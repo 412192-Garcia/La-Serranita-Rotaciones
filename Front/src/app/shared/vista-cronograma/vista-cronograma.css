@@ -67,6 +67,10 @@
   font-weight: 500;
 }
 
+.chip.acompanante {
+  border-style: dashed;
+}
+
 .chip.activa {
   background: var(--color-primary);
   border-color: var(--color-primary);
@@ -124,6 +128,13 @@ tbody th {
   color: var(--color-text-muted);
   white-space: normal;
   max-width: 220px;
+}
+
+.en-entrenamiento {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
 }
 
 .zona-impresion {

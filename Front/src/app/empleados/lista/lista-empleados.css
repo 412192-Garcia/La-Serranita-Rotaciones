@@ -48,6 +48,22 @@ h2 {
   min-width: 0;
 }
 
+.titulo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.badge-entrenamiento {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-accent-light, #fdf1e3);
+  color: var(--color-accent-dark, #d4650f);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 .puestos {
   display: flex;
   flex-wrap: wrap;

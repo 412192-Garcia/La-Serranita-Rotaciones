@@ -2,6 +2,14 @@
   <button type="button" class="btn-secundario" (click)="volver()"><svg lucideArrowLeft [strokeWidth]="2.5"></svg> Volver</button>
   <h2>{{ id() ? 'Editar cronograma' : 'Nuevo cronograma' }}</h2>
   <div class="barra-guardar">
+    <div class="deshacer">
+      <button type="button" class="btn-secundario btn-icono-texto" title="Deshacer (Ctrl+Z)" [disabled]="!puedeDeshacer()" (click)="deshacer()">
+        <svg lucideUndo2 [strokeWidth]="2.5"></svg> Deshacer
+      </button>
+      <button type="button" class="btn-secundario btn-icono-texto" title="Rehacer (Ctrl+Y)" [disabled]="!puedeRehacer()" (click)="rehacer()">
+        <svg lucideRedo2 [strokeWidth]="2.5"></svg> Rehacer
+      </button>
+    </div>
     @if (error()) {
       <span class="error-campo">{{ error() }}</span>
     } @else if (hayCambios()) {
@@ -32,7 +40,7 @@
       <span class="etiqueta">Afluencia</span>
       <div class="opciones">
         @for (a of afluencias; track a.valor) {
-          <button type="button" class="chip" [class.activa]="afluencia() === a.valor" (click)="afluencia.set(a.valor)">{{ a.texto }}</button>
+          <button type="button" class="chip" [class.activa]="afluencia() === a.valor" (click)="cambiarAfluencia(a.valor)">{{ a.texto }}</button>
         }
       </div>
     </div>

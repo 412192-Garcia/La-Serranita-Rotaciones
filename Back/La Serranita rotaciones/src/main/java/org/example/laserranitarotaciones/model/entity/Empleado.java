@@ -34,6 +34,13 @@ public class Empleado {
     @Column(name = "puesto", nullable = false, length = 60)
     private Set<String> puestos = new LinkedHashSet<>();
 
+    /** Está aprendiendo: no ocupa un número del cronograma, acompaña a otro. */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean enEntrenamiento;
+
+    /** A quién acompaña normalmente mientras está en entrenamiento. */
+    private Long idAcompananteHabitual;
+
     /** De los que sabe, en cuáles tiene prioridad (ej. la boletera en Boletería). */
     @ElementCollection
     @CollectionTable(name = "empleado_principales", joinColumns = @JoinColumn(name = "id_empleado"))

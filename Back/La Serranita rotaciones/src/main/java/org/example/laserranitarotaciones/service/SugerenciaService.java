@@ -85,11 +85,13 @@ public class SugerenciaService {
         for (PresenteDto p : pedidos) {
             EmpleadoDto e = porId.get(p.empleadoId());
             if (e == null) throw new NoEncontradoException("Uno de los empleados ya no existe. Recargá la página.");
+            if (e.enEntrenamiento()) continue; // acompaña a otro: no ocupa un número
             Set<String> sabe = claves(e.puestos());
             Set<String> hoy = p.puestosHoy() == null ? new HashSet<>(sabe) : claves(p.puestosHoy());
             hoy.retainAll(sabe);
             presentes.add(new AsignadorService.Presente(e.id(), e.nombre(), sabe, hoy, claves(e.principales())));
         }
+        if (presentes.isEmpty()) throw new ValidacionException("Vinieron sólo empleados en entrenamiento.");
         return presentes;
     }
 

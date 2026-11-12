@@ -17,7 +17,9 @@ y arma las tarjetas con el nombre de cada uno para imprimir.
   dispositivo hasta el otro día.
 - **Cronogramas**: importar desde Excel, crear, editar, ver y borrar. En el editor se pinta la grilla
   con el número elegido (tocando o arrastrando) y la fila "Sin puesto" muestra a quién falta ubicar.
-- **Empleados**: nombre, puestos que sabe hacer y, de esos, los principales (ahí tiene prioridad).
+- **Empleados**: nombre, puestos que sabe hacer y, de esos, los principales (ahí tiene prioridad). Un
+  empleado en entrenamiento no ocupa un número del cronograma: acompaña a otro (uno habitual, o el que
+  se elija en el día, con cambios por horario) y su tarjeta se arma con la de su acompañante.
 - **Puestos**: la prioridad de cada puesto (alta, media o baja; media si nunca se cambió).
 
 ## Cómo se elige

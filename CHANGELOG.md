@@ -43,6 +43,12 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
   varios (6-7). Los horarios se arman con "de 11:00 a 18:00 cada 30 min". Los puestos se eligen de los
   que ya existen, se suben, bajan o quitan, y la nota sólo aparece si tiene algo. Una fila "Sin puesto"
   muestra en cada horario qué números no están en ningún lado. Avisa antes de salir sin guardar.
+- Editor de cronogramas: botones Deshacer y Rehacer (también Ctrl+Z y Ctrl+Y). Una pincelada o lo escrito
+  seguido en un campo se deshace de una vez.
+- Empleados en entrenamiento: se marcan en Empleados, con a quién acompañan normalmente. No ocupan un
+  lugar en el cronograma: en Armar el día se elige a quién acompañan (se puede cambiar a una hora, por
+  ejemplo con Ana hasta las 14:00 y después con Beto) y su tarjeta se arma con la de esa persona.
+  Avisa si el acompañante no vino.
 
 ## Primera versión web
 

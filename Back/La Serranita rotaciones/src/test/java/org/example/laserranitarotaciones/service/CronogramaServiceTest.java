@@ -153,6 +153,20 @@ class CronogramaServiceTest {
     }
 
     @Test
+    void unEmpleadoEnEntrenamientoAcompanaAOtro() {
+        EmpleadoDto ana = empleados.crear(new EmpleadoDto(null, "Ana", List.of("Boleteria"), List.of()));
+        EmpleadoDto juan = empleados.crear(new EmpleadoDto(null, "Juan", List.of(), List.of(), true, ana.id()));
+        assertThat(juan.enEntrenamiento()).isTrue();
+        assertThat(juan.acompananteHabitualId()).isEqualTo(ana.id());
+
+        assertThatThrownBy(() -> empleados.crear(new EmpleadoDto(null, "Leo", List.of(), List.of(), true, juan.id())))
+                .isInstanceOf(ValidacionException.class).hasMessageContaining("también está en entrenamiento");
+
+        empleados.eliminar(ana.id());
+        assertThat(empleados.listar()).singleElement().extracting(EmpleadoDto::acompananteHabitualId).isNull();
+    }
+
+    @Test
     void rechazaArchivosQueNoSonExcel() {
         var archivo = new MockMultipartFile("archivo", "plan.txt", "text/plain", "hola".getBytes());
         assertThatThrownBy(() -> cronogramas.importar(archivo)).isInstanceOf(ValidacionException.class);

@@ -9,32 +9,42 @@
   </nav>
 
   @if (vista() === 'tarjetas') {
-    @if (tarjetas().length === 0) {
+    @if (items().length === 0) {
       <section class="panel vacio">Este cronograma no tiene empleados.</section>
     } @else {
       <section class="panel tarjetas">
         <div>
           <span class="etiqueta">Empleado</span>
           <div class="empleados">
-            @for (t of tarjetas(); track t.empleado) {
-              <button type="button" class="chip" [class.activa]="$index === seleccionada()" (click)="seleccionada.set($index)">
-                {{ t.empleado }}
-                @if (nombres().get(t.empleado); as n) {
-                  <span class="chip-nombre">{{ n }}</span>
+            @for (it of items(); track it.clave) {
+              <button
+                type="button"
+                class="chip"
+                [class.acompanante]="!it.numero"
+                [class.activa]="$index === seleccionada()"
+                (click)="seleccionada.set($index)"
+              >
+                @if (it.numero) {
+                  {{ it.numero }}
+                  @if (it.nombre) {
+                    <span class="chip-nombre">{{ it.nombre }}</span>
+                  }
+                } @else {
+                  {{ it.etiqueta }}
                 }
               </button>
             }
           </div>
           <div class="acciones">
-            <button type="button" class="btn-secundario" (click)="imprimir([tarjeta()!])">
+            <button type="button" class="btn-secundario" (click)="imprimir([item()!])">
               <svg lucidePrinter [strokeWidth]="2.5"></svg> Imprimir esta
             </button>
-            <button type="button" class="btn-primario" (click)="imprimir(tarjetas())">
-              <svg lucidePrinter [strokeWidth]="2.5"></svg> Imprimir todas ({{ tarjetas().length }})
+            <button type="button" class="btn-primario" (click)="imprimir(items())">
+              <svg lucidePrinter [strokeWidth]="2.5"></svg> Imprimir todas ({{ items().length }})
             </button>
           </div>
         </div>
-        <app-tarjeta [tarjeta]="tarjeta()!" [cronograma]="cronograma().nombre" [nombre]="nombres().get(tarjeta()!.empleado) ?? null" />
+        <app-tarjeta [tarjeta]="item()!.tarjeta" [cronograma]="cronograma().nombre" [etiqueta]="item()!.etiqueta" [nombre]="item()!.nombre" />
       </section>
     }
   } @else {
@@ -66,11 +76,19 @@
         </tbody>
       </table>
     </section>
+    @if (acompanantes().length) {
+      <section class="panel en-entrenamiento">
+        <span class="etiqueta">En entrenamiento</span>
+        @for (a of acompanantes(); track a.nombre) {
+          <div><strong>{{ a.nombre }}</strong> {{ a.detalle }}</div>
+        }
+      </section>
+    }
   }
 </div>
 
 <div class="zona-impresion">
-  @for (t of aImprimir(); track t.empleado) {
-    <app-tarjeta [tarjeta]="t" [cronograma]="cronograma().nombre" [nombre]="nombres().get(t.empleado) ?? null" />
+  @for (it of aImprimir(); track it.clave) {
+    <app-tarjeta [tarjeta]="it.tarjeta" [cronograma]="cronograma().nombre" [etiqueta]="it.etiqueta" [nombre]="it.nombre" />
   }
 </div>

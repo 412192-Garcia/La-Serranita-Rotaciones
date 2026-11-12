@@ -34,6 +34,10 @@ export class ListaEmpleados implements OnInit {
     });
   }
 
+  nombreDe(id: number | null): string | null {
+    return id == null ? null : (this.empleados().find((e) => e.id === id)?.nombre ?? null);
+  }
+
   esPrincipal(e: Empleado, puesto: string): boolean {
     return e.principales.includes(puesto);
   }

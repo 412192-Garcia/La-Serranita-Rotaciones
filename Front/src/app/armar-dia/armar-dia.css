@@ -147,6 +147,47 @@
   text-decoration: line-through;
 }
 
+.aprendiz .asistencia {
+  border-style: dashed;
+}
+
+.tramos {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.tramo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.aviso-aprendiz {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-danger);
+}
+
+.aviso-aprendiz svg {
+  width: 13px;
+  height: 13px;
+}
+
+.con-aprendiz {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
 .reparto {
   display: flex;
   flex-direction: column;

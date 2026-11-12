@@ -49,13 +49,18 @@ public class EmpleadoService {
     @Transactional
     public void eliminar(Long id) {
         repositorio.delete(repositorio.findById(id).orElseThrow(() -> new NoEncontradoException("Ese empleado no existe.")));
+        // Los que lo acompañaban quedan sin acompañante habitual.
+        repositorio.findAll().stream()
+                .filter(e -> id.equals(e.getIdAcompananteHabitual()))
+                .forEach(e -> e.setIdAcompananteHabitual(null));
     }
 
     static EmpleadoDto aDto(Empleado e) {
-        return new EmpleadoDto(e.getId(), e.getNombre(), List.copyOf(e.getPuestos()), List.copyOf(e.getPrincipales()));
+        return new EmpleadoDto(e.getId(), e.getNombre(), List.copyOf(e.getPuestos()), List.copyOf(e.getPrincipales()),
+                e.isEnEntrenamiento(), e.getIdAcompananteHabitual());
     }
 
-    private static void aplicar(Empleado e, EmpleadoDto dto) {
+    private void aplicar(Empleado e, EmpleadoDto dto) {
         String nombre = dto.nombre() == null ? "" : dto.nombre().trim();
         if (nombre.isEmpty()) throw new ValidacionException("Falta el nombre.");
         if (nombre.length() > 60) throw new ValidacionException("El nombre es muy largo.");
@@ -73,7 +78,17 @@ public class EmpleadoService {
             if (!principales.contains(puesto)) principales.add(puesto);
         }
 
+        Long acompanante = dto.enEntrenamiento() ? dto.acompananteHabitualId() : null;
+        if (acompanante != null) {
+            if (acompanante.equals(e.getId())) throw new ValidacionException("No puede acompañarse a sí mismo.");
+            Empleado otro = repositorio.findById(acompanante)
+                    .orElseThrow(() -> new ValidacionException("El acompañante elegido ya no existe."));
+            if (otro.isEnEntrenamiento()) throw new ValidacionException(otro.getNombre() + " también está en entrenamiento.");
+        }
+
         e.setNombre(nombre);
+        e.setEnEntrenamiento(dto.enEntrenamiento());
+        e.setIdAcompananteHabitual(acompanante);
         e.getPuestos().clear();
         e.getPuestos().addAll(puestos.values());
         e.getPrincipales().clear();

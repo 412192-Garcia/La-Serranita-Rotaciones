@@ -9,12 +9,12 @@ import {
   LucideStar,
   LucideTriangleExclamationPoint,
 } from '@lucide/angular';
-import { AFLUENCIAS, Afluencia, Cronograma, Sugerencia, puestosPorNumero, textoAfluencia } from '../models/cronograma';
+import { AFLUENCIAS, Afluencia, Cronograma, Renglon, Sugerencia, puestosPorNumero, textoAfluencia } from '../models/cronograma';
 import { Empleado, clavePuesto } from '../models/empleado';
 import { CronogramaService, mensajeDeError } from '../services/cronograma.service';
 import { EmpleadoService } from '../services/empleado.service';
 import { ToastService } from '../shared/toast/toast.service';
-import { VistaCronograma } from '../shared/vista-cronograma/vista-cronograma';
+import { TarjetaAcompanante, VistaCronograma } from '../shared/vista-cronograma/vista-cronograma';
 
 /** Lo que se marcó hoy: queda guardado en este dispositivo hasta mañana. */
 interface DiaGuardado {
@@ -22,6 +22,14 @@ interface DiaGuardado {
   /** Por empleado, las claves de los puestos que hoy no puede hacer. */
   noHoy: Record<number, string[]>;
   afluencia: Afluencia;
+  /** Por empleado en entrenamiento, con quién va en cada tramo del día. */
+  acompanan?: Record<number, Tramo[]>;
+}
+
+/** Desde qué hora (null = desde el principio) acompaña a quién. */
+interface Tramo {
+  desde: string | null;
+  acompananteId: number | null;
 }
 
 function hoyLocal(): string {
@@ -72,8 +80,13 @@ export class ArmarDia implements OnInit {
   ausentes = signal<number[]>(this.guardado?.ausentes ?? []);
   noHoy = signal<Record<number, string[]>>(this.guardado?.noHoy ?? {});
   afluencia = signal<Afluencia>(this.guardado?.afluencia ?? 'MEDIA');
+  acompanan = signal<Record<number, Tramo[]>>(this.guardado?.acompanan ?? {});
 
-  presentes = computed(() => this.empleados().filter((e) => !this.ausentes().includes(e.id!)));
+  regulares = computed(() => this.empleados().filter((e) => !e.enEntrenamiento));
+  enEntrenamiento = computed(() => this.empleados().filter((e) => e.enEntrenamiento));
+  /** Los que vinieron y ocupan un número (sin los que están en entrenamiento). */
+  presentes = computed(() => this.regulares().filter((e) => !this.ausentes().includes(e.id!)));
+  aprendicesPresentes = computed(() => this.enEntrenamiento().filter((e) => !this.ausentes().includes(e.id!)));
 
   buscando = signal(false);
   sugerencias = signal<Sugerencia[] | null>(null);
@@ -100,7 +113,12 @@ export class ArmarDia implements OnInit {
 
   constructor() {
     effect(() => {
-      const dia: DiaGuardado = { ausentes: this.ausentes(), noHoy: this.noHoy(), afluencia: this.afluencia() };
+      const dia: DiaGuardado = {
+        ausentes: this.ausentes(),
+        noHoy: this.noHoy(),
+        afluencia: this.afluencia(),
+        acompanan: this.acompanan(),
+      };
       try {
         localStorage.setItem(CLAVE_DIA, JSON.stringify(dia));
       } catch {
@@ -127,6 +145,19 @@ export class ArmarDia implements OnInit {
   private descartarMarcasViejas(empleados: Empleado[]): void {
     const porId = new Map(empleados.map((e) => [e.id!, e.puestos.map(clavePuesto)]));
     this.ausentes.update((l) => l.filter((id) => porId.has(id)));
+    const regulares = new Set(empleados.filter((e) => !e.enEntrenamiento).map((e) => e.id!));
+    const aprendices = new Set(empleados.filter((e) => e.enEntrenamiento).map((e) => e.id!));
+    this.acompanan.update((m) => {
+      const limpio: Record<number, Tramo[]> = {};
+      for (const [id, tramos] of Object.entries(m)) {
+        if (!aprendices.has(Number(id))) continue;
+        limpio[Number(id)] = tramos.map((t) => ({
+          ...t,
+          acompananteId: t.acompananteId != null && regulares.has(t.acompananteId) ? t.acompananteId : null,
+        }));
+      }
+      return limpio;
+    });
     this.noHoy.update((m) => {
       const limpio: Record<number, string[]> = {};
       for (const [id, claves] of Object.entries(m)) {
@@ -136,6 +167,104 @@ export class ArmarDia implements OnInit {
       }
       return limpio;
     });
+  }
+
+  // --- En entrenamiento
+
+  tramos(e: Empleado): Tramo[] {
+    return this.acompanan()[e.id!] ?? [{ desde: null, acompananteId: e.acompananteHabitualId }];
+  }
+
+  private cambiarTramos(e: Empleado, cambio: (t: Tramo[]) => Tramo[]): void {
+    const nuevos = cambio(this.tramos(e).map((t) => ({ ...t })));
+    this.acompanan.update((m) => ({ ...m, [e.id!]: nuevos }));
+  }
+
+  cambiarAcompanante(e: Empleado, i: number, evento: Event): void {
+    const valor = (evento.target as HTMLSelectElement).value;
+    this.cambiarTramos(e, (t) => {
+      t[i].acompananteId = valor === '' ? null : Number(valor);
+      return t;
+    });
+  }
+
+  cambiarDesde(e: Empleado, i: number, evento: Event): void {
+    const valor = (evento.target as HTMLInputElement).value;
+    this.cambiarTramos(e, (t) => {
+      t[i].desde = valor || null;
+      return t;
+    });
+  }
+
+  agregarTramo(e: Empleado): void {
+    this.cambiarTramos(e, (t) => [...t, { desde: '14:00', acompananteId: null }]);
+  }
+
+  quitarTramo(e: Empleado, i: number): void {
+    this.cambiarTramos(e, (t) => t.filter((_, j) => j !== i));
+  }
+
+  nombreDe(id: number | null): string {
+    return this.empleados().find((e) => e.id === id)?.nombre ?? '';
+  }
+
+  /** Qué falta para armar su tarjeta (con quién va, o si esa persona no vino). */
+  avisoAprendiz(e: Empleado): string | null {
+    for (const t of this.tramos(e)) {
+      if (t.acompananteId == null) return 'Elegí con quién va.';
+      if (!this.presentes().some((p) => p.id === t.acompananteId)) return `${this.nombreDe(t.acompananteId)} no vino hoy.`;
+    }
+    return null;
+  }
+
+  /** La tarjeta de cada uno en entrenamiento: la de su acompañante en cada tramo. */
+  tarjetasAcompanantes = computed<TarjetaAcompanante[]>(() => {
+    const c = this.cronograma();
+    if (!c) return [];
+    const numeroDe = new Map<number, number>();
+    this.asignacion().forEach((id, numero) => {
+      if (id != null) numeroDe.set(id, numero);
+    });
+    const tarjetaDe = new Map((c.tarjetas ?? []).map((t) => [t.empleado, t]));
+    const resultado: TarjetaAcompanante[] = [];
+    for (const e of this.aprendicesPresentes()) {
+      const tramos = [...this.tramos(e)].sort((a, b) => (a.desde ?? '').localeCompare(b.desde ?? ''));
+      if (tramos.some((t) => t.acompananteId == null || !numeroDe.has(t.acompananteId))) continue;
+      const renglones: Renglon[] = [];
+      let descanso: string | null = null;
+      tramos.forEach((t, i) => {
+        const desde = t.desde ?? '';
+        const hasta = tramos[i + 1]?.desde ?? '99:99';
+        const base = tarjetaDe.get(numeroDe.get(t.acompananteId!)!);
+        if (!base) return;
+        const delTramo = base.renglones.filter((r) => r.hora >= desde && r.hora < hasta);
+        // Al cambiar de acompañante, el primer renglón es el cambio (lo de "cubierto por" es del otro).
+        if (i > 0 && delTramo.length) {
+          const destino = delTramo[0].texto.match(/rote a (.+)$/i)?.[1] ?? delTramo[0].texto;
+          delTramo[0] = { hora: delTramo[0].hora, texto: `Pase a acompañar a ${this.nombreDe(t.acompananteId)} en ${destino}` };
+        }
+        renglones.push(...delTramo);
+        const inicioDescanso = base.descanso?.slice(0, 5);
+        if (!descanso && inicioDescanso && inicioDescanso >= desde && inicioDescanso < hasta) descanso = base.descanso;
+      });
+      const nombres = [...new Set(tramos.map((t) => this.nombreDe(t.acompananteId)))];
+      resultado.push({
+        nombre: e.nombre,
+        detalle: `acompaña a ${nombres.join(' y a ')}`,
+        tarjeta: { empleado: 0, descanso, renglones },
+      });
+    }
+    return resultado;
+  });
+
+  /** Número → nombres de los que lo acompañan en algún momento. */
+  acompanantesDe(numero: number): string {
+    const id = this.asignacion().get(numero);
+    if (id == null) return '';
+    return this.aprendicesPresentes()
+      .filter((e) => this.tramos(e).some((t) => t.acompananteId === id))
+      .map((e) => e.nombre)
+      .join(', ');
   }
 
   vino(e: Empleado): boolean {

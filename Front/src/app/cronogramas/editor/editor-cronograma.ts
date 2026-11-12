@@ -8,7 +8,9 @@ import {
   LucideEraser,
   LucideLoaderCircle,
   LucidePlus,
+  LucideRedo2,
   LucideSave,
+  LucideUndo2,
   LucideX,
 } from '@lucide/angular';
 import { AFLUENCIAS, Afluencia, Puesto } from '../../models/cronograma';
@@ -20,6 +22,16 @@ import { ToastService } from '../../shared/toast/toast.service';
 
 /** Con qué se pinta al tocar una celda. */
 type Herramienta = { tipo: 'numero'; numero: number } | { tipo: 'cerrado' } | { tipo: 'borrar' };
+
+/** Una foto de lo editable, para deshacer. */
+interface Foto {
+  nombre: string;
+  afluencia: Afluencia;
+  horarios: string[];
+  puestos: Puesto[];
+}
+
+const MAXIMO_DESHACER = 100;
 
 /** Lo que hace un toque (y el arrastre que sigue) sobre las celdas. */
 type Accion = (celda: string) => string;
@@ -52,7 +64,9 @@ function aHora(minutos: number): string {
     LucideEraser,
     LucideLoaderCircle,
     LucidePlus,
+    LucideRedo2,
     LucideSave,
+    LucideUndo2,
     LucideX,
   ],
   templateUrl: './editor-cronograma.html',
@@ -95,6 +109,13 @@ export class EditorCronograma implements OnInit {
 
   private guardado = '';
   private accionArrastre: Accion | null = null;
+
+  private pilaDeshacer = signal<Foto[]>([]);
+  private pilaRehacer = signal<Foto[]>([]);
+  /** Lo escrito seguido en un mismo campo se deshace de una vez. */
+  private ultimoCampo: string | null = null;
+  puedeDeshacer = computed(() => this.pilaDeshacer().length > 0);
+  puedeRehacer = computed(() => this.pilaRehacer().length > 0);
 
   /** Los números que se usan, más el siguiente para sumar a alguien. */
   numeros = computed(() => {
@@ -157,6 +178,70 @@ export class EditorCronograma implements OnInit {
     this.accionArrastre = null;
   }
 
+  /** Ctrl+Z / Ctrl+Y. Dentro de un campo de texto se deja el deshacer propio del campo. */
+  @HostListener('window:keydown', ['$event'])
+  atajos(evento: KeyboardEvent): void {
+    if (!(evento.ctrlKey || evento.metaKey)) return;
+    const enCampo = (evento.target as HTMLElement).closest?.('input, textarea, select');
+    if (enCampo) return;
+    const tecla = evento.key.toLowerCase();
+    if (tecla === 'z' && !evento.shiftKey) {
+      evento.preventDefault();
+      this.deshacer();
+    } else if (tecla === 'y' || (tecla === 'z' && evento.shiftKey)) {
+      evento.preventDefault();
+      this.rehacer();
+    }
+  }
+
+  // --- Deshacer
+
+  private foto(): Foto {
+    return {
+      nombre: this.nombre(),
+      afluencia: this.afluencia(),
+      horarios: [...this.horarios()],
+      puestos: this.puestos().map((p) => ({ ...p, celdas: [...p.celdas] })),
+    };
+  }
+
+  /** Guarda cómo estaba antes de un cambio. campo: para juntar lo escrito seguido en un mismo campo. */
+  private registrar(campo: string | null = null): void {
+    if (campo != null && campo === this.ultimoCampo) return;
+    this.ultimoCampo = campo;
+    this.pilaDeshacer.update((p) => [...p, this.foto()].slice(-MAXIMO_DESHACER));
+    this.pilaRehacer.set([]);
+  }
+
+  private aplicarFoto(f: Foto): void {
+    this.nombre.set(f.nombre);
+    this.afluencia.set(f.afluencia);
+    this.horarios.set(f.horarios);
+    this.puestos.set(f.puestos);
+  }
+
+  deshacer(): void {
+    this.mover(this.pilaDeshacer, this.pilaRehacer);
+  }
+
+  rehacer(): void {
+    this.mover(this.pilaRehacer, this.pilaDeshacer);
+  }
+
+  /** Saca la última foto de una pila (salteando las iguales a lo actual) y guarda lo actual en la otra. */
+  private mover(desde: ReturnType<typeof signal<Foto[]>>, hacia: ReturnType<typeof signal<Foto[]>>): void {
+    this.editando.set(null);
+    this.ultimoCampo = null;
+    const actual = JSON.stringify(this.foto());
+    const pila = [...desde()];
+    let f = pila.pop();
+    while (f && JSON.stringify(f) === actual) f = pila.pop();
+    desde.set(pila);
+    if (!f) return;
+    hacia.update((p) => [...p, this.foto()]);
+    this.aplicarFoto(f);
+  }
+
   valor(evento: Event): string {
     return (evento.target as HTMLInputElement).value;
   }
@@ -164,6 +249,7 @@ export class EditorCronograma implements OnInit {
   // --- Datos generales
 
   cambiarNombre(texto: string): void {
+    this.registrar('nombre');
     this.nombre.set(texto);
     this.errorNombre.set('');
   }
@@ -179,6 +265,7 @@ export class EditorCronograma implements OnInit {
     }
     const nuevos: string[] = [];
     for (let m = inicio; m <= fin; m += paso) nuevos.push(aHora(m));
+    if (this.horarios().length) this.registrar();
     const anteriores = this.horarios();
     this.puestos.update((l) =>
       l.map((p) => ({
@@ -194,11 +281,19 @@ export class EditorCronograma implements OnInit {
 
   // --- Puestos
 
+  cambiarAfluencia(a: Afluencia): void {
+    if (a === this.afluencia()) return;
+    this.registrar();
+    this.afluencia.set(a);
+  }
+
   cambiarPuesto(i: number, cambios: Partial<Puesto>): void {
+    this.registrar(`puesto-${i}-${Object.keys(cambios).join()}`);
     this.puestos.update((l) => l.map((p, j) => (j === i ? { ...p, ...cambios } : p)));
   }
 
   agregarPuesto(): void {
+    this.registrar();
     this.puestos.update((l) => [...l, { nombre: '', nota: null, celdas: this.horarios().map(() => '') }]);
     setTimeout(() => {
       const inputs = document.querySelectorAll<HTMLInputElement>('.nombre-puesto');
@@ -208,6 +303,7 @@ export class EditorCronograma implements OnInit {
 
   moverPuesto(i: number, delta: number): void {
     const j = i + delta;
+    this.registrar();
     this.puestos.update((l) => {
       if (j < 0 || j >= l.length) return l;
       const copia = [...l];
@@ -227,6 +323,7 @@ export class EditorCronograma implements OnInit {
       });
       if (!ok) return;
     }
+    this.registrar();
     this.puestos.update((l) => l.filter((_, j) => j !== i));
   }
 
@@ -266,6 +363,7 @@ export class EditorCronograma implements OnInit {
         accion = () => String(n);
       }
     }
+    this.registrar();
     this.accionArrastre = accion;
     this.pintar(fila, columna);
   }
@@ -293,6 +391,7 @@ export class EditorCronograma implements OnInit {
     if (!e) return;
     this.editando.set(null);
     const limpio = texto.replace(/\s/g, '');
+    if (limpio !== (this.puestos()[e.fila]?.celdas[e.columna] ?? '')) this.registrar();
     this.puestos.update((l) =>
       l.map((p, i) =>
         i === e.fila ? { ...p, celdas: p.celdas.map((c, k) => (k === e.columna ? (esCerrado(limpio) ? 'Cerrado' : limpio) : c)) } : p,

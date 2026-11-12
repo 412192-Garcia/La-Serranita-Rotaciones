@@ -1,6 +1,6 @@
 <div class="tarjeta">
   <div class="numero">
-    {{ tarjeta().empleado }}
+    {{ etiqueta() ?? tarjeta().empleado }}
     @if (nombre()) {
       <span class="nombre">{{ nombre() }}</span>
     }

@@ -12,4 +12,6 @@ export class TarjetaEmpleado {
   cronograma = input.required<string>();
   /** Quién hace este número hoy; vacío = sólo el número. */
   nombre = input<string | null>(null);
+  /** Va en lugar del número (alguien en entrenamiento no tiene número). */
+  etiqueta = input<string | null>(null);
 }

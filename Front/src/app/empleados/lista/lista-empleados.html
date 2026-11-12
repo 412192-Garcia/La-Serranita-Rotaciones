@@ -12,7 +12,12 @@
     @for (e of empleados(); track e.id) {
       <article class="panel empleado">
         <div class="datos">
-          <strong>{{ e.nombre }}</strong>
+          <div class="titulo">
+            <strong>{{ e.nombre }}</strong>
+            @if (e.enEntrenamiento) {
+              <span class="badge-entrenamiento">En entrenamiento{{ nombreDe(e.acompananteHabitualId) ? ' · acompaña a ' + nombreDe(e.acompananteHabitualId) : '' }}</span>
+            }
+          </div>
           <div class="puestos">
             @for (p of e.puestos; track p) {
               <span class="puesto" [class.principal]="esPrincipal(e, p)">

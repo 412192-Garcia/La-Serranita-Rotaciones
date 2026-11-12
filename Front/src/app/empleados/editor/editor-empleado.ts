@@ -32,6 +32,10 @@ export class EditorEmpleado implements OnInit {
   todos = signal<string[]>([]);
   sabe = signal<string[]>([]);
   principales = signal<string[]>([]);
+  enEntrenamiento = signal(false);
+  acompananteHabitualId = signal<number | null>(null);
+  /** Los que pueden acompañar: el resto de los empleados que no están en entrenamiento. */
+  acompanantes = signal<{ id: number; nombre: string }[]>([]);
 
   ngOnInit(): void {
     forkJoin({ puestos: this.cronogramas.puestos(), empleados: this.api.listar() }).subscribe({
@@ -48,7 +52,12 @@ export class EditorEmpleado implements OnInit {
           if (!todos.some((t) => clavePuesto(t) === clavePuesto(p))) todos.push(p);
         }
         this.todos.set(todos);
+        this.acompanantes.set(
+          empleados.filter((e) => !e.enEntrenamiento && e.id !== empleado?.id).map((e) => ({ id: e.id!, nombre: e.nombre })),
+        );
         if (empleado) {
+          this.enEntrenamiento.set(empleado.enEntrenamiento);
+          this.acompananteHabitualId.set(empleado.acompananteHabitualId);
           this.nombre.set(empleado.nombre);
           // Se guardan con el nombre de la lista general, para que coincidan con los cronogramas.
           this.sabe.set(todos.filter((t) => empleado.puestos.some((p) => clavePuesto(p) === clavePuesto(t))));
@@ -66,6 +75,11 @@ export class EditorEmpleado implements OnInit {
   cambiarNombre(evento: Event): void {
     this.nombre.set((evento.target as HTMLInputElement).value);
     this.errorNombre.set('');
+  }
+
+  cambiarAcompanante(evento: Event): void {
+    const valor = (evento.target as HTMLSelectElement).value;
+    this.acompananteHabitualId.set(valor === '' ? null : Number(valor));
   }
 
   alternarSabe(puesto: string): void {
@@ -95,7 +109,14 @@ export class EditorEmpleado implements OnInit {
     const id = this.id();
     this.guardando.set(true);
     this.api
-      .guardar({ id: id ? Number(id) : null, nombre: this.nombre(), puestos: this.sabe(), principales: this.principales() })
+      .guardar({
+        id: id ? Number(id) : null,
+        nombre: this.nombre(),
+        puestos: this.sabe(),
+        principales: this.principales(),
+        enEntrenamiento: this.enEntrenamiento(),
+        acompananteHabitualId: this.enEntrenamiento() ? this.acompananteHabitualId() : null,
+      })
       .subscribe({
         next: () => {
           this.toast.exito('Empleado guardado.');

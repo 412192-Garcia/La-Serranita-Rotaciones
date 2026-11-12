@@ -10,14 +10,14 @@
     <div class="pregunta">
       <div class="pregunta-titulo">
         <span class="etiqueta">¿Quién vino hoy?</span>
-        <span class="contador">Vinieron {{ presentes().length }} de {{ empleados().length }}</span>
+        <span class="contador">Vinieron {{ presentes().length }} de {{ regulares().length }}</span>
         @if (ausentes().length) {
           <button type="button" class="btn-link" (click)="todosVinieron()">Vinieron todos</button>
         }
       </div>
       <p class="ayuda">Tocá un puesto para que hoy no lo haga.</p>
       <div class="empleados">
-        @for (e of empleados(); track e.id) {
+        @for (e of regulares(); track e.id) {
           <div class="empleado" [class.ausente]="!vino(e)">
             <button type="button" class="asistencia" [attr.aria-pressed]="vino(e)" (click)="alternarAsistencia(e)">
               @if (vino(e)) {
@@ -49,6 +49,53 @@
         }
       </div>
     </div>
+
+    @if (enEntrenamiento().length) {
+      <div class="pregunta">
+        <span class="etiqueta">En entrenamiento</span>
+        <p class="ayuda">No ocupan un lugar en el cronograma: llevan la tarjeta de quien acompañan.</p>
+        <div class="empleados">
+          @for (e of enEntrenamiento(); track e.id) {
+            <div class="empleado aprendiz" [class.ausente]="!vino(e)">
+              <button type="button" class="asistencia" [attr.aria-pressed]="vino(e)" (click)="alternarAsistencia(e)">
+                @if (vino(e)) {
+                  <svg lucideCheck [strokeWidth]="3"></svg>
+                } @else {
+                  <svg lucideBan [strokeWidth]="2.5"></svg>
+                }
+                {{ e.nombre }}
+              </button>
+              @if (vino(e)) {
+                <div class="tramos">
+                  @for (t of tramos(e); track $index; let i = $index) {
+                    <div class="tramo">
+                      @if (i > 0) {
+                        <span>desde las</span>
+                        <input type="time" aria-label="Desde" [value]="t.desde ?? ''" (change)="cambiarDesde(e, i, $event)" />
+                      }
+                      <span>{{ i === 0 ? 'Acompaña a' : 'acompaña a' }}</span>
+                      <select [attr.aria-label]="'Con quién va ' + e.nombre" (change)="cambiarAcompanante(e, i, $event)">
+                        <option value="" [selected]="t.acompananteId == null">Elegir…</option>
+                        @for (p of presentes(); track p.id) {
+                          <option [value]="p.id" [selected]="t.acompananteId === p.id">{{ p.nombre }}</option>
+                        }
+                      </select>
+                      @if (i > 0) {
+                        <button type="button" class="btn-link" (click)="quitarTramo(e, i)">Quitar</button>
+                      }
+                    </div>
+                  }
+                  <button type="button" class="btn-link" (click)="agregarTramo(e)">Cambia de acompañante en el día</button>
+                  @if (avisoAprendiz(e); as aviso) {
+                    <span class="aviso-aprendiz"><svg lucideTriangleExclamationPoint [strokeWidth]="2.5"></svg> {{ aviso }}</span>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
 
     <div class="pregunta">
       <span class="etiqueta">¿Cuánta gente se espera?</span>
@@ -128,6 +175,9 @@
                   <option [value]="e.id" [selected]="asignacion().get(n) === e.id">{{ e.nombre }}</option>
                 }
               </select>
+              @if (acompanantesDe(n); as acomp) {
+                <span class="con-aprendiz">+ {{ acomp }}</span>
+              }
               @for (a of avisos(n); track a) {
                 <span class="aviso"><svg lucideTriangleExclamationPoint [strokeWidth]="2.5"></svg> {{ a }}</span>
               }
@@ -139,7 +189,7 @@
         }
       </div>
 
-      <app-vista-cronograma [cronograma]="c" [nombres]="nombres()" />
+      <app-vista-cronograma [cronograma]="c" [nombres]="nombres()" [acompanantes]="tarjetasAcompanantes()" />
     </section>
   }
 }
