@@ -26,10 +26,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Lee un Excel con un cronograma por hoja. El nombre del cronograma es el de la hoja. La 2ª fila
- * tiene los horarios desde la columna B y de la 3ª en adelante va un puesto por fila: el nombre en A
- * y en cada horario el número de empleado, varios separados con guión ("1-2") o "Cerrado".
- * La 1ª fila dice la afluencia: "Baja", "Media" o "Alta" (por ejemplo A1 "Afluencia" y B1 "Alta").
+ * Lee un Excel con un cronograma por hoja. La 1ª fila dice la afluencia ("Baja", "Media" o "Alta",
+ * por ejemplo A1 "Afluencia" y B1 "Alta") y puede decir el nombre (C1 "Nombre", D1 el nombre); si no,
+ * el nombre es el de la hoja. La 2ª fila tiene los horarios desde la columna B y de la 3ª en adelante
+ * va un puesto por fila: el nombre en A y en cada horario el número de empleado, varios separados con
+ * guión ("1-2") o "Cerrado".
  */
 @Service
 public class ImportadorExcelService {
@@ -77,9 +78,22 @@ public class ImportadorExcelService {
         if (puestos.isEmpty()) {
             throw new ValidacionException("La hoja \"" + hoja.getSheetName() + "\" no tiene puestos.");
         }
-        return new CronogramaDto(null, hoja.getSheetName().trim(),
+        return new CronogramaDto(null, nombre(hoja, formato, evaluador),
                 afluencia(hoja, formato, evaluador),
                 horarios, puestos, null, null, null);
+    }
+
+    /** El de la celda que sigue a "Nombre" en la 1ª fila; si no hay, el de la hoja (Excel lo corta en 31 letras). */
+    private static String nombre(Sheet hoja, DataFormatter formato, FormulaEvaluator evaluador) {
+        Row fila = hoja.getRow(0);
+        if (fila != null) {
+            for (Cell celda : fila) {
+                if (!texto(celda, formato, evaluador).equalsIgnoreCase("Nombre")) continue;
+                String nombre = texto(fila.getCell(celda.getColumnIndex() + 1), formato, evaluador);
+                if (!nombre.isEmpty()) return nombre;
+            }
+        }
+        return hoja.getSheetName().trim();
     }
 
     private static Afluencia afluencia(Sheet hoja, DataFormatter formato, FormulaEvaluator evaluador) {

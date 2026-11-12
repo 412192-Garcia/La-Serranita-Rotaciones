@@ -113,12 +113,28 @@ export class ArmarDia implements OnInit {
     this.empleadosApi.listar().subscribe({
       next: (l) => {
         this.empleados.set(l);
+        this.descartarMarcasViejas(l);
         this.cargando.set(false);
       },
       error: (e) => {
         this.toast.error(mensajeDeError(e));
         this.cargando.set(false);
       },
+    });
+  }
+
+  /** Lo marcado de empleados que ya no están, o de puestos que ya no sabe, no se arrastra. */
+  private descartarMarcasViejas(empleados: Empleado[]): void {
+    const porId = new Map(empleados.map((e) => [e.id!, e.puestos.map(clavePuesto)]));
+    this.ausentes.update((l) => l.filter((id) => porId.has(id)));
+    this.noHoy.update((m) => {
+      const limpio: Record<number, string[]> = {};
+      for (const [id, claves] of Object.entries(m)) {
+        const sabe = porId.get(Number(id));
+        const vigentes = sabe ? claves.filter((c) => sabe.includes(c)) : [];
+        if (vigentes.length) limpio[Number(id)] = vigentes;
+      }
+      return limpio;
     });
   }
 

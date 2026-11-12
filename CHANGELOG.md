@@ -33,6 +33,16 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 - Los puestos pueden tener una nota (por ejemplo "consultar al encargado"), que se ve en la planilla y
   en la tarjeta, sin que cuente como otro puesto.
 - En el celular, el menú se ve en dos filas.
+- En el Excel, la primera fila puede decir el nombre del cronograma (Excel corta los nombres de hoja
+  largos).
+- Al volver del descanso la tarjeta dice sólo adónde va, sin "Al ser cubierto por…".
+- Cuando alguien hace tres puestos a la vez, la tarjeta dice "Travesía, Búsqueda y Laberinto".
+- Armar el día: lo marcado de empleados que ya no existen o de puestos que ya no saben se descarta solo.
+- Editor de cronogramas nuevo: se elige un número (con su color), Cerrado o Borrar, y se pinta tocando o
+  arrastrando sobre la grilla; tocar un número que ya está lo saca, y con "Sumar a la celda" quedan
+  varios (6-7). Los horarios se arman con "de 11:00 a 18:00 cada 30 min". Los puestos se eligen de los
+  que ya existen, se suben, bajan o quitan, y la nota sólo aparece si tiene algo. Una fila "Sin puesto"
+  muestra en cada horario qué números no están en ningún lado. Avisa antes de salir sin guardar.
 
 ## Primera versión web
 

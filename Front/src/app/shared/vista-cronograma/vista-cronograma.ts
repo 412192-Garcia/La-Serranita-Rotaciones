@@ -31,9 +31,11 @@ export class VistaCronograma {
       ...t,
       renglones: t.renglones.map((r) => ({
         ...r,
-        texto: r.texto.replace(/cubierto por ([\d y]+) rote/, (_, numeros: string) =>
-          `cubierto por ${numeros.split(' y ').map((n) => nombres.get(Number(n)) ?? n).join(' y ')} rote`,
-        ),
+        texto: r.texto.replace(/cubierto por ([\d ,y]+) rote/, (_, numeros: string) => {
+          const nombresDe = numeros.split(/, | y /).map((n) => nombres.get(Number(n)) ?? n);
+          const lista = nombresDe.length > 1 ? `${nombresDe.slice(0, -1).join(', ')} y ${nombresDe.at(-1)}` : nombresDe[0];
+          return `cubierto por ${lista} rote`;
+        }),
       })),
     }));
   });

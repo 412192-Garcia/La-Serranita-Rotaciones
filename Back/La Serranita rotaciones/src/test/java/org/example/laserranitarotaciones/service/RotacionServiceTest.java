@@ -97,6 +97,23 @@ class RotacionServiceTest {
                 "Tobogán", "Al ser cubierto por 2 rote a Canilla (consultar al encargado)");
     }
 
+    @Test
+    void alVolverDelDescansoSoloDiceAdondeVa() {
+        PlanRotacion conDescanso = PlanRotacion.de(
+                List.of("11:00", "12:00", "13:00"),
+                List.of(
+                        new PuestoDto("Tobogán", List.of("1", "2", "1")),
+                        new PuestoDto("Descanso", List.of("2", "1-3", "2"))));
+        assertThat(textos(servicio.armarTarjetas(conDescanso), 1)).containsExactly(
+                "Tobogán", "Al ser cubierto por 2 rote a Descanso", "Tobogán");
+    }
+
+    @Test
+    void enumeraConComas() {
+        assertThat(RotacionService.enumerar(List.of("Travesía", "Búsqueda", "Laberinto"))).isEqualTo("Travesía, Búsqueda y Laberinto");
+        assertThat(RotacionService.enumerar(List.of("6", "7"))).isEqualTo("6 y 7");
+    }
+
     private static List<String> textos(List<TarjetaDto> tarjetas, int empleado) {
         return tarjetas.stream()
                 .filter(t -> t.empleado() == empleado)

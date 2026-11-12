@@ -166,8 +166,8 @@ class CronogramaServiceTest {
             fila(tranqui, 2, "Boleteria", 1, 1);
             fila(tranqui, 3, "Toboganes", 2, 2);
 
-            Sheet lleno = libro.createSheet("Lleno");
-            fila(lleno, 0, "Día de mucha gente - ALTA");
+            Sheet lleno = libro.createSheet("Hoja 2");
+            fila(lleno, 0, "Afluencia", "Alta", "Nombre", "Lleno");
             fila(lleno, 1, "Puesto", "10:00", "11:00");
             fila(lleno, 2, "Boleteria", 1, 2);
             fila(lleno, 3, "Toboganes", "3-4", 1);

@@ -15,7 +15,8 @@ y arma las tarjetas con el nombre de cada uno para imprimir.
   del más adecuado al menos, con lo que no coincide de cada uno. Al elegir uno se ve quién hace cada
   número (se puede cambiar a mano) y las tarjetas salen con nombre. Lo marcado queda guardado en el
   dispositivo hasta el otro día.
-- **Cronogramas**: importar desde Excel, crear, editar, ver y borrar.
+- **Cronogramas**: importar desde Excel, crear, editar, ver y borrar. En el editor se pinta la grilla
+  con el número elegido (tocando o arrastrando) y la fila "Sin puesto" muestra a quién falta ubicar.
 - **Empleados**: nombre, puestos que sabe hacer y, de esos, los principales (ahí tiene prioridad).
 - **Puestos**: la prioridad de cada puesto (alta, media o baja; media si nunca se cambió).
 
@@ -36,21 +37,25 @@ números distintos que aparecen en el cronograma.
 
 ## Formato del Excel para importar
 
-Cada hoja es un cronograma, con el nombre de la hoja.
+Cada hoja es un cronograma.
 
 - Fila 1: la afluencia, por ejemplo A1 `Afluencia` y B1 `Alta` (`Baja`, `Media` o `Alta`). Es
-  obligatoria: si una hoja no la tiene, no se importa nada del archivo.
+  obligatoria: si una hoja no la tiene, no se importa nada del archivo. Opcional: C1 `Nombre` y D1 el
+  nombre del cronograma; si no está, se usa el de la hoja (Excel lo corta en 31 letras).
 - Fila 2: en A el encabezado ("Puesto") y desde B los horarios (`10:00`, `11:00`...).
 - Desde la fila 3: un puesto por fila, el nombre en A y en cada horario el número de empleado. Varios
   empleados en el mismo puesto van separados con guión (`1-2`).
-- Cada fila es un solo puesto. Si una persona hace dos puestos a la vez (Travesía y Búsqueda), van
-  en dos filas con el mismo número; la tarjeta los junta en un renglón.
+- Cada fila es un solo puesto, y cada puesto va en una sola fila. Si una persona hace dos puestos a la
+  vez (Travesía y Búsqueda), van en dos filas con el mismo número; la tarjeta los junta en un renglón
+  ("Travesía, Búsqueda y Laberinto"). Si dos personas están en el mismo puesto, van en la misma celda:
+  `6-7`.
 - Una aclaración va entre paréntesis después del nombre: `Canilla (consultar al encargado)`. Se guarda
   como nota del puesto, aparte del nombre, y se lee en la tarjeta. Un `*` al principio se ignora.
 - Un puesto cerrado en un horario lleva `Cerrado` (o `C`). Si un empleado deja un puesto que cierra,
   la tarjeta dice "Rote a…".
 - Los colores del Excel no se leen: la app pinta cada número de empleado con un color fijo.
-- El puesto `Descanso` sale arriba en la tarjeta.
+- El puesto `Descanso` sale arriba en la tarjeta. Al volver del descanso la tarjeta dice sólo adónde
+  va.
 
 ## Levantarlo en desarrollo
 

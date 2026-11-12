@@ -87,8 +87,9 @@ public class RotacionService {
     }
 
     private String texto(int empleado, Horario horario, List<Puesto> anteriores, List<Puesto> actuales, PlanRotacion plan) {
-        String destino = actuales.stream().map(Puesto::conNota).collect(Collectors.joining(" y "));
-        List<Puesto> dejados = anteriores.stream().filter(p -> !actuales.contains(p)).toList();
+        String destino = enumerar(actuales.stream().map(Puesto::conNota).toList());
+        // El descanso no necesita que nadie lo cubra: al volver sólo se dice adónde va.
+        List<Puesto> dejados = anteriores.stream().filter(p -> !actuales.contains(p) && !p.esDescanso()).toList();
         if (dejados.isEmpty()) return destino;
 
         List<Puesto> abiertos = dejados.stream().filter(p -> !plan.cerrado(p, horario)).toList();
@@ -101,8 +102,14 @@ public class RotacionService {
                 .distinct()
                 .toList();
         if (cobertores.isEmpty()) return "Sin ser cubierto, rote a " + destino;
-        String quienes = cobertores.stream().map(String::valueOf).collect(Collectors.joining(" y "));
+        String quienes = enumerar(cobertores.stream().map(String::valueOf).toList());
         return "Al ser cubierto por " + quienes + " rote a " + destino;
+    }
+
+    /** "A", "A y B", "A, B y C". */
+    static String enumerar(List<String> partes) {
+        if (partes.size() <= 1) return String.join("", partes);
+        return String.join(", ", partes.subList(0, partes.size() - 1)) + " y " + partes.get(partes.size() - 1);
     }
 
     private static String rangoDescanso(Horario inicio, List<Horario> horarios) {
