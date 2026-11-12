@@ -1,0 +1,12 @@
+services:
+  backend:
+    build: ./Back/La Serranita rotaciones
+    restart: unless-stopped
+
+  frontend:
+    build: ./Front
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "4300:80"

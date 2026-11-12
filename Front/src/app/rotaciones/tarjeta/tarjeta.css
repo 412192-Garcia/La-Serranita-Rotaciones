@@ -1,0 +1,70 @@
+:host {
+  display: block;
+}
+
+.tarjeta {
+  width: 100%;
+  max-width: 340px;
+  border: 1px solid #111;
+  background: #fff;
+  color: #111;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.numero,
+.descanso,
+.renglon,
+.pie {
+  border-bottom: 1px solid #111;
+}
+
+.numero {
+  padding: 6px;
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.descanso {
+  padding: 6px;
+  text-align: center;
+}
+
+.renglon {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+}
+
+.hora {
+  padding: 5px 4px;
+  border-right: 1px solid #111;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.texto {
+  padding: 5px 8px;
+}
+
+.pie {
+  padding: 5px 8px;
+  border-bottom: none;
+  text-align: right;
+  font-size: 0.78rem;
+}
+
+@media print {
+  .tarjeta {
+    max-width: none;
+    font-size: 9pt;
+  }
+
+  .numero {
+    font-size: 18pt;
+  }
+
+  .renglon {
+    grid-template-columns: 13mm 1fr;
+  }
+}

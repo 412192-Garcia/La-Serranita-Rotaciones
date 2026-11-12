@@ -1,0 +1,128 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+/* Misma paleta que La Serranita Entradas. */
+:root {
+  --color-primary: #39a935;
+  --color-primary-dark: color-mix(in srgb, var(--color-primary) 82%, black);
+  --color-primary-light: color-mix(in srgb, var(--color-primary) 12%, white);
+
+  --color-danger: #bd1622;
+
+  --color-text: #111827;
+  --color-text-secondary: #374151;
+  --color-text-muted: #6b7280;
+  --color-heading-desc: #6b7280;
+
+  --color-border: #e5e7eb;
+  --color-bg-soft: #f9fafb;
+  --color-bg-page: #f4f5f7;
+  --color-card-bg: #ffffff;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+
+  --shadow-card: 0 2px 8px rgba(17, 24, 39, 0.06), 0 1px 2px rgba(17, 24, 39, 0.04);
+  --shadow-card-lg: 0 12px 28px -8px rgba(17, 24, 39, 0.16);
+
+  --font-heading: 'Rubik', 'Segoe UI', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+body {
+  background-color: var(--color-bg-page);
+  font-family: var(--font-body);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+input,
+select,
+textarea,
+button {
+  color: inherit;
+  font-family: inherit;
+}
+
+.btn-primario,
+.btn-secundario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+
+.btn-primario {
+  border: none;
+  background-color: var(--color-primary);
+  color: #fff;
+  padding: 10px 20px;
+}
+
+.btn-primario:hover:not(:disabled) {
+  background-color: var(--color-primary-dark);
+}
+
+.btn-secundario {
+  border: 1.5px solid var(--color-border);
+  background-color: var(--color-card-bg);
+  color: var(--color-text-secondary);
+  padding: 9px 16px;
+}
+
+.btn-secundario:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary-dark);
+}
+
+.btn-primario:disabled,
+.btn-secundario:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.btn-primario svg,
+.btn-secundario svg {
+  width: 17px;
+  height: 17px;
+}
+
+@media (pointer: coarse) {
+  .btn-primario,
+  .btn-secundario {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Con menos de 16px el iPhone hace zoom al tocar el campo. */
+  select {
+    font-size: 16px !important;
+  }
+}
+
+@page {
+  size: A4 landscape;
+  margin: 8mm;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  app-toast-host {
+    display: none;
+  }
+}

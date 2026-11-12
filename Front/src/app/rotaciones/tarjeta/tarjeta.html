@@ -1,0 +1,17 @@
+<div class="tarjeta">
+  <div class="numero">{{ tarjeta().empleado }}</div>
+  <div class="descanso">
+    @if (tarjeta().descanso) {
+      Descanso: {{ tarjeta().descanso }}
+    } @else {
+      Sin descanso
+    }
+  </div>
+  @for (r of tarjeta().renglones; track $index) {
+    <div class="renglon">
+      <span class="hora">{{ r.hora }}</span>
+      <span class="texto">{{ r.texto }}</span>
+    </div>
+  }
+  <div class="pie">{{ plan() }}, {{ variacion() }}</div>
+</div>
