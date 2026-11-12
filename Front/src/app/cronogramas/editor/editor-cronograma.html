@@ -25,7 +25,7 @@
   </section>
 
   <section class="panel grilla-panel">
-    <p class="ayuda">En cada horario poné el número de empleado. Si son varios, separalos con guión: 1-2. Si el puesto está cerrado, poné C.</p>
+    <p class="ayuda">En cada horario poné el número de empleado. Si son varios, separalos con guión: 1-2. Si el puesto está cerrado, poné C. Si una persona hace dos puestos a la vez, van en dos filas con el mismo número.</p>
     <div class="grilla">
       <table>
         <thead>
@@ -55,7 +55,10 @@
             <tr>
               <th class="col-puesto">
                 <div class="celda-puesto">
-                  <input type="text" maxlength="60" placeholder="Nombre" aria-label="Puesto" [value]="p.nombre" (input)="cambiarPuesto(i, { nombre: valor($event) })" />
+                  <div class="nombre-y-nota">
+                    <input type="text" maxlength="60" placeholder="Nombre" aria-label="Puesto" [value]="p.nombre" (input)="cambiarPuesto(i, { nombre: valor($event) })" />
+                    <input type="text" class="nota" maxlength="100" placeholder="Nota" aria-label="Nota" [value]="p.nota ?? ''" (input)="cambiarPuesto(i, { nota: valor($event) })" />
+                  </div>
                 </div>
               </th>
               @for (c of p.celdas; track $index; let k = $index) {

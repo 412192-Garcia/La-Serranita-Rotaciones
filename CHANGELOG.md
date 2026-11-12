@@ -18,6 +18,21 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 - Un puesto cuenta como fijo aunque otro lo cubra un rato, por ejemplo en el almuerzo.
 - Entre dos cronogramas que cumplen lo pedido, se recomienda el que deja rotar más puestos.
 - El pie de la tarjeta impresa lleva el nombre del cronograma.
+- Nueva pantalla **Empleados**: cada uno con los puestos que sabe hacer y en cuáles tiene prioridad.
+- **Armar el día** ahora pregunta quién vino y qué no puede hacer hoy cada uno (por ejemplo, alguien
+  lastimado sólo en Minigolf), en vez de la cantidad de empleados y los puestos fijos. Lo marcado se
+  guarda hasta el otro día.
+- La app decide quién hace cada número del cronograma: nadie queda en un puesto que no sabe o que hoy
+  no puede si hay otra forma, y cada uno tiene prioridad en su puesto principal. Si no hay forma,
+  avisa. El reparto se puede cambiar a mano.
+- Las tarjetas salen con el nombre del empleado, y dicen "Al ser cubierto por Ana" en vez del número.
+- Nueva pantalla **Puestos**: cada puesto tiene prioridad alta, media o baja. Si falta gente o alguien
+  tiene que hacer algo que no sabe, primero se cubren los de prioridad alta.
+- Si alguien hace dos puestos a la vez, en el cronograma van en dos filas con el mismo número. Cuando
+  deja los dos, la tarjeta dice quiénes lo cubren en cada uno ("Al ser cubierto por 6 y 7").
+- Los puestos pueden tener una nota (por ejemplo "consultar al encargado"), que se ve en la planilla y
+  en la tarjeta, sin que cuente como otro puesto.
+- En el celular, el menú se ve en dos filas.
 
 ## Primera versión web
 

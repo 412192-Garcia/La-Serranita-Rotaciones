@@ -1,0 +1,57 @@
+<div class="barra">
+  <a class="btn-secundario" routerLink="/empleados"><svg lucideArrowLeft [strokeWidth]="2.5"></svg> Volver</a>
+  <h2>{{ id() ? 'Editar empleado' : 'Nuevo empleado' }}</h2>
+</div>
+
+@if (cargando()) {
+  <section class="panel centrado"><svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg></section>
+} @else {
+  <section class="panel formulario">
+    <div class="campo-grupo">
+      <label class="etiqueta" for="nombre">Nombre</label>
+      <input id="nombre" type="text" maxlength="60" [value]="nombre()" [class.con-error]="errorNombre()" (input)="cambiarNombre($event)" />
+      @if (errorNombre()) {
+        <span class="error-campo">{{ errorNombre() }}</span>
+      }
+    </div>
+
+    <div class="campo-grupo">
+      <span class="etiqueta">Puestos que sabe hacer</span>
+      <p class="ayuda">Tocá un puesto para marcarlo. Con la estrella queda como principal: ahí tiene prioridad.</p>
+      @if (todos().length === 0) {
+        <p class="ayuda">Primero cargá algún cronograma para ver los puestos.</p>
+      }
+      <div class="puestos">
+        @for (p of todos(); track p) {
+          <div class="puesto" [class.activo]="sabe().includes(p)">
+            <button type="button" class="puesto-nombre" [attr.aria-pressed]="sabe().includes(p)" (click)="alternarSabe(p)">{{ p }}</button>
+            <button
+              type="button"
+              class="estrella"
+              [class.marcada]="principales().includes(p)"
+              [attr.aria-pressed]="principales().includes(p)"
+              [attr.aria-label]="'Principal: ' + p"
+              title="Principal"
+              (click)="alternarPrincipal(p)"
+            >
+              <svg lucideStar [strokeWidth]="2.25"></svg>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <div class="pie">
+    @if (error()) {
+      <span class="error-campo">{{ error() }}</span>
+    }
+    <button type="button" class="btn-primario" [disabled]="guardando()" (click)="guardar()">
+      @if (guardando()) {
+        <svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg> Guardando…
+      } @else {
+        <svg lucideSave [strokeWidth]="2.5"></svg> Guardar
+      }
+    </button>
+  </div>
+}

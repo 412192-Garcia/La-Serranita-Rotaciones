@@ -1,0 +1,40 @@
+<div class="barra">
+  <h2>Empleados</h2>
+  <a class="btn-primario" routerLink="/empleados/nuevo"><svg lucidePlus [strokeWidth]="2.5"></svg> Nuevo</a>
+</div>
+
+@if (cargando()) {
+  <section class="panel centrado"><svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg></section>
+} @else if (empleados().length === 0) {
+  <section class="panel centrado vacio">Todavía no hay empleados cargados.</section>
+} @else {
+  <section class="lista">
+    @for (e of empleados(); track e.id) {
+      <article class="panel empleado">
+        <div class="datos">
+          <strong>{{ e.nombre }}</strong>
+          <div class="puestos">
+            @for (p of e.puestos; track p) {
+              <span class="puesto" [class.principal]="esPrincipal(e, p)">
+                @if (esPrincipal(e, p)) {
+                  <svg lucideStar [strokeWidth]="2.5" aria-label="Principal"></svg>
+                }
+                {{ p }}
+              </span>
+            } @empty {
+              <span class="sin-puestos">Sin puestos cargados</span>
+            }
+          </div>
+        </div>
+        <div class="acciones-fila">
+          <a class="btn-icono" [routerLink]="['/empleados', e.id]" title="Editar" aria-label="Editar">
+            <svg lucidePencil [strokeWidth]="2.25"></svg>
+          </a>
+          <button type="button" class="btn-icono peligro" title="Borrar" aria-label="Borrar" (click)="eliminar(e)">
+            <svg lucideTrash [strokeWidth]="2.25"></svg>
+          </button>
+        </div>
+      </article>
+    }
+  </section>
+}

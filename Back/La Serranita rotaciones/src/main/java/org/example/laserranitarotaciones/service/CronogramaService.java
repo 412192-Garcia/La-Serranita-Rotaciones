@@ -119,7 +119,7 @@ public class CronogramaService {
     private CronogramaDto aDto(Cronograma c, boolean conTarjetas) {
         List<String> horarios = c.getHorarios().stream().map(RotacionService::formatear).toList();
         List<PuestoDto> puestos = c.getPuestos().stream()
-                .map(p -> new PuestoDto(p.getNombre(), List.copyOf(p.getCeldas())))
+                .map(p -> new PuestoDto(p.getNombre(), p.getNota(), List.copyOf(p.getCeldas())))
                 .toList();
         PlanRotacion plan = PlanRotacion.de(horarios, puestos);
         return new CronogramaDto(c.getId(), c.getNombre(), c.getAfluencia(), horarios, puestos,
@@ -136,6 +136,7 @@ public class CronogramaService {
         for (PuestoDto p : dto.puestos()) {
             PuestoCronograma puesto = new PuestoCronograma();
             puesto.setNombre(p.nombre());
+            puesto.setNota(p.nota());
             puesto.getCeldas().addAll(p.celdas());
             c.getPuestos().add(puesto);
         }
@@ -167,7 +168,11 @@ public class CronogramaService {
         Set<String> nombres = new HashSet<>();
         List<PuestoDto> puestos = new ArrayList<>();
         for (PuestoDto p : puestosDto) {
-            String nombrePuesto = p.nombre() == null ? "" : p.nombre().trim();
+            // Una nota escrita en el nombre ("Canilla (consultar al encargado)") pasa a su campo.
+            String[] nombreYNota = Nombres.separarNota(p.nombre());
+            String nombrePuesto = nombreYNota[0];
+            String nota = p.nota() != null && !p.nota().isBlank() ? p.nota().trim() : nombreYNota[1];
+            if (nota != null && nota.length() > 100) throw new ValidacionException("La nota de " + nombrePuesto + " es muy larga.");
             if (nombrePuesto.isEmpty()) throw new ValidacionException("Hay un puesto sin nombre.");
             if (nombrePuesto.length() > 60) throw new ValidacionException("El nombre de " + nombrePuesto + " es muy largo.");
             if (!nombres.add(nombrePuesto.toLowerCase(Locale.ROOT))) {
@@ -187,7 +192,7 @@ public class CronogramaService {
                 }
                 celdas.add(PlanRotacion.empleados(valor).stream().map(String::valueOf).collect(Collectors.joining("-")));
             }
-            puestos.add(new PuestoDto(nombrePuesto, celdas));
+            puestos.add(new PuestoDto(nombrePuesto, nota, celdas));
         }
         return new CronogramaDto(dto.id(), nombre, dto.afluencia(), horarios, puestos, null, null, null);
     }

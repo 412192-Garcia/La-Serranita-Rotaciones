@@ -15,6 +15,8 @@ type Vista = 'tarjetas' | 'planilla';
 })
 export class VistaCronograma {
   cronograma = input.required<Cronograma>();
+  /** Número del cronograma → nombre de quién lo hace hoy. */
+  nombres = input<Map<number, string>>(new Map());
 
   readonly estiloCelda = estiloCelda;
 
@@ -22,7 +24,19 @@ export class VistaCronograma {
   seleccionada = signal(0);
   aImprimir = signal<Tarjeta[]>([]);
 
-  tarjetas = computed(() => this.cronograma().tarjetas ?? []);
+  /** Con nombres, "cubierto por 2 y 5" pasa a "cubierto por Ana y Beto". */
+  tarjetas = computed(() => {
+    const nombres = this.nombres();
+    return (this.cronograma().tarjetas ?? []).map((t) => ({
+      ...t,
+      renglones: t.renglones.map((r) => ({
+        ...r,
+        texto: r.texto.replace(/cubierto por ([\d y]+) rote/, (_, numeros: string) =>
+          `cubierto por ${numeros.split(' y ').map((n) => nombres.get(Number(n)) ?? n).join(' y ')} rote`,
+        ),
+      })),
+    }));
+  });
   tarjeta = computed(() => this.tarjetas()[this.seleccionada()] ?? null);
 
   constructor() {
@@ -30,6 +44,14 @@ export class VistaCronograma {
       this.cronograma();
       this.seleccionada.set(0);
     });
+  }
+
+  nombresCelda(celda: string): string {
+    return celda
+      .split('-')
+      .map((n) => this.nombres().get(Number(n)))
+      .filter((n) => !!n)
+      .join(', ');
   }
 
   imprimir(tarjetas: Tarjeta[]): void {

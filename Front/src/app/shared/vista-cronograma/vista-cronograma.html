@@ -19,6 +19,9 @@
             @for (t of tarjetas(); track t.empleado) {
               <button type="button" class="chip" [class.activa]="$index === seleccionada()" (click)="seleccionada.set($index)">
                 {{ t.empleado }}
+                @if (nombres().get(t.empleado); as n) {
+                  <span class="chip-nombre">{{ n }}</span>
+                }
               </button>
             }
           </div>
@@ -31,7 +34,7 @@
             </button>
           </div>
         </div>
-        <app-tarjeta [tarjeta]="tarjeta()!" [cronograma]="cronograma().nombre" />
+        <app-tarjeta [tarjeta]="tarjeta()!" [cronograma]="cronograma().nombre" [nombre]="nombres().get(tarjeta()!.empleado) ?? null" />
       </section>
     }
   } @else {
@@ -48,10 +51,15 @@
         <tbody>
           @for (p of cronograma().puestos; track $index) {
             <tr>
-              <th>{{ p.nombre }}</th>
+              <th>
+                {{ p.nombre }}
+                @if (p.nota) {
+                  <span class="nota">{{ p.nota }}</span>
+                }
+              </th>
               @for (c of p.celdas; track $index) {
                 @let e = estiloCelda(c);
-                <td [style.background-color]="e.fondo" [style.color]="e.texto">{{ c }}</td>
+                <td [style.background-color]="e.fondo" [style.color]="e.texto" [title]="nombresCelda(c)">{{ c }}</td>
               }
             </tr>
           }
@@ -63,6 +71,6 @@
 
 <div class="zona-impresion">
   @for (t of aImprimir(); track t.empleado) {
-    <app-tarjeta [tarjeta]="t" [cronograma]="cronograma().nombre" />
+    <app-tarjeta [tarjeta]="t" [cronograma]="cronograma().nombre" [nombre]="nombres().get(t.empleado) ?? null" />
   }
 </div>

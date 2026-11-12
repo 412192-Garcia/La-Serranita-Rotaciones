@@ -10,4 +10,6 @@ import { Tarjeta } from '../../models/cronograma';
 export class TarjetaEmpleado {
   tarjeta = input.required<Tarjeta>();
   cronograma = input.required<string>();
+  /** Quién hace este número hoy; vacío = sólo el número. */
+  nombre = input<string | null>(null);
 }

@@ -1,0 +1,124 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+}
+
+.centrado {
+  display: flex;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.campo-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#nombre {
+  width: min(360px, 100%);
+}
+
+.ayuda {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.puestos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.puesto {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card-bg);
+  overflow: hidden;
+}
+
+.puesto.activo {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.puesto-nombre {
+  padding: 7px 10px;
+  border: none;
+  background: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.puesto.activo .puesto-nombre {
+  color: var(--color-primary-dark);
+}
+
+.estrella {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: none;
+  border-left: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.estrella svg {
+  width: 16px;
+  height: 16px;
+}
+
+.estrella.marcada {
+  color: var(--color-accent);
+}
+
+.estrella.marcada svg {
+  fill: currentColor;
+}
+
+.pie {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (pointer: coarse) {
+  .puesto-nombre,
+  .estrella {
+    min-height: 44px;
+  }
+
+  .estrella {
+    min-width: 44px;
+    justify-content: center;
+  }
+}

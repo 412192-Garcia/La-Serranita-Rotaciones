@@ -1,0 +1,32 @@
+<div class="barra">
+  <h2>Puestos</h2>
+</div>
+<p class="ayuda">Si falta gente o alguien tiene que hacer algo que no sabe, primero se cubren los de prioridad alta.</p>
+
+@if (cargando()) {
+  <section class="panel centrado"><svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg></section>
+} @else if (puestos().length === 0) {
+  <section class="panel vacio">
+    Los puestos salen de los cronogramas. <a routerLink="/cronogramas">Cargá un cronograma</a> primero.
+  </section>
+} @else {
+  <section class="panel lista">
+    @for (p of puestos(); track p.nombre) {
+      <div class="fila">
+        <span class="nombre">{{ p.nombre }}</span>
+        <div class="opciones" role="group" [attr.aria-label]="'Prioridad de ' + p.nombre">
+          @for (o of prioridades; track o.valor) {
+            <button
+              type="button"
+              [class]="'opcion opcion-' + o.valor.toLowerCase() + (p.prioridad === o.valor ? ' activa' : '')"
+              [attr.aria-pressed]="p.prioridad === o.valor"
+              (click)="cambiar(p, o.valor)"
+            >
+              {{ o.texto }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </section>
+}

@@ -63,6 +63,40 @@ class RotacionServiceTest {
                 "Tobogan", "Rote a Carrera", "Rote a Tobogan", "Tobogan");
     }
 
+    @Test
+    void dosPuestosALaVezSonDosFilasConElMismoNumero() {
+        PlanRotacion separados = PlanRotacion.de(
+                List.of("11:00", "12:00", "13:00"),
+                List.of(
+                        new PuestoDto("Travesía", List.of("5", "5", "6")),
+                        new PuestoDto("Búsqueda", List.of("5", "5", "7")),
+                        new PuestoDto("Tobogán", List.of("6", "6", "5")),
+                        new PuestoDto("Carrera", List.of("7", "7", "")),
+                        new PuestoDto("Laberinto", List.of("", "", "7"))));
+        List<TarjetaDto> tarjetas = servicio.armarTarjetas(separados);
+
+        assertThat(textos(tarjetas, 5)).containsExactly(
+                "Travesía y Búsqueda", "Travesía y Búsqueda", "Al ser cubierto por 6 y 7 rote a Tobogán");
+        assertThat(textos(tarjetas, 7)).containsExactly(
+                "Carrera", "Carrera", "Sin ser cubierto, rote a Búsqueda y Laberinto");
+        assertThat(servicio.fijos(separados)).containsExactly("Carrera", "Laberinto");
+    }
+
+    @Test
+    void laNotaSeSeparaDelNombreYSeLeeEnLaTarjeta() {
+        assertThat(Nombres.separarNota("*Canilla (consultar al encargado)"))
+                .containsExactly("Canilla", "consultar al encargado");
+        assertThat(Nombres.separarNota("Flotante de minigolf")).containsExactly("Flotante de minigolf", null);
+
+        PlanRotacion conNota = PlanRotacion.de(
+                List.of("11:00", "12:00"),
+                List.of(
+                        new PuestoDto("Tobogán", List.of("1", "2")),
+                        new PuestoDto("Canilla", "consultar al encargado", List.of("2", "1"))));
+        assertThat(textos(servicio.armarTarjetas(conNota), 1)).containsExactly(
+                "Tobogán", "Al ser cubierto por 2 rote a Canilla (consultar al encargado)");
+    }
+
     private static List<String> textos(List<TarjetaDto> tarjetas, int empleado) {
         return tarjetas.stream()
                 .filter(t -> t.empleado() == empleado)

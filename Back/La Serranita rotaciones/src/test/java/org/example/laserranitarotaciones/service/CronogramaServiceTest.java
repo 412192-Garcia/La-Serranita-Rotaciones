@@ -10,6 +10,13 @@ import org.example.laserranitarotaciones.model.dto.CronogramaDto;
 import org.example.laserranitarotaciones.model.dto.CronogramaResumenDto;
 import org.example.laserranitarotaciones.model.dto.PedidoSugerenciaDto;
 import org.example.laserranitarotaciones.model.dto.PuestoDto;
+import org.example.laserranitarotaciones.model.dto.AsignacionDto;
+import org.example.laserranitarotaciones.model.dto.EmpleadoDto;
+import org.example.laserranitarotaciones.model.dto.PresenteDto;
+import org.example.laserranitarotaciones.repository.EmpleadoRepository;
+import org.example.laserranitarotaciones.repository.PuestoParqueRepository;
+import org.example.laserranitarotaciones.model.dto.PuestoParqueDto;
+import org.example.laserranitarotaciones.model.entity.Prioridad;
 import org.example.laserranitarotaciones.model.dto.SugerenciaDto;
 import org.example.laserranitarotaciones.model.entity.Afluencia;
 import org.example.laserranitarotaciones.repository.CronogramaRepository;
@@ -21,6 +28,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,10 +44,20 @@ class CronogramaServiceTest {
     private SugerenciaService sugerencias;
     @Autowired
     private CronogramaRepository repositorio;
+    @Autowired
+    private EmpleadoService empleados;
+    @Autowired
+    private EmpleadoRepository empleadoRepositorio;
+    @Autowired
+    private PuestoParqueService puestosParque;
+    @Autowired
+    private PuestoParqueRepository puestoRepositorio;
 
     @BeforeEach
     void limpiar() {
         repositorio.deleteAll();
+        empleadoRepositorio.deleteAll();
+        puestoRepositorio.deleteAll();
     }
 
     @Test
@@ -59,17 +77,32 @@ class CronogramaServiceTest {
     }
 
     @Test
-    void sugiereElMasAdecuadoPrimero() throws Exception {
+    void sugiereElMasAdecuadoPrimeroYRepartelosNumeros() throws Exception {
         cronogramas.importar(excel());
+        List<String> todo = List.of("Boleteria", "Toboganes");
+        List<PresenteDto> presentes = new ArrayList<>();
+        for (String nombre : List.of("Ana", "Beto", "Carlos", "Dani")) {
+            EmpleadoDto e = empleados.crear(new EmpleadoDto(null, nombre, todo,
+                    nombre.equals("Ana") ? List.of("Boleteria") : List.of()));
+            presentes.add(new PresenteDto(e.id(), null));
+        }
 
-        List<SugerenciaDto> lista = sugerencias.sugerir(new PedidoSugerenciaDto(4, Afluencia.ALTA, List.of()));
+        List<SugerenciaDto> lista = sugerencias.sugerir(new PedidoSugerenciaDto(Afluencia.ALTA, presentes));
         assertThat(lista).extracting(s -> s.cronograma().nombre()).containsExactly("Lleno", "Tranqui");
         assertThat(lista.get(0).diferencias()).isEmpty();
-        assertThat(lista.get(1).diferencias()).containsExactly(
-                "Es para 2 empleados y hay 4.", "Es para afluencia baja.");
+        assertThat(lista.get(0).asignacion()).extracting(AsignacionDto::nombre).doesNotContainNull().hasSize(4);
+        assertThat(lista.get(1).diferencias()).startsWith(
+                "Es para 2 empleados y vinieron 4.", "Es para afluencia baja.").hasSize(4);
 
-        List<SugerenciaDto> conFijo = sugerencias.sugerir(new PedidoSugerenciaDto(4, Afluencia.ALTA, List.of("boleteria")));
-        assertThat(conFijo.get(0).diferencias()).containsExactly("En boleteria el empleado rota.");
+        // Ana hoy sólo puede Toboganes: le toca un número que sólo hace Toboganes.
+        presentes.set(0, new PresenteDto(presentes.get(0).empleadoId(), List.of("toboganes")));
+        assertThat(sugerencias.sugerir(new PedidoSugerenciaDto(Afluencia.ALTA, presentes)).get(0).diferencias()).isEmpty();
+
+        // Hoy no puede nada: antes que ponerla donde no puede, conviene el de 2 y dejarla sin puesto.
+        presentes.set(0, new PresenteDto(presentes.get(0).empleadoId(), List.of()));
+        SugerenciaDto sinAna = sugerencias.sugerir(new PedidoSugerenciaDto(Afluencia.ALTA, presentes)).get(0);
+        assertThat(sinAna.cronograma().nombre()).isEqualTo("Tranqui");
+        assertThat(sinAna.diferencias()).contains("Ana queda sin puesto.");
     }
 
     @Test
@@ -107,6 +140,16 @@ class CronogramaServiceTest {
                     .hasMessageContaining("no dice la afluencia");
         }
         assertThat(repositorio.count()).isZero();
+    }
+
+    @Test
+    void laPrioridadDeUnPuestoQuedaGuardada() throws Exception {
+        cronogramas.importar(excel());
+        assertThat(puestosParque.listar()).extracting(PuestoParqueDto::prioridad).containsOnly(Prioridad.MEDIA);
+
+        puestosParque.cambiarPrioridad(new PuestoParqueDto("boletería", Prioridad.ALTA));
+        assertThat(puestosParque.listar()).contains(new PuestoParqueDto("Boleteria", Prioridad.ALTA));
+        assertThat(puestosParque.pesos()).containsEntry("boleteria", Prioridad.ALTA.peso());
     }
 
     @Test

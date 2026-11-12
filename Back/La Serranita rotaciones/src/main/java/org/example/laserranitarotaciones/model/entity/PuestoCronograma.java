@@ -30,6 +30,10 @@ public class PuestoCronograma {
     @Column(nullable = false, length = 60)
     private String nombre;
 
+    /** Aclaración que no cambia el puesto ("consultar al encargado"). */
+    @Column(length = 100)
+    private String nota;
+
     /** Una por horario: vacía, "3", "1-2" o "Cerrado". */
     @ElementCollection
     @CollectionTable(name = "puesto_cronograma_celdas", joinColumns = @JoinColumn(name = "id_puesto"))

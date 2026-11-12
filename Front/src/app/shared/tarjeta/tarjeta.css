@@ -26,6 +26,12 @@
   font-weight: 800;
 }
 
+.nombre {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
 .descanso {
   padding: 6px;
   text-align: center;
@@ -62,6 +68,10 @@
 
   .numero {
     font-size: 18pt;
+  }
+
+  .nombre {
+    font-size: 11pt;
   }
 
   .renglon {

@@ -1,5 +1,10 @@
 <div class="tarjeta">
-  <div class="numero">{{ tarjeta().empleado }}</div>
+  <div class="numero">
+    {{ tarjeta().empleado }}
+    @if (nombre()) {
+      <span class="nombre">{{ nombre() }}</span>
+    }
+  </div>
   <div class="descanso">
     @if (tarjeta().descanso) {
       Descanso: {{ tarjeta().descanso }}

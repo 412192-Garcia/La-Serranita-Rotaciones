@@ -99,10 +99,24 @@ tbody th {
   padding: 5px 6px;
 }
 
-.panel .celda-puesto input[type='text'] {
+.nombre-y-nota {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   flex: 1;
   min-width: 0;
+}
+
+.panel .celda-puesto input[type='text'] {
+  width: 100%;
+  box-sizing: border-box;
   padding: 6px 8px;
+}
+
+.panel .celda-puesto input.nota {
+  padding: 3px 8px;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
 }
 
 .panel input.celda {

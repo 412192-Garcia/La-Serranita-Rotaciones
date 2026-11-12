@@ -62,48 +62,47 @@ public class RotacionService {
         return tarjetas;
     }
 
+    /** Un renglón por horario; si a esa hora tiene varios puestos van juntos ("Travesía y Búsqueda"). */
     private TarjetaDto armarTarjeta(int empleado, List<Turno> turnos, PlanRotacion plan) {
+        Map<Horario, List<Puesto>> porHorario = new TreeMap<>(Comparator.comparingInt(Horario::orden));
+        turnos.forEach(t -> porHorario.computeIfAbsent(t.horario(), h -> new ArrayList<>()).add(t.puesto()));
+
         String descanso = null;
         List<RenglonDto> renglones = new ArrayList<>();
+        List<Puesto> anteriores = List.of();
         Horario horarioAnterior = null;
-
-        for (Turno turno : turnos) {
-            Horario horario = turno.horario();
-            String puesto = turno.puesto().nombre();
-            if (turno.puesto().esDescanso() && descanso == null) {
+        for (Map.Entry<Horario, List<Puesto>> e : porHorario.entrySet()) {
+            Horario horario = e.getKey();
+            List<Puesto> actuales = e.getValue();
+            if (descanso == null && actuales.stream().anyMatch(Puesto::esDescanso)) {
                 descanso = rangoDescanso(horario, plan.horarios());
             }
-
-            // Dos puestos a la misma hora van en el mismo renglón.
-            if (horario.equals(horarioAnterior)) {
-                RenglonDto ultimo = renglones.remove(renglones.size() - 1);
-                renglones.add(new RenglonDto(ultimo.hora(), ultimo.texto() + " y " + puesto));
-                continue;
-            }
-            renglones.add(new RenglonDto(formatear(horario.hora()), texto(turno, turnos, plan)));
+            boolean seguido = horarioAnterior != null && horarioAnterior.orden() == horario.orden() - 1;
+            String texto = texto(empleado, horario, seguido ? anteriores : List.of(), actuales, plan);
+            renglones.add(new RenglonDto(formatear(horario.hora()), texto));
+            anteriores = actuales;
             horarioAnterior = horario;
         }
         return new TarjetaDto(empleado, descanso, renglones);
     }
 
-    private String texto(Turno turno, List<Turno> delEmpleado, PlanRotacion plan) {
-        String puesto = turno.puesto().nombre();
-        Turno previo = delEmpleado.stream()
-                .filter(t -> t.horario().orden() == turno.horario().orden() - 1)
-                .findFirst().orElse(null);
-        if (previo == null) return puesto;
-        if (plan.cerrado(previo.puesto(), turno.horario())) return "Rote a " + puesto;
+    private String texto(int empleado, Horario horario, List<Puesto> anteriores, List<Puesto> actuales, PlanRotacion plan) {
+        String destino = actuales.stream().map(Puesto::conNota).collect(Collectors.joining(" y "));
+        List<Puesto> dejados = anteriores.stream().filter(p -> !actuales.contains(p)).toList();
+        if (dejados.isEmpty()) return destino;
 
-        // Quién queda en el puesto que deja.
+        List<Puesto> abiertos = dejados.stream().filter(p -> !plan.cerrado(p, horario)).toList();
+        if (abiertos.isEmpty()) return "Rote a " + destino;
+
+        // Quiénes quedan en los puestos que deja.
         List<Integer> cobertores = plan.turnos().stream()
-                .filter(t -> t.puesto().equals(previo.puesto()) && t.horario().equals(turno.horario()))
+                .filter(t -> abiertos.contains(t.puesto()) && t.horario().equals(horario) && t.empleado() != empleado)
                 .map(Turno::empleado)
                 .distinct()
                 .toList();
-        if (cobertores.isEmpty()) return "Sin ser cubierto, rote a " + puesto;
-        if (cobertores.contains(turno.empleado())) return puesto;
+        if (cobertores.isEmpty()) return "Sin ser cubierto, rote a " + destino;
         String quienes = cobertores.stream().map(String::valueOf).collect(Collectors.joining(" y "));
-        return "Al ser cubierto por " + quienes + " rote a " + puesto;
+        return "Al ser cubierto por " + quienes + " rote a " + destino;
     }
 
     private static String rangoDescanso(Horario inicio, List<Horario> horarios) {

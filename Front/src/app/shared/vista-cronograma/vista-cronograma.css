@@ -62,6 +62,11 @@
   border-color: var(--color-primary);
 }
 
+.chip-nombre {
+  margin-left: 6px;
+  font-weight: 500;
+}
+
 .chip.activa {
   background: var(--color-primary);
   border-color: var(--color-primary);
@@ -110,6 +115,15 @@ tbody th {
   background: var(--color-bg-soft);
   position: sticky;
   left: 0;
+}
+
+.nota {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  white-space: normal;
+  max-width: 220px;
 }
 
 .zona-impresion {
