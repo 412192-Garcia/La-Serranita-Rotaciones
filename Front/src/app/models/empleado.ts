@@ -9,6 +9,8 @@ export interface Empleado {
   enEntrenamiento: boolean;
   /** A quién acompaña normalmente mientras está en entrenamiento. */
   acompananteHabitualId: number | null;
+  /** Ids de las tareas que piden saber y sabe hacer. */
+  tareas: number[];
 }
 
 /** Para comparar nombres de puestos sin que importen mayúsculas, acentos ni espacios. */

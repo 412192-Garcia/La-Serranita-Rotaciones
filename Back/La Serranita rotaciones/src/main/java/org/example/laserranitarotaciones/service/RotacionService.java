@@ -24,6 +24,8 @@ public class RotacionService {
 
     private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
     private static final int PORCENTAJE_FIJO = 75;
+    /** Un puesto que abre menos que esto del día (Basura, un rato a la tarde) no cuenta como fijo. */
+    private static final int PORCENTAJE_ABIERTO_FIJO = 50;
 
     public static String formatear(LocalTime hora) {
         return hora.format(HH_MM);
@@ -34,8 +36,9 @@ public class RotacionService {
     }
 
     /**
-     * Puestos donde un mismo empleado está en al menos el 75% de los horarios en que hay alguien:
-     * así el que lo cubre en el almuerzo no le quita lo de fijo.
+     * Puestos donde un mismo empleado está en al menos el 75% de los horarios en que hay alguien
+     * (así el que lo cubre en el almuerzo no le quita lo de fijo), si hay alguien en al menos la mitad
+     * de los horarios del día.
      */
     public List<String> fijos(PlanRotacion plan) {
         List<String> fijos = new ArrayList<>();
@@ -43,7 +46,7 @@ public class RotacionService {
             if (puesto.esDescanso()) continue;
             List<Turno> delPuesto = plan.turnos().stream().filter(t -> t.puesto().equals(puesto)).toList();
             long horariosConAlguien = delPuesto.stream().map(Turno::horario).distinct().count();
-            if (horariosConAlguien == 0) continue;
+            if (horariosConAlguien * 100 < (long) plan.horarios().size() * PORCENTAJE_ABIERTO_FIJO) continue;
             long maximo = delPuesto.stream()
                     .collect(Collectors.groupingBy(Turno::empleado, Collectors.mapping(Turno::horario, Collectors.toSet())))
                     .values().stream().mapToLong(Set::size).max().orElse(0);
@@ -87,7 +90,9 @@ public class RotacionService {
     }
 
     private String texto(int empleado, Horario horario, List<Puesto> anteriores, List<Puesto> actuales, PlanRotacion plan) {
-        String destino = enumerar(actuales.stream().map(Puesto::conNota).toList());
+        // Un solo * delante aunque arranque la rotación en varios de los puestos juntos.
+        String destino = (actuales.stream().anyMatch(Puesto::iniciaRotacion) ? "*" : "")
+                + enumerar(actuales.stream().map(Puesto::conNota).toList());
         // El descanso no necesita que nadie lo cubra: al volver sólo se dice adónde va.
         List<Puesto> dejados = anteriores.stream().filter(p -> !actuales.contains(p) && !p.esDescanso()).toList();
         if (dejados.isEmpty()) return destino;

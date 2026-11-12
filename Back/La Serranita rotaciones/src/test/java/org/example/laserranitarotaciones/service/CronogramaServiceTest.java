@@ -72,6 +72,9 @@ class CronogramaServiceTest {
         CronogramaDto lleno = cronogramas.obtener(importados.get(1).id());
         assertThat(lleno.horarios()).containsExactly("10:00", "11:00");
         assertThat(lleno.puestos().get(1).celdas()).containsExactly("3-4", "1");
+        assertThat(lleno.puestos().get(1).nombre()).isEqualTo("Toboganes");
+        assertThat(lleno.puestos().get(1).iniciaRotacion()).isTrue();
+        assertThat(lleno.puestos().get(0).iniciaRotacion()).isFalse();
         assertThat(lleno.tarjetas()).hasSize(4);
         assertThat(cronogramas.puestos()).containsExactly("Boleteria", "Toboganes");
     }
@@ -184,7 +187,7 @@ class CronogramaServiceTest {
             fila(lleno, 0, "Afluencia", "Alta", "Nombre", "Lleno");
             fila(lleno, 1, "Puesto", "10:00", "11:00");
             fila(lleno, 2, "Boleteria", 1, 2);
-            fila(lleno, 3, "Toboganes", "3-4", 1);
+            fila(lleno, 3, "*Toboganes", "3-4", 1);
             fila(lleno, 4, "Descanso", 2, "3-4");
 
             XSSFCellStyle amarillo = libro.createCellStyle();

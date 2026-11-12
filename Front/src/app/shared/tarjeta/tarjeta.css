@@ -37,6 +37,12 @@
   text-align: center;
 }
 
+.tarea {
+  padding: 6px 8px;
+  border-bottom: 1px solid #111;
+  font-weight: 700;
+}
+
 .renglon {
   display: grid;
   grid-template-columns: 52px 1fr;

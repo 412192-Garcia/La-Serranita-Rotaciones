@@ -171,9 +171,18 @@
               <span class="numero">{{ n }}</span>
               <select [attr.aria-label]="'Quién hace el ' + n" (change)="reasignar(n, $event)">
                 <option value="" [selected]="asignacion().get(n) == null">Nadie</option>
-                @for (e of presentes(); track e.id) {
-                  <option [value]="e.id" [selected]="asignacion().get(n) === e.id">{{ e.nombre }}</option>
+                @if (sinPuesto().length) {
+                  <optgroup label="Sin número">
+                    @for (e of sinPuesto(); track e.id) {
+                      <option [value]="e.id">{{ e.nombre }}</option>
+                    }
+                  </optgroup>
                 }
+                <optgroup label="Ya tienen número (se intercambian)">
+                  @for (x of conNumero(); track x.empleado.id) {
+                    <option [value]="x.empleado.id" [selected]="x.numero === n">{{ x.empleado.nombre }} ({{ x.numero }})</option>
+                  }
+                </optgroup>
               </select>
               @if (acompanantesDe(n); as acomp) {
                 <span class="con-aprendiz">+ {{ acomp }}</span>
@@ -189,7 +198,48 @@
         }
       </div>
 
-      <app-vista-cronograma [cronograma]="c" [nombres]="nombres()" [acompanantes]="tarjetasAcompanantes()" />
+      @if (tareasDelDia().length) {
+        <div class="panel tareas-dia">
+          <span class="etiqueta">Antes de abrir</span>
+          <div class="tareas-lista">
+            @for (t of tareasDelDia(); track t.tareaId) {
+              <div class="tarea-fila">
+                <strong>{{ t.nombre }}</strong>
+                <span class="tarea-cantidad">{{ t.cantidad === 1 ? '1 persona' : t.cantidad + ' personas' }}</span>
+                <div class="tarea-gente">
+                  @for (id of t.empleadoIds; track id) {
+                    <span class="persona">
+                      {{ nombreDe(id) }}
+                      <button type="button" class="quitar-persona" [attr.aria-label]="'Sacar a ' + nombreDe(id)" (click)="quitarDeTarea(t.tareaId, id)">
+                        <svg lucideX [strokeWidth]="2.5"></svg>
+                      </button>
+                    </span>
+                  }
+                  <select aria-label="Sumar a alguien" (change)="sumarATarea(t.tareaId, $event)">
+                    <option value="">Sumar…</option>
+                    @for (p of todosLosPresentes(); track p.id) {
+                      @if (!t.empleadoIds.includes(p.id!)) {
+                        <option [value]="p.id">{{ p.nombre }}</option>
+                      }
+                    }
+                  </select>
+                </div>
+                @if (avisoTarea(t); as aviso) {
+                  <span class="aviso"><svg lucideTriangleExclamationPoint [strokeWidth]="2.5"></svg> {{ aviso }}</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <app-vista-cronograma
+        [cronograma]="c"
+        [nombres]="nombres()"
+        [acompanantes]="tarjetasAcompanantes()"
+        [tareas]="tareasPorNumero()"
+        (imprimio)="guardarTareasHechas()"
+      />
     </section>
   }
 }

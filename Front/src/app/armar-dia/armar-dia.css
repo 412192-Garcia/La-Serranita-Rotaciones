@@ -188,6 +188,79 @@
   color: var(--color-accent);
 }
 
+.tareas-dia {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tareas-lista {
+  display: flex;
+  flex-direction: column;
+}
+
+.tarea-fila {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tarea-fila:last-child {
+  border-bottom: none;
+}
+
+.tarea-cantidad {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.tarea-gente {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.persona {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px 2px 10px;
+  border-radius: 999px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.quitar-persona {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.quitar-persona svg {
+  width: 13px;
+  height: 13px;
+}
+
+.tarea-gente select {
+  font-size: 0.82rem;
+  padding: 4px 6px;
+}
+
 .reparto {
   display: flex;
   flex-direction: column;
@@ -359,9 +432,17 @@ h2 {
   }
 }
 
+@media (pointer: coarse) {
+  .quitar-persona {
+    width: 36px;
+    height: 36px;
+  }
+}
+
 @media print {
   .preguntas,
   .sugerencias,
+  .tareas-dia,
   .reparto,
   .elegido h2 {
     display: none;

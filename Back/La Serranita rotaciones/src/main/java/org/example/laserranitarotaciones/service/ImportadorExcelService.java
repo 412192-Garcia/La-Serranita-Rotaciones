@@ -63,8 +63,8 @@ public class ImportadorExcelService {
         for (int r = FILA_HORARIOS + 1; r <= hoja.getLastRowNum(); r++) {
             Row fila = hoja.getRow(r);
             if (fila == null) continue;
-            String[] nombreYNota = Nombres.separarNota(texto(fila.getCell(0), formato, evaluador));
-            String nombre = nombreYNota[0];
+            Nombres.NombrePuesto leido = Nombres.separar(texto(fila.getCell(0), formato, evaluador));
+            String nombre = leido.nombre();
             if (nombre.isEmpty()) continue;
 
             List<String> celdas = new ArrayList<>();
@@ -73,7 +73,7 @@ public class ImportadorExcelService {
                 celdas.add(PlanRotacion.esCerrado(valor) ? PlanRotacion.CERRADO
                         : PlanRotacion.empleados(valor).stream().map(String::valueOf).collect(Collectors.joining("-")));
             }
-            puestos.add(new PuestoDto(nombre, nombreYNota[1], celdas));
+            puestos.add(new PuestoDto(nombre, leido.nota(), leido.iniciaRotacion(), celdas));
         }
         if (puestos.isEmpty()) {
             throw new ValidacionException("La hoja \"" + hoja.getSheetName() + "\" no tiene puestos.");

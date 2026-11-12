@@ -27,6 +27,12 @@ public class EmpleadoService {
                 .toList();
     }
 
+    /** Una tarea que se borra deja de figurar en lo que sabe cada uno. */
+    @Transactional
+    public void olvidarTarea(Long idTarea) {
+        repositorio.findAll().forEach(e -> e.getTareas().remove(idTarea));
+    }
+
     @Transactional(readOnly = true)
     public List<EmpleadoDto> buscar(List<Long> ids) {
         return repositorio.findAllById(ids).stream().map(EmpleadoService::aDto).toList();
@@ -57,7 +63,7 @@ public class EmpleadoService {
 
     static EmpleadoDto aDto(Empleado e) {
         return new EmpleadoDto(e.getId(), e.getNombre(), List.copyOf(e.getPuestos()), List.copyOf(e.getPrincipales()),
-                e.isEnEntrenamiento(), e.getIdAcompananteHabitual());
+                e.isEnEntrenamiento(), e.getIdAcompananteHabitual(), List.copyOf(e.getTareas()));
     }
 
     private void aplicar(Empleado e, EmpleadoDto dto) {
@@ -93,5 +99,7 @@ public class EmpleadoService {
         e.getPuestos().addAll(puestos.values());
         e.getPrincipales().clear();
         e.getPrincipales().addAll(principales);
+        e.getTareas().clear();
+        if (dto.tareas() != null) e.getTareas().addAll(dto.tareas());
     }
 }

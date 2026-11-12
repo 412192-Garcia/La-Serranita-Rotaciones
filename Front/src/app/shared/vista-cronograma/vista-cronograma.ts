@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, signal } from '@angular/core';
+import { Component, computed, effect, input, output, signal } from '@angular/core';
 import { LucideIdCard, LucidePrinter, LucideTable } from '@lucide/angular';
 import { Cronograma, Tarjeta } from '../../models/cronograma';
 import { TarjetaEmpleado } from '../tarjeta/tarjeta';
@@ -12,6 +12,7 @@ export interface TarjetaAcompanante {
   /** "acompaña a Ana", "acompaña a Ana y a Beto". */
   detalle: string;
   tarjeta: Tarjeta;
+  tarea?: string | null;
 }
 
 /** Una tarjeta para mostrar o imprimir. etiqueta reemplaza al número (acompañantes). */
@@ -20,6 +21,7 @@ interface Item {
   numero: number | null;
   etiqueta: string | null;
   nombre: string | null;
+  tarea: string | null;
   tarjeta: Tarjeta;
 }
 
@@ -36,6 +38,10 @@ export class VistaCronograma {
   nombres = input<Map<number, string>>(new Map());
   /** Los que están en entrenamiento hoy, con su tarjeta ya armada. */
   acompanantes = input<TarjetaAcompanante[]>([]);
+  /** Número → lo que hace antes de abrir. */
+  tareas = input<Map<number, string>>(new Map());
+  /** Se abrió la impresión (para guardar lo que se hizo hoy). */
+  imprimio = output<void>();
 
   readonly estiloCelda = estiloCelda;
 
@@ -50,6 +56,7 @@ export class VistaCronograma {
       numero: t.empleado,
       etiqueta: null,
       nombre: nombres.get(t.empleado) ?? null,
+      tarea: this.tareas().get(t.empleado) ?? null,
       tarjeta: this.conNombres(t),
     }));
     const acompanantes = this.acompanantes().map((a) => ({
@@ -57,11 +64,13 @@ export class VistaCronograma {
       numero: null,
       etiqueta: a.nombre,
       nombre: a.detalle,
+      tarea: a.tarea ?? null,
       tarjeta: this.conNombres(a.tarjeta),
     }));
     return [...numerados, ...acompanantes];
   });
   item = computed(() => this.items()[this.seleccionada()] ?? null);
+  hayInicio = computed(() => this.cronograma().puestos.some((p) => p.iniciaRotacion));
 
   constructor() {
     effect(() => {
@@ -80,6 +89,7 @@ export class VistaCronograma {
 
   imprimir(items: Item[]): void {
     this.aImprimir.set(items);
+    this.imprimio.emit();
     // Se espera a que se dibujen las tarjetas antes de abrir la impresión.
     setTimeout(() => window.print());
   }

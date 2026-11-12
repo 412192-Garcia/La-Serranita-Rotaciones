@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { LucideLoaderCircle } from '@lucide/angular';
+import { LucideArrowLeft, LucideLoaderCircle } from '@lucide/angular';
 import { PRIORIDADES, Prioridad, PuestoParque } from '../models/puesto';
 import { mensajeDeError } from '../services/cronograma.service';
 import { PuestoService } from '../services/puesto.service';
@@ -8,7 +8,7 @@ import { ToastService } from '../shared/toast/toast.service';
 
 @Component({
   selector: 'app-puestos',
-  imports: [RouterLink, LucideLoaderCircle],
+  imports: [RouterLink, LucideArrowLeft, LucideLoaderCircle],
   templateUrl: './puestos.html',
   styleUrl: './puestos.css',
 })

@@ -121,6 +121,11 @@ tbody th {
   left: 0;
 }
 
+.inicio {
+  font-weight: 800;
+  color: var(--color-accent);
+}
+
 .nota {
   display: block;
   font-size: 0.72rem;
@@ -135,6 +140,13 @@ tbody th {
   flex-direction: column;
   gap: 4px;
   font-size: 0.9rem;
+}
+
+.leyenda {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
 }
 
 .zona-impresion {

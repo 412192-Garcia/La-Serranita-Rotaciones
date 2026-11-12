@@ -81,13 +81,17 @@ main {
 
   .menu {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
     width: 100%;
     margin-left: 0;
   }
 
   .menu a {
     justify-content: center;
+    padding: 9px 4px;
+    font-size: 0.82rem;
+    gap: 5px;
   }
 }
 

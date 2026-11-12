@@ -44,7 +44,7 @@
             </button>
           </div>
         </div>
-        <app-tarjeta [tarjeta]="item()!.tarjeta" [cronograma]="cronograma().nombre" [etiqueta]="item()!.etiqueta" [nombre]="item()!.nombre" />
+        <app-tarjeta [tarjeta]="item()!.tarjeta" [cronograma]="cronograma().nombre" [etiqueta]="item()!.etiqueta" [nombre]="item()!.nombre" [tarea]="item()!.tarea" />
       </section>
     }
   } @else {
@@ -62,7 +62,9 @@
           @for (p of cronograma().puestos; track $index) {
             <tr>
               <th>
-                {{ p.nombre }}
+                @if (p.iniciaRotacion) {
+                  <span class="inicio" title="Inicia la rotación">*</span>
+                }{{ p.nombre }}
                 @if (p.nota) {
                   <span class="nota">{{ p.nota }}</span>
                 }
@@ -75,6 +77,9 @@
           }
         </tbody>
       </table>
+      @if (hayInicio()) {
+        <p class="leyenda">* Ahí arranca la rotación.</p>
+      }
     </section>
     @if (acompanantes().length) {
       <section class="panel en-entrenamiento">
@@ -89,6 +94,6 @@
 
 <div class="zona-impresion">
   @for (it of aImprimir(); track it.clave) {
-    <app-tarjeta [tarjeta]="it.tarjeta" [cronograma]="cronograma().nombre" [etiqueta]="it.etiqueta" [nombre]="it.nombre" />
+    <app-tarjeta [tarjeta]="it.tarjeta" [cronograma]="cronograma().nombre" [etiqueta]="it.etiqueta" [nombre]="it.nombre" [tarea]="it.tarea" />
   }
 </div>

@@ -1,0 +1,60 @@
+<div class="barra">
+  <a class="btn-secundario" routerLink="/empleados"><svg lucideArrowLeft [strokeWidth]="2.5"></svg> Volver</a>
+  <h2>Tareas de apertura</h2>
+</div>
+<p class="ayuda">Se reparten todas, todos los días, antes de abrir. Las que piden saber las hacen sólo los que las tienen marcadas en su ficha.</p>
+
+<section class="panel nueva">
+  <div class="campo-grupo nombre">
+    <label class="etiqueta" for="nombre-tarea">Nueva tarea</label>
+    <input
+      id="nombre-tarea"
+      type="text"
+      maxlength="60"
+      placeholder="Pasar la sopladora"
+      [value]="nueva().nombre"
+      [class.con-error]="errorNueva()"
+      (input)="cambiarNueva({ nombre: valor($event) })"
+      (keydown.enter)="agregar()"
+    />
+  </div>
+  <div class="campo-grupo">
+    <label class="etiqueta" for="cantidad-tarea">Personas</label>
+    <input id="cantidad-tarea" type="number" min="1" max="20" class="cantidad" [value]="nueva().cantidad" (input)="cambiarNueva({ cantidad: +valor($event) })" />
+  </div>
+  <label class="pide-saber">
+    <input type="checkbox" [checked]="nueva().requiereSaber" (change)="cambiarNueva({ requiereSaber: !nueva().requiereSaber })" />
+    Pide saber
+  </label>
+  <button type="button" class="btn-primario" [disabled]="agregando()" (click)="agregar()">
+    <svg lucidePlus [strokeWidth]="2.5"></svg> Agregar
+  </button>
+  @if (errorNueva()) {
+    <span class="error-campo">{{ errorNueva() }}</span>
+  }
+</section>
+
+@if (cargando()) {
+  <section class="panel centrado"><svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg></section>
+} @else if (tareas().length === 0) {
+  <section class="panel vacio">Todavía no hay tareas.</section>
+} @else {
+  <section class="panel lista">
+    @for (t of tareas(); track t.id) {
+      <div class="fila">
+        <input type="text" class="nombre-fila" maxlength="60" aria-label="Nombre" [value]="t.nombre" (change)="cambiar(t, { nombre: valor($event) })" />
+        <label class="personas">
+          <input type="number" min="1" max="20" class="cantidad" aria-label="Personas" [value]="t.cantidad" (change)="cambiar(t, { cantidad: +valor($event) })" />
+          {{ t.cantidad === 1 ? 'persona' : 'personas' }}
+        </label>
+        <label class="pide-saber">
+          <input type="checkbox" [checked]="t.requiereSaber" (change)="cambiar(t, { requiereSaber: !t.requiereSaber })" />
+          Pide saber
+        </label>
+        <button type="button" class="btn-icono peligro" title="Borrar" aria-label="Borrar" (click)="eliminar(t)">
+          <svg lucideTrash [strokeWidth]="2.25"></svg>
+        </button>
+      </div>
+    }
+  </section>
+}

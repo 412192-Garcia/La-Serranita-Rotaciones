@@ -119,7 +119,7 @@ public class CronogramaService {
     private CronogramaDto aDto(Cronograma c, boolean conTarjetas) {
         List<String> horarios = c.getHorarios().stream().map(RotacionService::formatear).toList();
         List<PuestoDto> puestos = c.getPuestos().stream()
-                .map(p -> new PuestoDto(p.getNombre(), p.getNota(), List.copyOf(p.getCeldas())))
+                .map(p -> new PuestoDto(p.getNombre(), p.getNota(), p.isIniciaRotacion(), List.copyOf(p.getCeldas())))
                 .toList();
         PlanRotacion plan = PlanRotacion.de(horarios, puestos);
         return new CronogramaDto(c.getId(), c.getNombre(), c.getAfluencia(), horarios, puestos,
@@ -137,6 +137,7 @@ public class CronogramaService {
             PuestoCronograma puesto = new PuestoCronograma();
             puesto.setNombre(p.nombre());
             puesto.setNota(p.nota());
+            puesto.setIniciaRotacion(p.iniciaRotacion());
             puesto.getCeldas().addAll(p.celdas());
             c.getPuestos().add(puesto);
         }
@@ -169,9 +170,10 @@ public class CronogramaService {
         List<PuestoDto> puestos = new ArrayList<>();
         for (PuestoDto p : puestosDto) {
             // Una nota escrita en el nombre ("Canilla (consultar al encargado)") pasa a su campo.
-            String[] nombreYNota = Nombres.separarNota(p.nombre());
-            String nombrePuesto = nombreYNota[0];
-            String nota = p.nota() != null && !p.nota().isBlank() ? p.nota().trim() : nombreYNota[1];
+            Nombres.NombrePuesto escrito = Nombres.separar(p.nombre());
+            String nombrePuesto = escrito.nombre();
+            String nota = p.nota() != null && !p.nota().isBlank() ? p.nota().trim() : escrito.nota();
+            boolean iniciaRotacion = p.iniciaRotacion() || escrito.iniciaRotacion();
             if (nota != null && nota.length() > 100) throw new ValidacionException("La nota de " + nombrePuesto + " es muy larga.");
             if (nombrePuesto.isEmpty()) throw new ValidacionException("Hay un puesto sin nombre.");
             if (nombrePuesto.length() > 60) throw new ValidacionException("El nombre de " + nombrePuesto + " es muy largo.");
@@ -192,7 +194,7 @@ public class CronogramaService {
                 }
                 celdas.add(PlanRotacion.empleados(valor).stream().map(String::valueOf).collect(Collectors.joining("-")));
             }
-            puestos.add(new PuestoDto(nombrePuesto, nota, celdas));
+            puestos.add(new PuestoDto(nombrePuesto, nota, iniciaRotacion, celdas));
         }
         return new CronogramaDto(dto.id(), nombre, dto.afluencia(), horarios, puestos, null, null, null);
     }

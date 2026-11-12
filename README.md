@@ -20,7 +20,12 @@ y arma las tarjetas con el nombre de cada uno para imprimir.
 - **Empleados**: nombre, puestos que sabe hacer y, de esos, los principales (ahí tiene prioridad). Un
   empleado en entrenamiento no ocupa un número del cronograma: acompaña a otro (uno habitual, o el que
   se elija en el día, con cambios por horario) y su tarjeta se arma con la de su acompañante.
-- **Puestos**: la prioridad de cada puesto (alta, media o baja; media si nunca se cambió).
+- **Tareas de apertura** (botón en Empleados): nombre, cuántas personas y si pide saber. Se reparten
+  todas, todos los días, al elegir el cronograma en Armar el día. Al imprimir se guarda quién hizo cada
+  una; al repartir se evita repetir lo de los últimos 14 días (más si fue ayer) y se reparte parejo.
+- **Prioridad de puestos** (botón en Cronogramas): alta, media o baja por puesto; media si nunca se
+  cambió. Sólo decide algo cuando el reparto no sale perfecto: qué puesto queda sin nadie o con alguien
+  que no lo sabe.
 
 ## Cómo se elige
 
@@ -34,7 +39,8 @@ Cada diferencia suma puntos y gana el que menos tiene (`SugerenciaService` y `As
   3; por ocupar el principal de otro que vino: 4.
 
 Un puesto es fijo si un mismo empleado está en al menos el 75% de los horarios en que hay alguien
-(así el que lo cubre en el almuerzo no le quita lo de fijo). La cantidad de empleados son los
+(así el que lo cubre en el almuerzo no le quita lo de fijo), y si hay alguien en al menos la mitad de
+los horarios del día (Basura, que se hace un rato, no es fija). La cantidad de empleados son los
 números distintos que aparecen en el cronograma.
 
 ## Formato del Excel para importar
@@ -52,7 +58,9 @@ Cada hoja es un cronograma.
   ("Travesía, Búsqueda y Laberinto"). Si dos personas están en el mismo puesto, van en la misma celda:
   `6-7`.
 - Una aclaración va entre paréntesis después del nombre: `Canilla (consultar al encargado)`. Se guarda
-  como nota del puesto, aparte del nombre, y se lee en la tarjeta. Un `*` al principio se ignora.
+  como nota del puesto, aparte del nombre, y se lee en la tarjeta.
+- Un `*` delante del nombre (`*Travesía`) marca el puesto donde arranca la rotación. Se ve en la
+  planilla y en la tarjeta.
 - Un puesto cerrado en un horario lleva `Cerrado` (o `C`). Si un empleado deja un puesto que cierra,
   la tarjeta dice "Rote a…".
 - Los colores del Excel no se leen: la app pinta cada número de empleado con un color fijo.

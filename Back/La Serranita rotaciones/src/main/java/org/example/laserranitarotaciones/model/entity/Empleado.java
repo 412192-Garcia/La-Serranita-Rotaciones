@@ -41,6 +41,12 @@ public class Empleado {
     /** A quién acompaña normalmente mientras está en entrenamiento. */
     private Long idAcompananteHabitual;
 
+    /** Tareas de las que piden saber que sabe hacer. */
+    @ElementCollection
+    @CollectionTable(name = "empleado_tareas", joinColumns = @JoinColumn(name = "id_empleado"))
+    @Column(name = "id_tarea", nullable = false)
+    private Set<Long> tareas = new LinkedHashSet<>();
+
     /** De los que sabe, en cuáles tiene prioridad (ej. la boletera en Boletería). */
     @ElementCollection
     @CollectionTable(name = "empleado_principales", joinColumns = @JoinColumn(name = "id_empleado"))

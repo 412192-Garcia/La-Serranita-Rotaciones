@@ -58,7 +58,7 @@ class RotacionServiceTest {
                         new PuestoDto("Carrera", List.of("Cerrado", "3", "Cerrado", "Cerrado")),
                         new PuestoDto("Entrada", List.of("4", "4", "2", "4"))));
 
-        assertThat(servicio.fijos(conAlmuerzo)).containsExactly("Minigolf", "Tobogan", "Carrera", "Entrada");
+        assertThat(servicio.fijos(conAlmuerzo)).containsExactly("Minigolf", "Tobogan", "Entrada");
         assertThat(textos(servicio.armarTarjetas(conAlmuerzo), 3)).containsExactly(
                 "Tobogan", "Rote a Carrera", "Rote a Tobogan", "Tobogan");
     }
@@ -79,7 +79,7 @@ class RotacionServiceTest {
                 "Travesía y Búsqueda", "Travesía y Búsqueda", "Al ser cubierto por 6 y 7 rote a Tobogán");
         assertThat(textos(tarjetas, 7)).containsExactly(
                 "Carrera", "Carrera", "Sin ser cubierto, rote a Búsqueda y Laberinto");
-        assertThat(servicio.fijos(separados)).containsExactly("Carrera", "Laberinto");
+        assertThat(servicio.fijos(separados)).containsExactly("Carrera");
     }
 
     @Test
@@ -106,6 +106,41 @@ class RotacionServiceTest {
                         new PuestoDto("Descanso", List.of("2", "1-3", "2"))));
         assertThat(textos(servicio.armarTarjetas(conDescanso), 1)).containsExactly(
                 "Tobogán", "Al ser cubierto por 2 rote a Descanso", "Tobogán");
+    }
+
+    @Test
+    void unPuestoQueAbreUnRatoNoEsFijo() {
+        PlanRotacion conBasura = PlanRotacion.de(
+                List.of("11:00", "12:00", "13:00", "14:00"),
+                List.of(
+                        new PuestoDto("Minigolf", List.of("1", "1", "1", "1")),
+                        new PuestoDto("Basura", List.of("", "", "", "2-3")),
+                        new PuestoDto("Pileta", List.of("Cerrado", "Cerrado", "Cerrado", "4"))));
+        assertThat(servicio.fijos(conBasura)).containsExactly("Minigolf");
+    }
+
+    @Test
+    void elAsteriscoMarcaDondeArrancaLaRotacionYSeVeEnLaTarjeta() {
+        Nombres.NombrePuesto leido = Nombres.separar("*Travesía (consultar al encargado)");
+        assertThat(leido.nombre()).isEqualTo("Travesía");
+        assertThat(leido.nota()).isEqualTo("consultar al encargado");
+        assertThat(leido.iniciaRotacion()).isTrue();
+        assertThat(Nombres.separar("Tobogán").iniciaRotacion()).isFalse();
+
+        PlanRotacion plan = PlanRotacion.de(
+                List.of("11:00", "12:00"),
+                List.of(
+                        new PuestoDto("Tobogán", List.of("1", "2")),
+                        new PuestoDto("Travesía", null, true, List.of("2", "1"))));
+        assertThat(textos(servicio.armarTarjetas(plan), 1)).containsExactly("Tobogán", "Al ser cubierto por 2 rote a *Travesía");
+
+        PlanRotacion tres = PlanRotacion.de(
+                List.of("11:00"),
+                List.of(
+                        new PuestoDto("Travesía", null, true, List.of("5")),
+                        new PuestoDto("Búsqueda", null, true, List.of("5")),
+                        new PuestoDto("Laberinto", null, true, List.of("5"))));
+        assertThat(textos(servicio.armarTarjetas(tres), 5)).containsExactly("*Travesía, Búsqueda y Laberinto");
     }
 
     @Test

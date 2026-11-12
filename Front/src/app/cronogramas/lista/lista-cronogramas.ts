@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { LucideEye, LucideFileUp, LucideLoaderCircle, LucidePencil, LucidePlus, LucideTrash } from '@lucide/angular';
+import { LucideEye, LucideFileUp, LucideLoaderCircle, LucideMapPin, LucidePencil, LucidePlus, LucideTrash } from '@lucide/angular';
 import { CronogramaResumen, textoAfluencia } from '../../models/cronograma';
 import { CronogramaService, mensajeDeError } from '../../services/cronograma.service';
 import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
@@ -8,7 +8,7 @@ import { ToastService } from '../../shared/toast/toast.service';
 
 @Component({
   selector: 'app-lista-cronogramas',
-  imports: [RouterLink, LucideEye, LucideFileUp, LucideLoaderCircle, LucidePencil, LucidePlus, LucideTrash],
+  imports: [RouterLink, LucideEye, LucideFileUp, LucideLoaderCircle, LucideMapPin, LucidePencil, LucidePlus, LucideTrash],
   templateUrl: './lista-cronogramas.html',
   styleUrl: './lista-cronogramas.css',
 })

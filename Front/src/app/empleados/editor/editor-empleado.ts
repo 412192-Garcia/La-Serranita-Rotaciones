@@ -5,6 +5,8 @@ import { LucideArrowLeft, LucideLoaderCircle, LucideSave, LucideStar } from '@lu
 import { clavePuesto } from '../../models/empleado';
 import { CronogramaService, mensajeDeError } from '../../services/cronograma.service';
 import { EmpleadoService } from '../../services/empleado.service';
+import { TareaService } from '../../services/tarea.service';
+import { Tarea } from '../../models/tarea';
 import { ToastService } from '../../shared/toast/toast.service';
 
 @Component({
@@ -15,6 +17,7 @@ import { ToastService } from '../../shared/toast/toast.service';
 })
 export class EditorEmpleado implements OnInit {
   private api = inject(EmpleadoService);
+  private tareasApi = inject(TareaService);
   private cronogramas = inject(CronogramaService);
   private toast = inject(ToastService);
   private router = inject(Router);
@@ -32,14 +35,18 @@ export class EditorEmpleado implements OnInit {
   todos = signal<string[]>([]);
   sabe = signal<string[]>([]);
   principales = signal<string[]>([]);
+  /** Las tareas que piden saber, y de esas cuáles sabe. */
+  tareasConSaber = signal<Tarea[]>([]);
+  tareas = signal<number[]>([]);
   enEntrenamiento = signal(false);
   acompananteHabitualId = signal<number | null>(null);
   /** Los que pueden acompañar: el resto de los empleados que no están en entrenamiento. */
   acompanantes = signal<{ id: number; nombre: string }[]>([]);
 
   ngOnInit(): void {
-    forkJoin({ puestos: this.cronogramas.puestos(), empleados: this.api.listar() }).subscribe({
-      next: ({ puestos, empleados }) => {
+    forkJoin({ puestos: this.cronogramas.puestos(), empleados: this.api.listar(), tareas: this.tareasApi.listar() }).subscribe({
+      next: ({ puestos, empleados, tareas }) => {
+        this.tareasConSaber.set(tareas.filter((t) => t.requiereSaber));
         const id = this.id();
         const empleado = id ? empleados.find((e) => e.id === Number(id)) : undefined;
         if (id && !empleado) {
@@ -57,6 +64,7 @@ export class EditorEmpleado implements OnInit {
         );
         if (empleado) {
           this.enEntrenamiento.set(empleado.enEntrenamiento);
+          this.tareas.set(empleado.tareas ?? []);
           this.acompananteHabitualId.set(empleado.acompananteHabitualId);
           this.nombre.set(empleado.nombre);
           // Se guardan con el nombre de la lista general, para que coincidan con los cronogramas.
@@ -80,6 +88,10 @@ export class EditorEmpleado implements OnInit {
   cambiarAcompanante(evento: Event): void {
     const valor = (evento.target as HTMLSelectElement).value;
     this.acompananteHabitualId.set(valor === '' ? null : Number(valor));
+  }
+
+  alternarTarea(id: number): void {
+    this.tareas.update((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id]));
   }
 
   alternarSabe(puesto: string): void {
@@ -116,6 +128,7 @@ export class EditorEmpleado implements OnInit {
         principales: this.principales(),
         enEntrenamiento: this.enEntrenamiento(),
         acompananteHabitualId: this.enEntrenamiento() ? this.acompananteHabitualId() : null,
+        tareas: this.tareas(),
       })
       .subscribe({
         next: () => {

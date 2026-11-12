@@ -14,4 +14,6 @@ export class TarjetaEmpleado {
   nombre = input<string | null>(null);
   /** Va en lugar del número (alguien en entrenamiento no tiene número). */
   etiqueta = input<string | null>(null);
+  /** Lo que hace antes de abrir. */
+  tarea = input<string | null>(null);
 }

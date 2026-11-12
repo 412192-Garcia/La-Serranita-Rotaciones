@@ -57,6 +57,19 @@
         }
       </div>
     </div>
+
+    @if (tareasConSaber().length) {
+      <div class="campo-grupo">
+        <span class="etiqueta">Tareas de apertura que sabe hacer</span>
+        <div class="puestos">
+          @for (t of tareasConSaber(); track t.id) {
+            <div class="puesto" [class.activo]="tareas().includes(t.id!)">
+              <button type="button" class="puesto-nombre" [attr.aria-pressed]="tareas().includes(t.id!)" (click)="alternarTarea(t.id!)">{{ t.nombre }}</button>
+            </div>
+          }
+        </div>
+      </div>
+    }
   </section>
 
   <div class="pie">

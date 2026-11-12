@@ -19,6 +19,18 @@ public final class Nombres {
         return sinAcentos.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
     }
 
+    /** Lo escrito en la celda del puesto: "*Canilla (consultar al encargado)". */
+    public record NombrePuesto(String nombre, String nota, boolean iniciaRotacion) {
+    }
+
+    /** "*Canilla (consultar al encargado)" → Canilla, nota "consultar al encargado", inicia la rotación. */
+    public static NombrePuesto separar(String texto) {
+        String t = texto == null ? "" : texto.trim();
+        boolean inicia = t.startsWith("*");
+        String[] nombreYNota = separarNota(t);
+        return new NombrePuesto(nombreYNota[0], nombreYNota[1], inicia);
+    }
+
     /** "*Canilla (consultar al encargado)" → ["Canilla", "consultar al encargado"]. Sin nota, la 2ª es null. */
     public static String[] separarNota(String texto) {
         String t = texto == null ? "" : texto.trim().replaceFirst("^\\*+\\s*", "");

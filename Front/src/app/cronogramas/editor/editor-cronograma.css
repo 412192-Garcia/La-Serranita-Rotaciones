@@ -234,6 +234,33 @@ thead .col-puesto {
   gap: 4px;
 }
 
+.btn-inicio {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-muted);
+  font-weight: 800;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.btn-inicio:hover {
+  opacity: 1;
+}
+
+.btn-inicio.marcado {
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent-light, #fdf1e3);
+  color: var(--color-accent);
+  opacity: 1;
+}
+
 .nombre-y-nota {
   display: flex;
   flex-direction: column;
@@ -395,7 +422,8 @@ tfoot .col-puesto {
     opacity: 1;
   }
 
-  .btn-mini {
+  .btn-mini,
+  .btn-inicio {
     width: 36px;
     height: 36px;
   }

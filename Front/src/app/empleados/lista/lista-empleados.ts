@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { LucideLoaderCircle, LucidePencil, LucidePlus, LucideStar, LucideTrash } from '@lucide/angular';
+import { LucideListChecks, LucideLoaderCircle, LucidePencil, LucidePlus, LucideStar, LucideTrash } from '@lucide/angular';
 import { Empleado } from '../../models/empleado';
 import { mensajeDeError } from '../../services/cronograma.service';
 import { EmpleadoService } from '../../services/empleado.service';
@@ -9,7 +9,7 @@ import { ToastService } from '../../shared/toast/toast.service';
 
 @Component({
   selector: 'app-lista-empleados',
-  imports: [RouterLink, LucideLoaderCircle, LucidePencil, LucidePlus, LucideStar, LucideTrash],
+  imports: [RouterLink, LucideListChecks, LucideLoaderCircle, LucidePencil, LucidePlus, LucideStar, LucideTrash],
   templateUrl: './lista-empleados.html',
   styleUrl: './lista-empleados.css',
 })

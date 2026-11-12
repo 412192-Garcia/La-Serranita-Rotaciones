@@ -12,6 +12,9 @@
       Sin descanso
     }
   </div>
+  @if (tarea()) {
+    <div class="tarea">Antes de abrir: {{ tarea() }}</div>
+  }
   @for (r of tarjeta().renglones; track $index) {
     <div class="renglon">
       <span class="hora">{{ r.hora }}</span>

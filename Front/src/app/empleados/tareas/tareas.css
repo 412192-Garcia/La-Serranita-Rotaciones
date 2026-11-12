@@ -1,0 +1,140 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+}
+
+.ayuda {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-heading-desc);
+}
+
+.centrado {
+  display: flex;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+.vacio {
+  color: var(--color-text-muted);
+}
+
+.nueva {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+}
+
+.campo-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campo-grupo.nombre {
+  flex: 1;
+  min-width: 200px;
+}
+
+.cantidad {
+  width: 70px;
+}
+
+.pide-saber {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  min-height: 38px;
+}
+
+.lista {
+  padding: 4px 0;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fila:last-child {
+  border-bottom: none;
+}
+
+/* Se ve como texto; al tocarlo, como campo. */
+.panel .nombre-fila {
+  flex: 1;
+  min-width: 180px;
+  border-color: transparent;
+  background: transparent;
+  font-weight: 700;
+}
+
+.panel .nombre-fila:hover,
+.panel .nombre-fila:focus {
+  border-color: var(--color-border);
+  background: var(--color-card-bg);
+}
+
+.personas {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.btn-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.btn-icono svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-icono.peligro:hover {
+  background: color-mix(in srgb, var(--color-danger) 10%, white);
+  color: var(--color-danger);
+}
+
+@media (pointer: coarse) {
+  .btn-icono {
+    width: 44px;
+    height: 44px;
+  }
+
+  .pide-saber {
+    min-height: 44px;
+  }
+}

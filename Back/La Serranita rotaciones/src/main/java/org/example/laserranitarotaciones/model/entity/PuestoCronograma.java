@@ -34,6 +34,10 @@ public class PuestoCronograma {
     @Column(length = 100)
     private String nota;
 
+    /** Ahí arranca la rotación (en las planillas, el * delante del nombre). */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean iniciaRotacion;
+
     /** Una por horario: vacía, "3", "1-2" o "Cerrado". */
     @ElementCollection
     @CollectionTable(name = "puesto_cronograma_celdas", joinColumns = @JoinColumn(name = "id_puesto"))

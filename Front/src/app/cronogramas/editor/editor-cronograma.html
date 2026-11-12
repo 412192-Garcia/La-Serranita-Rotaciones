@@ -91,7 +91,7 @@
         Sumar a la celda
       </label>
     </div>
-    <p class="ayuda">Tocá o arrastrá sobre la grilla. Tocar un número que ya está lo saca. Con "Sumar" quedan varios en la misma celda (6-7). Doble toque para escribir.</p>
+    <p class="ayuda">Tocá o arrastrá sobre la grilla. Tocar un número que ya está lo saca. Con "Sumar" quedan varios en la misma celda (6-7). Doble toque para escribir. El * al lado del puesto marca dónde arranca la rotación.</p>
   </section>
 
   <section class="panel grilla-panel">
@@ -110,6 +110,15 @@
             <tr>
               <th class="col-puesto">
                 <div class="celda-puesto">
+                  <button
+                    type="button"
+                    class="btn-inicio"
+                    [class.marcado]="p.iniciaRotacion"
+                    [attr.aria-pressed]="!!p.iniciaRotacion"
+                    aria-label="Inicia la rotación"
+                    title="Inicia la rotación"
+                    (click)="cambiarPuesto(i, { iniciaRotacion: !p.iniciaRotacion })"
+                  >*</button>
                   <div class="nombre-y-nota">
                     <input
                       type="text"

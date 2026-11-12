@@ -14,6 +14,8 @@ export interface Puesto {
   nombre: string;
   /** Aclaración que no cambia el puesto ("consultar al encargado"). */
   nota?: string | null;
+  /** Ahí arranca la rotación: se ve con un * delante del nombre. */
+  iniciaRotacion?: boolean;
   /** Una por horario: vacía, "3", "1-2" o "Cerrado". */
   celdas: string[];
 }

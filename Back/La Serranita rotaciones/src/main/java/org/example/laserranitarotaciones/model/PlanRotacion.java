@@ -35,7 +35,7 @@ public record PlanRotacion(List<Horario> horarios, List<Puesto> puestos, List<Tu
         List<Turno> turnos = new ArrayList<>();
         Set<Cierre> cierres = new HashSet<>();
         for (PuestoDto fila : filas) {
-            Puesto puesto = new Puesto(puestos.size() + 1, fila.nombre(), fila.nota());
+            Puesto puesto = new Puesto(puestos.size() + 1, fila.nombre(), fila.nota(), fila.iniciaRotacion());
             puestos.add(puesto);
             for (int i = 0; i < horarios.size() && i < fila.celdas().size(); i++) {
                 String celda = fila.celdas().get(i);

@@ -15,7 +15,8 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 - Un puesto puede estar cerrado en un horario (se escribe C). Si alguien deja un puesto que cierra, la
   tarjeta dice "Rote a…".
 - Cada número de empleado tiene siempre el mismo color en la planilla y en el editor.
-- Un puesto cuenta como fijo aunque otro lo cubra un rato, por ejemplo en el almuerzo.
+- Un puesto cuenta como fijo aunque otro lo cubra un rato, por ejemplo en el almuerzo. Un puesto que se
+  hace sólo un rato del día (Basura, Fotos a la tarde) no cuenta como fijo.
 - Entre dos cronogramas que cumplen lo pedido, se recomienda el que deja rotar más puestos.
 - El pie de la tarjeta impresa lleva el nombre del cronograma.
 - Nueva pantalla **Empleados**: cada uno con los puestos que sabe hacer y en cuáles tiene prioridad.
@@ -26,13 +27,15 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
   no puede si hay otra forma, y cada uno tiene prioridad en su puesto principal. Si no hay forma,
   avisa. El reparto se puede cambiar a mano.
 - Las tarjetas salen con el nombre del empleado, y dicen "Al ser cubierto por Ana" en vez del número.
-- Nueva pantalla **Puestos**: cada puesto tiene prioridad alta, media o baja. Si falta gente o alguien
+- **Prioridad de puestos** (desde Cronogramas): cada puesto tiene prioridad alta, media o baja. Si falta gente o alguien
   tiene que hacer algo que no sabe, primero se cubren los de prioridad alta.
 - Si alguien hace dos puestos a la vez, en el cronograma van en dos filas con el mismo número. Cuando
   deja los dos, la tarjeta dice quiénes lo cubren en cada uno ("Al ser cubierto por 6 y 7").
+- Cada cronograma puede marcar dónde arranca la rotación: en el Excel con un * delante del nombre del
+  puesto, y en el editor con el botón * de cada puesto. Se ve en la planilla y en la tarjeta
+  ("rote a *Travesía, Búsqueda y Laberinto"), como en la versión de Windows.
 - Los puestos pueden tener una nota (por ejemplo "consultar al encargado"), que se ve en la planilla y
   en la tarjeta, sin que cuente como otro puesto.
-- En el celular, el menú se ve en dos filas.
 - En el Excel, la primera fila puede decir el nombre del cronograma (Excel corta los nombres de hoja
   largos).
 - Al volver del descanso la tarjeta dice sólo adónde va, sin "Al ser cubierto por…".
@@ -43,6 +46,13 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
   varios (6-7). Los horarios se arman con "de 11:00 a 18:00 cada 30 min". Los puestos se eligen de los
   que ya existen, se suben, bajan o quitan, y la nota sólo aparece si tiene algo. Una fila "Sin puesto"
   muestra en cada horario qué números no están en ningún lado. Avisa antes de salir sin guardar.
+- **Tareas de apertura** (desde Empleados): cosas sin horario que se hacen antes de abrir, como pasar
+  la sopladora, con cuántas personas necesita cada una y si pide saber (eso se marca en cada empleado).
+  En Armar el día se reparten todas entre los que vinieron; quien está en entrenamiento va con su
+  acompañante y cuenta como uno más. Se pueden cambiar a mano y salen arriba en la tarjeta. Al imprimir
+  queda guardado quién hizo cada una, y los días siguientes se evita repetirla.
+- Armar el día, "Quién hace cada número": al elegir a alguien, primero aparecen los que no tienen número
+  y después los demás con su número al lado.
 - Editor de cronogramas: botones Deshacer y Rehacer (también Ctrl+Z y Ctrl+Y). Una pincelada o lo escrito
   seguido en un campo se deshace de una vez.
 - Empleados en entrenamiento: se marcan en Empleados, con a quién acompañan normalmente. No ocupan un

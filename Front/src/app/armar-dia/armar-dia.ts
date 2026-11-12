@@ -8,11 +8,15 @@ import {
   LucideSearch,
   LucideStar,
   LucideTriangleExclamationPoint,
+  LucideX,
 } from '@lucide/angular';
 import { AFLUENCIAS, Afluencia, Cronograma, Renglon, Sugerencia, puestosPorNumero, textoAfluencia } from '../models/cronograma';
 import { Empleado, clavePuesto } from '../models/empleado';
 import { CronogramaService, mensajeDeError } from '../services/cronograma.service';
 import { EmpleadoService } from '../services/empleado.service';
+import { TareaService } from '../services/tarea.service';
+import { TareaAsignada } from '../models/tarea';
+import { hoyLocal as fechaDeHoy } from '../shared/fecha';
 import { ToastService } from '../shared/toast/toast.service';
 import { TarjetaAcompanante, VistaCronograma } from '../shared/vista-cronograma/vista-cronograma';
 
@@ -60,6 +64,7 @@ function leerDia(): DiaGuardado | null {
     LucideSearch,
     LucideStar,
     LucideTriangleExclamationPoint,
+    LucideX,
   ],
   templateUrl: './armar-dia.html',
   styleUrl: './armar-dia.css',
@@ -67,6 +72,7 @@ function leerDia(): DiaGuardado | null {
 export class ArmarDia implements OnInit {
   private api = inject(CronogramaService);
   private empleadosApi = inject(EmpleadoService);
+  private tareasApi = inject(TareaService);
   private toast = inject(ToastService);
 
   readonly afluencias = AFLUENCIAS;
@@ -87,6 +93,9 @@ export class ArmarDia implements OnInit {
   /** Los que vinieron y ocupan un número (sin los que están en entrenamiento). */
   presentes = computed(() => this.regulares().filter((e) => !this.ausentes().includes(e.id!)));
   aprendicesPresentes = computed(() => this.enEntrenamiento().filter((e) => !this.ausentes().includes(e.id!)));
+
+  /** Las tareas de antes de abrir, ya repartidas (se pueden cambiar a mano). */
+  tareasDelDia = signal<TareaAsignada[]>([]);
 
   buscando = signal(false);
   sugerencias = signal<Sugerencia[] | null>(null);
@@ -252,10 +261,85 @@ export class ArmarDia implements OnInit {
         nombre: e.nombre,
         detalle: `acompaña a ${nombres.join(' y a ')}`,
         tarjeta: { empleado: 0, descanso, renglones },
+        tarea: this.tareaDe(e.id!),
       });
     }
     return resultado;
   });
+
+  // --- Tareas de antes de abrir
+
+  repartirTareas(): void {
+    const presentes = [
+      ...this.presentes().map((e) => ({ empleadoId: e.id!, acompananteId: null })),
+      ...this.aprendicesPresentes().map((e) => {
+        const primero = [...this.tramos(e)].sort((a, b) => (a.desde ?? '').localeCompare(b.desde ?? ''))[0];
+        return { empleadoId: e.id!, acompananteId: primero?.acompananteId ?? null };
+      }),
+    ];
+    this.tareasApi.repartir(fechaDeHoy(), presentes).subscribe({
+      next: (t) => this.tareasDelDia.set(t),
+      error: (e) => this.toast.error(mensajeDeError(e, 'No se pudieron repartir las tareas.')),
+    });
+  }
+
+  /** Todos los que vinieron, también los que están en entrenamiento. */
+  todosLosPresentes = computed(() => [...this.presentes(), ...this.aprendicesPresentes()]);
+
+  quitarDeTarea(tareaId: number, empleadoId: number): void {
+    this.tareasDelDia.update((l) =>
+      l.map((t) => (t.tareaId === tareaId ? { ...t, empleadoIds: t.empleadoIds.filter((id) => id !== empleadoId) } : t)),
+    );
+  }
+
+  sumarATarea(tareaId: number, evento: Event): void {
+    const select = evento.target as HTMLSelectElement;
+    const id = Number(select.value);
+    select.value = '';
+    if (!id) return;
+    this.tareasDelDia.update((l) =>
+      l.map((t) => (t.tareaId === tareaId && !t.empleadoIds.includes(id) ? { ...t, empleadoIds: [...t.empleadoIds, id] } : t)),
+    );
+  }
+
+  /** Lo que se ve debajo de cada tarea: si faltan personas. */
+  avisoTarea(t: TareaAsignada): string | null {
+    const faltan = t.cantidad - t.empleadoIds.length;
+    if (t.empleadoIds.length === 0 && t.aviso) return t.aviso;
+    if (faltan === 1) return 'Falta 1 persona.';
+    if (faltan > 1) return `Faltan ${faltan} personas.`;
+    return null;
+  }
+
+  /** "Pasar la sopladora (con Beto)". */
+  tareaDe(empleadoId: number): string | null {
+    const suyas = this.tareasDelDia().filter((t) => t.empleadoIds.includes(empleadoId));
+    if (!suyas.length) return null;
+    return suyas
+      .map((t) => {
+        const otros = t.empleadoIds.filter((id) => id !== empleadoId).map((id) => this.nombreDe(id));
+        return otros.length ? `${t.nombre} (con ${otros.join(', ')})` : t.nombre;
+      })
+      .join(' y ');
+  }
+
+  tareasPorNumero = computed(() => {
+    const mapa = new Map<number, string>();
+    this.asignacion().forEach((id, numero) => {
+      const tarea = id == null ? null : this.tareaDe(id);
+      if (tarea) mapa.set(numero, tarea);
+    });
+    return mapa;
+  });
+
+  /** Al imprimir queda guardado quién hizo cada tarea, para no repetirla los próximos días. */
+  guardarTareasHechas(): void {
+    const hechas = this.tareasDelDia().map((t) => ({ tareaId: t.tareaId, empleadoIds: t.empleadoIds }));
+    if (!hechas.length) return;
+    this.tareasApi.guardarHechas(fechaDeHoy(), hechas).subscribe({
+      error: (e) => this.toast.error(mensajeDeError(e, 'No se pudo guardar quién hizo cada tarea.')),
+    });
+  }
 
   /** Número → nombres de los que lo acompañan en algún momento. */
   acompanantesDe(numero: number): string {
@@ -327,6 +411,7 @@ export class ArmarDia implements OnInit {
       next: (c) => {
         this.asignacion.set(new Map(s.asignacion.map((a) => [a.numero, a.empleadoId])));
         this.cronograma.set(c);
+        this.repartirTareas();
         setTimeout(() => document.getElementById('cronograma-elegido')?.scrollIntoView({ behavior: 'smooth' }));
       },
       error: (e) => {
@@ -369,5 +454,16 @@ export class ArmarDia implements OnInit {
   sinPuesto = computed(() => {
     const asignados = new Set(this.asignacion().values());
     return this.presentes().filter((e) => !asignados.has(e.id!));
+  });
+
+  /** Los que ya hacen un número, ordenados por número. */
+  conNumero = computed(() => {
+    const porId = new Map(this.presentes().map((e) => [e.id!, e]));
+    const lista: { numero: number; empleado: Empleado }[] = [];
+    this.asignacion().forEach((id, numero) => {
+      const empleado = id == null ? undefined : porId.get(id);
+      if (empleado) lista.push({ numero, empleado });
+    });
+    return lista.sort((a, b) => a.numero - b.numero);
   });
 }
