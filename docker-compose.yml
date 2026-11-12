@@ -1,7 +1,24 @@
 services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: rotaciones
+      POSTGRES_USER: ${DB_USERNAME:-rotaciones}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en el .env}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
   backend:
     build: ./Back/La Serranita rotaciones
     restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/rotaciones
+      DB_USERNAME: ${DB_USERNAME:-rotaciones}
+      DB_PASSWORD: ${DB_PASSWORD}
 
   frontend:
     build: ./Front
@@ -10,3 +27,6 @@ services:
       - backend
     ports:
       - "4300:80"
+
+volumes:
+  db_data:

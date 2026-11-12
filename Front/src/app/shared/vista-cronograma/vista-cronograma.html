@@ -1,0 +1,68 @@
+<div class="pantalla">
+  <nav class="pestanas">
+    <button type="button" [class.activa]="vista() === 'tarjetas'" (click)="vista.set('tarjetas')">
+      <svg lucideIdCard [strokeWidth]="2.25"></svg> Tarjetas
+    </button>
+    <button type="button" [class.activa]="vista() === 'planilla'" (click)="vista.set('planilla')">
+      <svg lucideTable [strokeWidth]="2.25"></svg> Planilla
+    </button>
+  </nav>
+
+  @if (vista() === 'tarjetas') {
+    @if (tarjetas().length === 0) {
+      <section class="panel vacio">Este cronograma no tiene empleados.</section>
+    } @else {
+      <section class="panel tarjetas">
+        <div>
+          <span class="etiqueta">Empleado</span>
+          <div class="empleados">
+            @for (t of tarjetas(); track t.empleado) {
+              <button type="button" class="chip" [class.activa]="$index === seleccionada()" (click)="seleccionada.set($index)">
+                {{ t.empleado }}
+              </button>
+            }
+          </div>
+          <div class="acciones">
+            <button type="button" class="btn-secundario" (click)="imprimir([tarjeta()!])">
+              <svg lucidePrinter [strokeWidth]="2.5"></svg> Imprimir esta
+            </button>
+            <button type="button" class="btn-primario" (click)="imprimir(tarjetas())">
+              <svg lucidePrinter [strokeWidth]="2.5"></svg> Imprimir todas ({{ tarjetas().length }})
+            </button>
+          </div>
+        </div>
+        <app-tarjeta [tarjeta]="tarjeta()!" [cronograma]="cronograma().nombre" />
+      </section>
+    }
+  } @else {
+    <section class="panel matriz">
+      <table>
+        <thead>
+          <tr>
+            <th>Puesto</th>
+            @for (h of cronograma().horarios; track $index) {
+              <th>{{ h }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of cronograma().puestos; track $index) {
+            <tr>
+              <th>{{ p.nombre }}</th>
+              @for (c of p.celdas; track $index) {
+                @let e = estiloCelda(c);
+                <td [style.background-color]="e.fondo" [style.color]="e.texto">{{ c }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+</div>
+
+<div class="zona-impresion">
+  @for (t of aImprimir(); track t.empleado) {
+    <app-tarjeta [tarjeta]="t" [cronograma]="cronograma().nombre" />
+  }
+</div>

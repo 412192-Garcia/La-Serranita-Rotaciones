@@ -1,0 +1,18 @@
+<div class="barra">
+  <a class="btn-secundario" routerLink="/cronogramas"><svg lucideArrowLeft [strokeWidth]="2.5"></svg> Volver</a>
+  @if (cronograma(); as c) {
+    <div class="titulo">
+      <h2>{{ c.nombre }}</h2>
+      <span>{{ c.empleados }} empleados · Afluencia {{ textoAfluencia(c.afluencia).toLowerCase() }}</span>
+    </div>
+    <a class="btn-secundario" [routerLink]="['/cronogramas', c.id, 'editar']">
+      <svg lucidePencil [strokeWidth]="2.5"></svg> Editar
+    </a>
+  }
+</div>
+
+@if (cronograma(); as c) {
+  <app-vista-cronograma [cronograma]="c" />
+} @else {
+  <section class="panel centrado"><svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg></section>
+}

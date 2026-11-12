@@ -1,4 +1,24 @@
-<router-outlet />
+<div class="pagina">
+  <header class="cabecera">
+    <img class="logo" src="img/logo-la-serranita.png" alt="La Serranita" />
+    <h1>Rotación de puestos</h1>
+    <nav class="menu">
+      <a routerLink="/" routerLinkActive="activo" [routerLinkActiveOptions]="{ exact: true }">
+        <svg lucideCalendarCheck [strokeWidth]="2.25"></svg> Armar el día
+      </a>
+      <a routerLink="/cronogramas" routerLinkActive="activo">
+        <svg lucideLayoutList [strokeWidth]="2.25"></svg> Cronogramas
+      </a>
+    </nav>
+  </header>
+
+  <main>
+    <router-outlet />
+  </main>
+</div>
+
+<!-- Confirmaciones de toda la app: ver ConfirmacionService. -->
+<app-confirmacion-dialogo />
 
 <!-- Avisos de toda la app: ver ToastService. -->
 <app-toast-host />

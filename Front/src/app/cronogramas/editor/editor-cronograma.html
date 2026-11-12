@@ -1,0 +1,96 @@
+<div class="barra">
+  <a class="btn-secundario" routerLink="/cronogramas"><svg lucideArrowLeft [strokeWidth]="2.5"></svg> Volver</a>
+  <h2>{{ id() ? 'Editar cronograma' : 'Nuevo cronograma' }}</h2>
+</div>
+
+@if (cargando()) {
+  <section class="panel centrado"><svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg></section>
+} @else {
+  <section class="panel datos">
+    <div class="campo-grupo">
+      <label class="etiqueta" for="nombre">Nombre</label>
+      <input id="nombre" type="text" maxlength="100" [value]="nombre()" [class.con-error]="errorNombre()" (input)="cambiarNombre(valor($event))" />
+      @if (errorNombre()) {
+        <span class="error-campo">{{ errorNombre() }}</span>
+      }
+    </div>
+    <div class="campo-grupo">
+      <span class="etiqueta">Afluencia</span>
+      <div class="opciones">
+        @for (a of afluencias; track a.valor) {
+          <button type="button" class="chip" [class.activa]="afluencia() === a.valor" (click)="afluencia.set(a.valor)">{{ a.texto }}</button>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="panel grilla-panel">
+    <p class="ayuda">En cada horario poné el número de empleado. Si son varios, separalos con guión: 1-2. Si el puesto está cerrado, poné C.</p>
+    <div class="grilla">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-puesto">Puesto</th>
+            @for (h of horarios(); track $index; let i = $index) {
+              <th>
+                <div class="celda-hora">
+                  <input type="time" [value]="h" aria-label="Horario" (change)="cambiarHorario(i, valor($event))" />
+                  @if (horarios().length > 1) {
+                    <button type="button" class="btn-quitar" aria-label="Quitar horario" title="Quitar horario" (click)="quitarHorario(i)">
+                      <svg lucideX [strokeWidth]="2.5"></svg>
+                    </button>
+                  }
+                </div>
+              </th>
+            }
+            <th>
+              <button type="button" class="btn-secundario btn-chico" (click)="agregarHorario()">
+                <svg lucidePlus [strokeWidth]="2.5"></svg> Horario
+              </button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of puestos(); track $index; let i = $index) {
+            <tr>
+              <th class="col-puesto">
+                <div class="celda-puesto">
+                  <input type="text" maxlength="60" placeholder="Nombre" aria-label="Puesto" [value]="p.nombre" (input)="cambiarPuesto(i, { nombre: valor($event) })" />
+                </div>
+              </th>
+              @for (c of p.celdas; track $index; let k = $index) {
+                @let e = estiloCelda(c);
+                <td [style.background-color]="e.fondo">
+                  <input type="text" class="celda" aria-label="Empleado" [style.color]="e.texto" [value]="c" (input)="cambiarCelda(i, k, valor($event))" />
+                </td>
+              }
+              <td>
+                @if (puestos().length > 1) {
+                  <button type="button" class="btn-quitar" aria-label="Quitar puesto" title="Quitar puesto" (click)="quitarPuesto(i)">
+                    <svg lucideX [strokeWidth]="2.5"></svg>
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <button type="button" class="btn-secundario" (click)="agregarPuesto()"><svg lucidePlus [strokeWidth]="2.5"></svg> Puesto</button>
+    </div>
+  </section>
+
+  <div class="pie">
+    @if (error()) {
+      <span class="error-campo">{{ error() }}</span>
+    }
+    <button type="button" class="btn-primario" [disabled]="guardando()" (click)="guardar()">
+      @if (guardando()) {
+        <svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg> Guardando…
+      } @else {
+        <svg lucideSave [strokeWidth]="2.5"></svg> Guardar
+      }
+    </button>
+  </div>
+}

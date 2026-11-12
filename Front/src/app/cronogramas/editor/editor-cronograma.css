@@ -1,0 +1,159 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+}
+
+.centrado {
+  display: flex;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+.datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 32px;
+}
+
+.campo-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#nombre {
+  width: min(360px, 100%);
+}
+
+.opciones {
+  display: flex;
+  gap: 8px;
+}
+
+.grilla-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ayuda {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* Matriz densa: scroll horizontal */
+.grilla {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border: 1px solid var(--color-border);
+  padding: 4px;
+  text-align: center;
+}
+
+thead th {
+  background: var(--color-bg-soft);
+}
+
+tbody th {
+  background: var(--color-bg-soft);
+  font-weight: normal;
+}
+
+.col-puesto {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 190px;
+}
+
+.celda-hora,
+.celda-puesto {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.panel .celda-hora input {
+  width: 92px;
+  padding: 5px 6px;
+}
+
+.panel .celda-puesto input[type='text'] {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+}
+
+.panel input.celda {
+  width: 56px;
+  padding: 6px 4px;
+  text-align: center;
+  background: transparent;
+  font-weight: 600;
+}
+
+.btn-quitar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btn-quitar:hover {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 10%, white);
+}
+
+.btn-quitar svg {
+  width: 15px;
+  height: 15px;
+}
+
+.btn-chico {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+
+.pie {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (pointer: coarse) {
+  .btn-quitar {
+    width: 44px;
+    height: 44px;
+  }
+}

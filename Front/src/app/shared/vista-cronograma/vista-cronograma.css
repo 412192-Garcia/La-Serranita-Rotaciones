@@ -1,0 +1,149 @@
+.pantalla {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pestanas {
+  display: flex;
+  gap: 6px;
+}
+
+.pestanas button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pestanas button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.pestanas button.activa {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.tarjetas {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.empleados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  min-width: 42px;
+  padding: 7px 10px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card-bg);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.chip:hover {
+  border-color: var(--color-primary);
+}
+
+.chip.activa {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.vacio {
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* Matriz densa: scroll horizontal */
+.matriz {
+  overflow-x: auto;
+  padding: 0;
+}
+
+table {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  width: 100%;
+}
+
+th,
+td {
+  border: 1px solid var(--color-border);
+  padding: 6px 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+thead th {
+  background: var(--color-bg-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+tbody th {
+  text-align: left;
+  background: var(--color-bg-soft);
+  position: sticky;
+  left: 0;
+}
+
+.zona-impresion {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .tarjetas {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (pointer: coarse) {
+  .chip,
+  .pestanas button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+@media print {
+  .pantalla {
+    display: none;
+  }
+
+  .zona-impresion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 4mm;
+  }
+
+  .zona-impresion app-tarjeta {
+    width: 64mm;
+    break-inside: avoid;
+  }
+}

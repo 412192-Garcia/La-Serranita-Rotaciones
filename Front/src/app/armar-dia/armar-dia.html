@@ -1,0 +1,104 @@
+@if (cargandoPuestos()) {
+  <section class="panel cargando"><svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg></section>
+} @else if (puestos().length === 0) {
+  <section class="panel vacio">
+    <p>Todavía no hay cronogramas cargados.</p>
+    <a class="btn-primario" routerLink="/cronogramas">Cargar cronogramas</a>
+  </section>
+} @else {
+  <section class="panel preguntas">
+    <div class="pregunta">
+      <label class="etiqueta" for="empleados">¿Cuántos empleados hay hoy?</label>
+      <input
+        id="empleados"
+        type="number"
+        min="1"
+        inputmode="numeric"
+        [value]="empleados() ?? ''"
+        [class.con-error]="errorEmpleados()"
+        (input)="cambiarEmpleados($event)"
+        (keydown.enter)="buscar()"
+      />
+      @if (errorEmpleados()) {
+        <span class="error-campo">{{ errorEmpleados() }}</span>
+      }
+    </div>
+
+    <div class="pregunta">
+      <span class="etiqueta">¿Cuánta gente se espera?</span>
+      <div class="opciones">
+        @for (a of afluencias; track a.valor) {
+          <button type="button" class="chip" [class.activa]="afluencia() === a.valor" (click)="afluencia.set(a.valor)">
+            {{ a.texto }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="pregunta">
+      <span class="etiqueta">¿Qué puestos tienen que tener el mismo empleado todo el día?</span>
+      <div class="opciones">
+        @for (p of puestos(); track p) {
+          <button type="button" class="chip" [class.activa]="fijos().includes(p)" (click)="alternarFijo(p)">{{ p }}</button>
+        }
+      </div>
+    </div>
+
+    <div>
+      <button type="button" class="btn-primario" [disabled]="buscando()" (click)="buscar()">
+        @if (buscando()) {
+          <svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg> Buscando…
+        } @else {
+          <svg lucideSearch [strokeWidth]="2.5"></svg> Buscar cronograma
+        }
+      </button>
+    </div>
+  </section>
+
+  @if (sugerencias(); as lista) {
+    <section class="sugerencias">
+      <h2>Cronogramas sugeridos</h2>
+      @for (s of lista; track s.cronograma.id; let primero = $first) {
+        <article class="panel sugerencia" [class.elegida]="elegidaId() === s.cronograma.id">
+          <div class="sugerencia-datos">
+            <div class="titulo">
+              <strong>{{ s.cronograma.nombre }}</strong>
+              @if (primero) {
+                <span class="badge">Recomendado</span>
+              }
+            </div>
+            <div class="detalle">
+              {{ s.cronograma.empleados }} empleados · Afluencia {{ textoAfluencia(s.cronograma.afluencia).toLowerCase() }}
+              @if (s.cronograma.desde) {
+                · {{ s.cronograma.desde }} a {{ s.cronograma.hasta }}
+              }
+            </div>
+            @if (s.diferencias.length === 0) {
+              <div class="coincide"><svg lucideCircleCheck [strokeWidth]="2.5"></svg> Coincide en todo</div>
+            } @else {
+              <ul class="diferencias">
+                @for (d of s.diferencias; track d) {
+                  <li><svg lucideTriangleExclamationPoint [strokeWidth]="2.5"></svg> {{ d }}</li>
+                }
+              </ul>
+            }
+          </div>
+          <button
+            type="button"
+            [class]="elegidaId() === s.cronograma.id ? 'btn-primario' : 'btn-secundario'"
+            (click)="usar(s.cronograma.id)"
+          >
+            {{ elegidaId() === s.cronograma.id ? 'Elegido' : 'Usar este' }}
+          </button>
+        </article>
+      }
+    </section>
+  }
+
+  @if (cronograma(); as c) {
+    <section id="cronograma-elegido" class="elegido">
+      <h2>{{ c.nombre }}</h2>
+      <app-vista-cronograma [cronograma]="c" />
+    </section>
+  }
+}

@@ -1,0 +1,40 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+
+.titulo {
+  flex: 1;
+  min-width: 0;
+}
+
+h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+}
+
+.titulo span {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.centrado {
+  display: flex;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+@media print {
+  .barra {
+    display: none;
+  }
+}

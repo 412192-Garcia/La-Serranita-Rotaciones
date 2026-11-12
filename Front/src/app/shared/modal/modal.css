@@ -1,0 +1,41 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+/* Transparente para el layout: el panel proyectado (con su propia clase) es el
+   verdadero item flex centrado por .modal-overlay, este div sólo existe para
+   frenar el click y no cerrar el modal al clickear adentro. */
+.modal-panel-wrapper {
+  display: contents;
+}
+
+/* Celular: hoja desde abajo. Los !important le ganan a las medidas propias de cada panel. */
+@media (max-width: 600px) {
+  .modal-overlay.como-hoja {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  :host ::ng-deep .como-hoja > .modal-panel-wrapper > * {
+    box-sizing: border-box;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: 92dvh !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+    animation: subir-hoja 0.22s ease-out;
+  }
+}
+
+@keyframes subir-hoja {
+  from { transform: translateY(40px); }
+  to { transform: none; }
+}

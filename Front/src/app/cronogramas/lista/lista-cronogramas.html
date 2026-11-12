@@ -1,0 +1,56 @@
+<input #selector type="file" accept=".xlsx,.xls" hidden (change)="importar($event)" />
+
+<div class="barra">
+  <h2>Cronogramas</h2>
+  <div class="barra-acciones">
+    <button type="button" class="btn-secundario" [disabled]="importando()" (click)="selector.click()">
+      @if (importando()) {
+        <svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg> Importando…
+      } @else {
+        <svg lucideFileUp [strokeWidth]="2.5"></svg> Importar Excel
+      }
+    </button>
+    <a class="btn-primario" routerLink="/cronogramas/nuevo">
+      <svg lucidePlus [strokeWidth]="2.5"></svg> Nuevo
+    </a>
+  </div>
+</div>
+
+@if (cargando()) {
+  <section class="panel centrado"><svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg></section>
+} @else if (cronogramas().length === 0) {
+  <section class="panel centrado vacio">
+    Todavía no hay cronogramas. Importá un Excel o creá uno nuevo.
+  </section>
+} @else {
+  <section class="panel tabla">
+    <div class="fila-simple fila-simple-header">
+      <span>Nombre</span>
+      <span>Afluencia</span>
+      <span>Empleados</span>
+      <span>Horario</span>
+      <span>Puestos fijos</span>
+      <span></span>
+    </div>
+    @for (c of cronogramas(); track c.id) {
+      <div class="fila-simple">
+        <span class="nombre">{{ c.nombre }}</span>
+        <span data-label="Afluencia">{{ textoAfluencia(c.afluencia) }}</span>
+        <span data-label="Empleados">{{ c.empleados }}</span>
+        <span data-label="Horario">{{ c.desde }} a {{ c.hasta }}</span>
+        <span data-label="Puestos fijos">{{ c.fijos.length ? c.fijos.join(', ') : '—' }}</span>
+        <span class="acciones-fila">
+          <a class="btn-icono" [routerLink]="['/cronogramas', c.id]" title="Ver tarjetas" aria-label="Ver tarjetas">
+            <svg lucideEye [strokeWidth]="2.25"></svg>
+          </a>
+          <a class="btn-icono" [routerLink]="['/cronogramas', c.id, 'editar']" title="Editar" aria-label="Editar">
+            <svg lucidePencil [strokeWidth]="2.25"></svg>
+          </a>
+          <button type="button" class="btn-icono peligro" title="Borrar" aria-label="Borrar" (click)="eliminar(c)">
+            <svg lucideTrash [strokeWidth]="2.25"></svg>
+          </button>
+        </span>
+      </div>
+    }
+  </section>
+}
