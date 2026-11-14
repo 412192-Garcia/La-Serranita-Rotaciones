@@ -22,12 +22,12 @@
             }
           </div>
           <div class="puestos">
-            @for (p of e.puestos; track p) {
-              <span class="puesto" [class.principal]="esPrincipal(e, p)">
-                @if (esPrincipal(e, p)) {
+            @for (c of chips(e); track c.texto) {
+              <span class="puesto" [class.principal]="c.principal">
+                @if (c.principal) {
                   <svg lucideStar [strokeWidth]="2.5" aria-label="Principal"></svg>
                 }
-                {{ p }}
+                {{ c.texto }}
               </span>
             } @empty {
               <span class="sin-puestos">Sin puestos cargados</span>

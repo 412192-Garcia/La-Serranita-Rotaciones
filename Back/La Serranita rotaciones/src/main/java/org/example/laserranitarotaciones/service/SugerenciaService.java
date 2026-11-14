@@ -8,6 +8,7 @@ import org.example.laserranitarotaciones.model.dto.PedidoSugerenciaDto;
 import org.example.laserranitarotaciones.model.dto.PresenteDto;
 import org.example.laserranitarotaciones.model.dto.SugerenciaDto;
 import org.example.laserranitarotaciones.model.entity.Afluencia;
+import org.example.laserranitarotaciones.model.entity.Prioridad;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -29,9 +30,11 @@ import java.util.stream.Collectors;
 public class SugerenciaService {
 
     static final int MAXIMO = 5;
-    private static final int POR_EMPLEADO_FALTANTE = 12;
-    private static final int POR_EMPLEADO_SOBRANTE = 6;
-    private static final int POR_NIVEL_AFLUENCIA = 8;
+    // En la misma escala que los pesos de prioridad (Media = 100). Alguien sin puesto pesa un poco menos
+    // que un puesto Media mal cubierto. El que falta ya lo castiga el reparto (sus puestos quedan sin nadie).
+    private static final int POR_EMPLEADO_FALTANTE = Prioridad.MEDIA.peso() / 10;
+    private static final int POR_EMPLEADO_SOBRANTE = Prioridad.MEDIA.peso() * 4 / 5;
+    private static final int POR_NIVEL_AFLUENCIA = Prioridad.BAJA.peso();
 
     private final CronogramaService cronogramas;
     private final EmpleadoService empleados;
@@ -52,7 +55,9 @@ public class SugerenciaService {
             int hay = presentes.size();
             if (c.empleados() != hay) {
                 int dif = c.empleados() - hay;
-                puntos += dif > 0 ? dif * POR_EMPLEADO_FALTANTE : -dif * POR_EMPLEADO_SOBRANTE;
+                // El que hoy no puede hacer nada no suma como sobrante: igual no trabajaría.
+                int sobran = Math.max(0, (int) presentes.stream().filter(p -> !p.hoy().isEmpty()).count() - c.empleados());
+                puntos += dif > 0 ? dif * POR_EMPLEADO_FALTANTE : sobran * POR_EMPLEADO_SOBRANTE;
                 diferencias.add("Es para " + c.empleados() + " empleados y vinieron " + hay + ".");
             }
 
@@ -86,7 +91,7 @@ public class SugerenciaService {
             EmpleadoDto e = porId.get(p.empleadoId());
             if (e == null) throw new NoEncontradoException("Uno de los empleados ya no existe. Recargá la página.");
             if (e.enEntrenamiento()) continue; // acompaña a otro: no ocupa un número
-            Set<String> sabe = claves(e.puestos());
+            Set<String> sabe = claves(e.puedeHacer()); // con los grupos ya cambiados por sus puestos
             Set<String> hoy = p.puestosHoy() == null ? new HashSet<>(sabe) : claves(p.puestosHoy());
             hoy.retainAll(sabe);
             presentes.add(new AsignadorService.Presente(e.id(), e.nombre(), sabe, hoy, claves(e.principales())));

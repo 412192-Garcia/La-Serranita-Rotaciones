@@ -41,7 +41,7 @@
         <span data-label="Afluencia">{{ textoAfluencia(c.afluencia) }}</span>
         <span data-label="Empleados">{{ c.empleados }}</span>
         <span data-label="Horario">{{ c.desde }} a {{ c.hasta }}</span>
-        <span data-label="Puestos fijos">{{ c.fijos.length ? c.fijos.join(', ') : '—' }}</span>
+        <span data-label="Puestos fijos">{{ fijosVisibles(c).length ? fijosVisibles(c).join(', ') : '—' }}</span>
         <span class="acciones-fila">
           <a class="btn-icono" [routerLink]="['/cronogramas', c.id]" title="Ver tarjetas" aria-label="Ver tarjetas">
             <svg lucideEye [strokeWidth]="2.25"></svg>

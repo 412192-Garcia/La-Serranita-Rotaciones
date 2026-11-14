@@ -87,6 +87,60 @@ h2 {
   cursor: pointer;
 }
 
+.puesto-nombre {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.puesto-nombre.fijo {
+  cursor: default;
+}
+
+.estrella-chica {
+  width: 14px;
+  height: 14px;
+  color: var(--color-accent);
+  fill: currentColor;
+}
+
+.desplegar svg {
+  transition: transform 0.15s;
+}
+
+.desplegar.abierto svg {
+  transform: rotate(180deg);
+}
+
+/* Un grupo: varios puestos juntos. */
+.puesto.grupo .puesto-nombre {
+  font-weight: 800;
+}
+
+/* Sabe algunos puestos del grupo, sueltos. */
+.puesto.grupo.parcial {
+  border-style: dashed;
+  border-color: var(--color-primary);
+}
+
+.cuenta {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.del-grupo-titulo {
+  align-self: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+/* Los puestos de un grupo desplegado: sólo se elige el principal. */
+.del-grupo {
+  padding-left: 12px;
+  border-left: 2px solid var(--color-border);
+}
+
 .puesto.activo .puesto-nombre {
   color: var(--color-primary-dark);
 }

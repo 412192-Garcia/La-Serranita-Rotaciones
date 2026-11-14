@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import {
   LucideBan,
   LucideCheck,
+  LucideChevronDown,
   LucideCircleCheck,
   LucideLoaderCircle,
   LucideSearch,
@@ -11,10 +12,13 @@ import {
   LucideX,
 } from '@lucide/angular';
 import { AFLUENCIAS, Afluencia, Cronograma, Renglon, Sugerencia, puestosPorNumero, textoAfluencia } from '../models/cronograma';
-import { Empleado, clavePuesto } from '../models/empleado';
+import { Empleado, clavePuesto, puedeHacer } from '../models/empleado';
 import { CronogramaService, mensajeDeError } from '../services/cronograma.service';
 import { EmpleadoService } from '../services/empleado.service';
 import { TareaService } from '../services/tarea.service';
+import { GrupoService } from '../services/grupo.service';
+import { GrupoPuestos } from '../models/grupo';
+import { forkJoin } from 'rxjs';
 import { TareaAsignada } from '../models/tarea';
 import { hoyLocal as fechaDeHoy } from '../shared/fecha';
 import { ToastService } from '../shared/toast/toast.service';
@@ -59,6 +63,7 @@ function leerDia(): DiaGuardado | null {
     VistaCronograma,
     LucideBan,
     LucideCheck,
+    LucideChevronDown,
     LucideCircleCheck,
     LucideLoaderCircle,
     LucideSearch,
@@ -73,14 +78,19 @@ export class ArmarDia implements OnInit {
   private api = inject(CronogramaService);
   private empleadosApi = inject(EmpleadoService);
   private tareasApi = inject(TareaService);
+  private gruposApi = inject(GrupoService);
   private toast = inject(ToastService);
 
   readonly afluencias = AFLUENCIAS;
   readonly textoAfluencia = textoAfluencia;
   readonly clavePuesto = clavePuesto;
+  readonly puedeHacer = puedeHacer;
 
   cargando = signal(true);
   empleados = signal<Empleado[]>([]);
+  grupos = signal<GrupoPuestos[]>([]);
+  /** Grupos desplegados para tocar sus puestos de a uno: "idEmpleado|grupo". */
+  abiertos = signal<Set<string>>(new Set());
 
   private guardado = leerDia();
   ausentes = signal<number[]>(this.guardado?.ausentes ?? []);
@@ -137,8 +147,9 @@ export class ArmarDia implements OnInit {
   }
 
   ngOnInit(): void {
-    this.empleadosApi.listar().subscribe({
-      next: (l) => {
+    forkJoin({ empleados: this.empleadosApi.listar(), grupos: this.gruposApi.listar() }).subscribe({
+      next: ({ empleados: l, grupos }) => {
+        this.grupos.set(grupos);
         this.empleados.set(l);
         this.descartarMarcasViejas(l);
         this.cargando.set(false);
@@ -152,7 +163,7 @@ export class ArmarDia implements OnInit {
 
   /** Lo marcado de empleados que ya no están, o de puestos que ya no sabe, no se arrastra. */
   private descartarMarcasViejas(empleados: Empleado[]): void {
-    const porId = new Map(empleados.map((e) => [e.id!, e.puestos.map(clavePuesto)]));
+    const porId = new Map(empleados.map((e) => [e.id!, puedeHacer(e).map(clavePuesto)]));
     this.ausentes.update((l) => l.filter((id) => porId.has(id)));
     const regulares = new Set(empleados.filter((e) => !e.enEntrenamiento).map((e) => e.id!));
     const aprendices = new Set(empleados.filter((e) => e.enEntrenamiento).map((e) => e.id!));
@@ -363,6 +374,44 @@ export class ArmarDia implements OnInit {
     this.ausentes.set([]);
   }
 
+  /** Lo que sabe como se cargó: los grupos enteros (con sus puestos) y los puestos sueltos. */
+  sabeEnPartes(e: Empleado): { grupo: GrupoPuestos | null; nombre: string }[] {
+    return e.puestos.map((p) => ({ grupo: this.grupos().find((g) => clavePuesto(g.nombre) === clavePuesto(p)) ?? null, nombre: p }));
+  }
+
+  /** Cuántos puestos del grupo puede hacer hoy. */
+  puedeDelGrupo(e: Empleado, g: GrupoPuestos): number {
+    return g.puestos.filter((p) => this.puedeHoy(e, p)).length;
+  }
+
+  principalEnGrupo(e: Empleado, g: GrupoPuestos): string[] {
+    return g.puestos.filter((p) => e.principales.some((x) => clavePuesto(x) === clavePuesto(p)));
+  }
+
+  /** Si hoy puede algo del grupo, lo apaga entero; si no, lo prende entero. */
+  alternarGrupoHoy(e: Empleado, g: GrupoPuestos): void {
+    const apagar = this.puedeDelGrupo(e, g) > 0;
+    const claves = g.puestos.map(clavePuesto);
+    this.noHoy.update((m) => {
+      const resto = (m[e.id!] ?? []).filter((c) => !claves.includes(c));
+      return { ...m, [e.id!]: apagar ? [...resto, ...claves] : resto };
+    });
+  }
+
+  abierto(e: Empleado, g: GrupoPuestos): boolean {
+    return this.abiertos().has(`${e.id}|${g.nombre}`);
+  }
+
+  alternarAbierto(e: Empleado, g: GrupoPuestos): void {
+    const clave = `${e.id}|${g.nombre}`;
+    this.abiertos.update((s) => {
+      const n = new Set(s);
+      if (n.has(clave)) n.delete(clave);
+      else n.add(clave);
+      return n;
+    });
+  }
+
   puedeHoy(e: Empleado, puesto: string): boolean {
     return !(this.noHoy()[e.id!] ?? []).includes(clavePuesto(puesto));
   }
@@ -389,7 +438,7 @@ export class ArmarDia implements OnInit {
       afluencia: this.afluencia(),
       presentes: presentes.map((e) => {
         const no = this.noHoy()[e.id!] ?? [];
-        return { empleadoId: e.id!, puestosHoy: no.length ? e.puestos.filter((p) => !no.includes(clavePuesto(p))) : null };
+        return { empleadoId: e.id!, puestosHoy: no.length ? puedeHacer(e).filter((p) => !no.includes(clavePuesto(p))) : null };
       }),
     };
     this.api.sugerir(pedido).subscribe({
@@ -443,7 +492,7 @@ export class ArmarDia implements OnInit {
     if (id == null) return ['Nadie hace este número.'];
     const e = this.empleados().find((x) => x.id === id);
     if (!e) return [];
-    const sabe = e.puestos.map(clavePuesto);
+    const sabe = puedeHacer(e).map(clavePuesto);
     return (this.puestosDeNumero().get(numero) ?? []).flatMap((p) => {
       if (!sabe.includes(clavePuesto(p))) return [`No sabe ${p}.`];
       if (!this.puedeHoy(e, p)) return [`Hoy no puede ${p}.`];

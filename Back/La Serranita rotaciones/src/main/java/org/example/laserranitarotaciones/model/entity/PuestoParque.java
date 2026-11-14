@@ -32,4 +32,8 @@ public class PuestoParque {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
     private Prioridad prioridad;
+
+    /** Si aparece en la columna "Puestos fijos" de los cronogramas. */
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean mostrarEnFijos = true;
 }

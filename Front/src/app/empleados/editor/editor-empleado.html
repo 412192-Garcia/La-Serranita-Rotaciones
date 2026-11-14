@@ -34,14 +34,44 @@
 
     <div class="campo-grupo">
       <span class="etiqueta">Puestos que sabe hacer</span>
-      <p class="ayuda">Tocá un puesto para marcarlo. Con la estrella queda como principal: ahí tiene prioridad.</p>
+      <p class="ayuda">
+        Tocá un puesto para marcarlo. Con la estrella queda como principal: ahí tiene prioridad.
+        @if (grupos().length) {
+          Los grupos (con flecha) incluyen varios puestos: marcá el grupo si los sabe todos, o desplegalo para marcar sólo algunos o elegir el principal.
+        }
+      </p>
       @if (todos().length === 0) {
         <p class="ayuda">Primero cargá algún cronograma para ver los puestos.</p>
       }
       <div class="puestos">
-        @for (p of todos(); track p) {
-          <div class="puesto" [class.activo]="sabe().includes(p)">
-            <button type="button" class="puesto-nombre" [attr.aria-pressed]="sabe().includes(p)" (click)="alternarSabe(p)">{{ p }}</button>
+        @for (g of grupos(); track g.id) {
+          <div class="puesto grupo" [class.activo]="sabe().includes(g.nombre)" [class.parcial]="!sabe().includes(g.nombre) && sueltosDe(g) > 0">
+            <button type="button" class="puesto-nombre" [title]="g.puestos.join(', ')" [attr.aria-pressed]="sabe().includes(g.nombre)" (click)="alternarGrupo(g)">
+              @if (principalesDe(g).length) {
+                <svg lucideStar class="estrella-chica" [strokeWidth]="2.25" [attr.aria-label]="'Principal: ' + principalesDe(g).join(', ')"></svg>
+              }
+              {{ g.nombre }}
+              @if (!sabe().includes(g.nombre) && sueltosDe(g) > 0) {
+                <span class="cuenta">{{ sueltosDe(g) }}/{{ g.puestos.length }}</span>
+              }
+            </button>
+            <button
+              type="button"
+              class="estrella desplegar"
+              [class.abierto]="abierto() === g.nombre"
+              [attr.aria-expanded]="abierto() === g.nombre"
+              [attr.aria-label]="'Ver los puestos de ' + g.nombre"
+              (click)="abierto.set(abierto() === g.nombre ? null : g.nombre)"
+            >
+              <svg lucideChevronDown [strokeWidth]="2.25"></svg>
+            </button>
+          </div>
+        }
+        @for (p of sueltos(); track p) {
+          <div class="puesto" [class.activo]="loSabe(p)">
+            <button type="button" class="puesto-nombre" [attr.aria-pressed]="loSabe(p)" (click)="alternarSabe(p)">
+              {{ p }}
+            </button>
             <button
               type="button"
               class="estrella"
@@ -56,6 +86,34 @@
           </div>
         }
       </div>
+      @for (g of grupos(); track g.id) {
+        @if (abierto() === g.nombre) {
+          <div class="puestos del-grupo">
+            <span class="del-grupo-titulo">{{ g.nombre }}:</span>
+            @for (p of g.puestos; track p) {
+              <div class="puesto" [class.activo]="loSabe(p)">
+                @if (sabe().includes(g.nombre)) {
+                  <!-- Con el grupo marcado los sabe todos: sólo se elige el principal. -->
+                  <span class="puesto-nombre fijo">{{ p }}</span>
+                } @else {
+                  <button type="button" class="puesto-nombre" [attr.aria-pressed]="loSabe(p)" (click)="alternarSabe(p)">{{ p }}</button>
+                }
+                <button
+                  type="button"
+                  class="estrella"
+                  [class.marcada]="principales().includes(p)"
+                  [attr.aria-pressed]="principales().includes(p)"
+                  [attr.aria-label]="'Principal: ' + p"
+                  title="Principal"
+                  (click)="alternarPrincipal(p)"
+                >
+                  <svg lucideStar [strokeWidth]="2.25"></svg>
+                </button>
+              </div>
+            }
+          </div>
+        }
+      }
     </div>
 
     @if (tareasConSaber().length) {

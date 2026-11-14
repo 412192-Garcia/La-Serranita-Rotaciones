@@ -5,6 +5,16 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 
 ## Sin publicar
 
+- **Grupos de puestos** (en Prioridad de puestos): por ejemplo "Parque" = toda la rueda. El empleado que
+  sabe un grupo sabe todos sus puestos, también los que se le agreguen después. En el empleado y en
+  Armar el día se ve el grupo, no sus puestos; con la flecha se despliega para elegir el principal o
+  apagar puesto por puesto lo que no puede hacer hoy. Al borrar un grupo, los que lo
+  sabían pasan a saber sus puestos uno por uno.
+- En **Prioridad de puestos**, "En fijos" elige si un puesto aparece en la columna Puestos fijos de los
+  cronogramas. Sirve para los que son fijos siempre, como Cajero. Es sólo lo que se ve: no cambia nada
+  más.
+- **Armar el día**: con gente de más ya no sugiere un cronograma mucho más chico. Dejar a alguien sin
+  puesto ahora pesa casi como ponerlo en un puesto que no sabe.
 - Los cronogramas quedan guardados: ya no hace falta elegir el Excel cada vez.
 - Nueva pantalla **Armar el día**: se responde cuántos empleados hay, cuánta gente se espera y qué
   puestos tienen que tener el mismo empleado todo el día, y sugiere los cronogramas más adecuados,
@@ -27,6 +37,9 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
   no puede si hay otra forma, y cada uno tiene prioridad en su puesto principal. Si no hay forma,
   avisa. El reparto se puede cambiar a mano.
 - Las tarjetas salen con el nombre del empleado, y dicen "Al ser cubierto por Ana" en vez del número.
+- Prioridad de puestos: con el lápiz se cambia el nombre de un puesto en todos los cronogramas y
+  empleados; si se le pone el nombre de otro, se juntan en una sola fila (por ejemplo Cajero 2 pasa a
+  ser Cajero con dos personas).
 - **Prioridad de puestos** (desde Cronogramas): cada puesto tiene prioridad alta, media o baja. Si falta gente o alguien
   tiene que hacer algo que no sabe, primero se cubren los de prioridad alta.
 - Si alguien hace dos puestos a la vez, en el cronograma van en dos filas con el mismo número. Cuando

@@ -29,21 +29,69 @@
             </button>
             @if (vino(e)) {
               <div class="puestos-hoy">
-                @for (p of e.puestos; track p) {
-                  <button
-                    type="button"
-                    class="puesto-hoy"
-                    [class.apagado]="!puedeHoy(e, p)"
-                    [attr.aria-pressed]="puedeHoy(e, p)"
-                    (click)="alternarPuestoHoy(e, p)"
-                  >
-                    @if (e.principales.includes(p)) {
-                      <svg lucideStar [strokeWidth]="2.5" aria-label="Principal"></svg>
-                    }
-                    {{ p }}
-                  </button>
+                @for (parte of sabeEnPartes(e); track parte.nombre) {
+                  @if (parte.grupo; as g) {
+                    <span
+                      class="grupo-hoy"
+                      [class.apagado]="puedeDelGrupo(e, g) === 0"
+                      [class.parcial]="puedeDelGrupo(e, g) > 0 && puedeDelGrupo(e, g) < g.puestos.length"
+                    >
+                      <button type="button" class="grupo-nombre" [attr.aria-pressed]="puedeDelGrupo(e, g) > 0" [title]="g.puestos.join(', ')" (click)="alternarGrupoHoy(e, g)">
+                        @if (principalEnGrupo(e, g).length) {
+                          <svg lucideStar [strokeWidth]="2.5" [attr.aria-label]="'Principal: ' + principalEnGrupo(e, g).join(', ')"></svg>
+                        }
+                        {{ g.nombre }}
+                        @if (puedeDelGrupo(e, g) > 0 && puedeDelGrupo(e, g) < g.puestos.length) {
+                          <span class="cuenta">{{ puedeDelGrupo(e, g) }}/{{ g.puestos.length }}</span>
+                        }
+                      </button>
+                      <button
+                        type="button"
+                        class="desplegar"
+                        [class.abierto]="abierto(e, g)"
+                        [attr.aria-expanded]="abierto(e, g)"
+                        [attr.aria-label]="'Ver los puestos de ' + g.nombre"
+                        (click)="alternarAbierto(e, g)"
+                      >
+                        <svg lucideChevronDown [strokeWidth]="2.5"></svg>
+                      </button>
+                    </span>
+                  } @else {
+                    <button
+                      type="button"
+                      class="puesto-hoy"
+                      [class.apagado]="!puedeHoy(e, parte.nombre)"
+                      [attr.aria-pressed]="puedeHoy(e, parte.nombre)"
+                      (click)="alternarPuestoHoy(e, parte.nombre)"
+                    >
+                      @if (e.principales.includes(parte.nombre)) {
+                        <svg lucideStar [strokeWidth]="2.5" aria-label="Principal"></svg>
+                      }
+                      {{ parte.nombre }}
+                    </button>
+                  }
                 }
               </div>
+              @for (parte of sabeEnPartes(e); track parte.nombre) {
+                @if (parte.grupo && abierto(e, parte.grupo)) {
+                  <div class="puestos-hoy del-grupo">
+                    @for (p of parte.grupo.puestos; track p) {
+                      <button
+                        type="button"
+                        class="puesto-hoy"
+                        [class.apagado]="!puedeHoy(e, p)"
+                        [attr.aria-pressed]="puedeHoy(e, p)"
+                        (click)="alternarPuestoHoy(e, p)"
+                      >
+                        @if (principalEnGrupo(e, parte.grupo).includes(p)) {
+                          <svg lucideStar [strokeWidth]="2.5" aria-label="Principal"></svg>
+                        }
+                        {{ p }}
+                      </button>
+                    }
+                  </div>
+                }
+              }
             }
           </div>
         }

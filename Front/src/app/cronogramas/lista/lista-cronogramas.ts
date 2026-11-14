@@ -3,6 +3,8 @@ import { RouterLink } from '@angular/router';
 import { LucideEye, LucideFileUp, LucideLoaderCircle, LucideMapPin, LucidePencil, LucidePlus, LucideTrash } from '@lucide/angular';
 import { CronogramaResumen, textoAfluencia } from '../../models/cronograma';
 import { CronogramaService, mensajeDeError } from '../../services/cronograma.service';
+import { PuestoService } from '../../services/puesto.service';
+import { clavePuesto } from '../../models/empleado';
 import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 import { ToastService } from '../../shared/toast/toast.service';
 
@@ -14,6 +16,7 @@ import { ToastService } from '../../shared/toast/toast.service';
 })
 export class ListaCronogramas implements OnInit {
   private api = inject(CronogramaService);
+  private puestosApi = inject(PuestoService);
   private toast = inject(ToastService);
   private confirmacion = inject(ConfirmacionService);
 
@@ -22,9 +25,21 @@ export class ListaCronogramas implements OnInit {
   cargando = signal(true);
   importando = signal(false);
   cronogramas = signal<CronogramaResumen[]>([]);
+  /** Claves de los puestos que no se muestran en la columna de fijos (se elige en Prioridad de puestos). */
+  private ocultos = signal<Set<string>>(new Set());
+
+  /** Los puestos fijos del cronograma, sin los que se eligió no mostrar. */
+  fijosVisibles(c: CronogramaResumen): string[] {
+    return c.fijos.filter((f) => !this.ocultos().has(clavePuesto(f)));
+  }
 
   ngOnInit(): void {
     this.cargar();
+    this.puestosApi.listar().subscribe({
+      next: (l) => this.ocultos.set(new Set(l.filter((p) => !p.mostrarEnFijos).map((p) => clavePuesto(p.nombre)))),
+      // Sin la lista, se muestran todos los fijos.
+      error: () => this.ocultos.set(new Set()),
+    });
   }
 
   importar(evento: Event): void {

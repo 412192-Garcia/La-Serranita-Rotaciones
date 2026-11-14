@@ -9,4 +9,6 @@ export const PRIORIDADES: { valor: Prioridad; texto: string }[] = [
 export interface PuestoParque {
   nombre: string;
   prioridad: Prioridad;
+  /** Si aparece en la columna "Puestos fijos" de los cronogramas. */
+  mostrarEnFijos: boolean;
 }

@@ -17,7 +17,9 @@ y arma las tarjetas con el nombre de cada uno para imprimir.
   dispositivo hasta el otro día.
 - **Cronogramas**: importar desde Excel, crear, editar, ver y borrar. En el editor se pinta la grilla
   con el número elegido (tocando o arrastrando) y la fila "Sin puesto" muestra a quién falta ubicar.
-- **Empleados**: nombre, puestos que sabe hacer y, de esos, los principales (ahí tiene prioridad). Un
+- **Grupos de puestos** (en Prioridad de puestos): un nombre para varios puestos, por ejemplo "Parque"
+  para toda la rueda. Quien sabe el grupo sabe todos sus puestos.
+- **Empleados**: nombre, puestos (o grupos) que sabe hacer y, de esos, los principales (ahí tiene prioridad). Un
   empleado en entrenamiento no ocupa un número del cronograma: acompaña a otro (uno habitual, o el que
   se elija en el día, con cambios por horario) y su tarjeta se arma con la de su acompañante.
 - **Tareas de apertura** (botón en Empleados): nombre, cuántas personas y si pide saber. Se reparten
@@ -25,7 +27,10 @@ y arma las tarjetas con el nombre de cada uno para imprimir.
   una; al repartir se evita repetir lo de los últimos 14 días (más si fue ayer) y se reparte parejo.
 - **Prioridad de puestos** (botón en Cronogramas): alta, media o baja por puesto; media si nunca se
   cambió. Sólo decide algo cuando el reparto no sale perfecto: qué puesto queda sin nadie o con alguien
-  que no lo sabe.
+  que no lo sabe. Desde ahí también se renombra un puesto en todos lados, o se junta con otro.
+
+Nombres estándar: Cajero (sin "1" ni "2": dos cajeros son dos personas en la fila Cajero), Canilla (no
+"Canilla o Laberinto"), y Travesía, Búsqueda y Laberinto como puestos separados.
 
 ## Cómo se elige
 

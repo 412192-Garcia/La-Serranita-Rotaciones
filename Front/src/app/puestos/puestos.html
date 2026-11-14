@@ -2,7 +2,13 @@
   <a class="btn-secundario" routerLink="/cronogramas"><svg lucideArrowLeft [strokeWidth]="2.5"></svg> Volver</a>
   <h2>Prioridad de puestos</h2>
 </div>
-<p class="ayuda">Si falta gente o alguien tiene que hacer algo que no sabe, primero se cubren los de prioridad alta.</p>
+<p class="ayuda">Si falta gente o alguien tiene que hacer algo que no sabe, primero se cubren los de prioridad alta. Con el lápiz se cambia el nombre en todos lados; si ponés el de otro puesto, se juntan. "En fijos" elige si el puesto aparece en la columna Puestos fijos de los cronogramas (por ejemplo, Cajero, que es fijo siempre).</p>
+
+<datalist id="puestos-existentes">
+  @for (p of puestos(); track p.nombre) {
+    <option [value]="p.nombre"></option>
+  }
+</datalist>
 
 @if (cargando()) {
   <section class="panel centrado"><svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg></section>
@@ -14,7 +20,46 @@
   <section class="panel lista">
     @for (p of puestos(); track p.nombre) {
       <div class="fila">
-        <span class="nombre">{{ p.nombre }}</span>
+        @if (renombrando()?.de === p.nombre) {
+          <div class="renombre">
+            <input
+              type="text"
+              class="nombre-nuevo"
+              maxlength="60"
+              aria-label="Nombre nuevo"
+              list="puestos-existentes"
+              [value]="renombrando()!.a"
+              (input)="cambiarNombreNuevo($event)"
+              (keydown.enter)="confirmarRenombre()"
+              (keydown.escape)="renombrando.set(null)"
+            />
+            <button type="button" class="btn-primario btn-chico" [disabled]="guardandoNombre()" (click)="confirmarRenombre()">Aplicar</button>
+            <button type="button" class="btn-secundario btn-chico" (click)="renombrando.set(null)">Cancelar</button>
+          </div>
+        } @else {
+          <span class="nombre">
+            {{ p.nombre }}
+            <button type="button" class="btn-renombrar" title="Renombrar o unificar" [attr.aria-label]="'Renombrar ' + p.nombre" (click)="empezarRenombre(p)">
+              <svg lucidePencil [strokeWidth]="2.25"></svg>
+            </button>
+          </span>
+        }
+        <div class="ajustes">
+        <button
+          type="button"
+          class="en-fijos"
+          [class.activo]="p.mostrarEnFijos"
+          [attr.aria-pressed]="p.mostrarEnFijos"
+          [title]="p.mostrarEnFijos ? 'Aparece en la columna Puestos fijos' : 'No aparece en la columna Puestos fijos'"
+          (click)="alternarFijos(p)"
+        >
+          @if (p.mostrarEnFijos) {
+            <svg lucideEye [strokeWidth]="2.25"></svg>
+          } @else {
+            <svg lucideEyeOff [strokeWidth]="2.25"></svg>
+          }
+          En fijos
+        </button>
         <div class="opciones" role="group" [attr.aria-label]="'Prioridad de ' + p.nombre">
           @for (o of prioridades; track o.valor) {
             <button
@@ -27,7 +72,63 @@
             </button>
           }
         </div>
+        </div>
       </div>
     }
   </section>
+
+  <div class="barra-grupos">
+    <h3>Grupos de puestos</h3>
+    @if (!editandoGrupo()) {
+      <button type="button" class="btn-secundario btn-chico" (click)="empezarGrupo()"><svg lucidePlus [strokeWidth]="2.5"></svg> Nuevo grupo</button>
+    }
+  </div>
+  <p class="ayuda">Un empleado que sabe un grupo sabe todos sus puestos. Por ejemplo, "Parque": toda la rueda. Si después le agregás un puesto al grupo, ya lo saben todos los que tienen el grupo.</p>
+
+  @if (editandoGrupo(); as g) {
+    <section class="panel grupo-editor">
+      <input
+        type="text"
+        class="nombre-grupo"
+        maxlength="60"
+        placeholder="Nombre del grupo"
+        aria-label="Nombre del grupo"
+        [value]="g.nombre"
+        (input)="cambiarNombreGrupo($event)"
+        (keydown.escape)="editandoGrupo.set(null)"
+      />
+      <div class="chips">
+        @for (p of puestos(); track p.nombre) {
+          <button type="button" class="chip" [class.activo]="enGrupo(p.nombre)" [attr.aria-pressed]="enGrupo(p.nombre)" (click)="alternarEnGrupo(p.nombre)">
+            {{ p.nombre }}
+          </button>
+        }
+      </div>
+      <div class="acciones">
+        <button type="button" class="btn-secundario btn-chico" (click)="editandoGrupo.set(null)">Cancelar</button>
+        <button type="button" class="btn-primario btn-chico" [disabled]="guardandoGrupo()" (click)="guardarGrupo()">Guardar grupo</button>
+      </div>
+    </section>
+  }
+
+  @if (grupos().length) {
+    <section class="panel lista">
+      @for (g of grupos(); track g.id) {
+        <div class="fila">
+          <span class="nombre">{{ g.nombre }}</span>
+          <span class="grupo-puestos">{{ g.puestos.join(', ') }}</span>
+          <span class="grupo-botones">
+            <button type="button" class="btn-renombrar" title="Cambiar" [attr.aria-label]="'Cambiar ' + g.nombre" (click)="empezarGrupo(g)">
+              <svg lucidePencil [strokeWidth]="2.25"></svg>
+            </button>
+            <button type="button" class="btn-renombrar" title="Borrar" [attr.aria-label]="'Borrar ' + g.nombre" (click)="borrarGrupo(g)">
+              <svg lucideTrash [strokeWidth]="2.25"></svg>
+            </button>
+          </span>
+        </div>
+      }
+    </section>
+  } @else if (!editandoGrupo()) {
+    <section class="panel vacio">Todavía no hay grupos.</section>
+  }
 }

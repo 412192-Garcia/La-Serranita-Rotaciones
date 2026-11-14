@@ -1,23 +1,26 @@
-import { Component, inject, input, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, input, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import { LucideArrowLeft, LucideLoaderCircle, LucideSave, LucideStar } from '@lucide/angular';
+import { LucideArrowLeft, LucideChevronDown, LucideLoaderCircle, LucideSave, LucideStar } from '@lucide/angular';
 import { clavePuesto } from '../../models/empleado';
 import { CronogramaService, mensajeDeError } from '../../services/cronograma.service';
 import { EmpleadoService } from '../../services/empleado.service';
 import { TareaService } from '../../services/tarea.service';
+import { GrupoService } from '../../services/grupo.service';
+import { GrupoPuestos } from '../../models/grupo';
 import { Tarea } from '../../models/tarea';
 import { ToastService } from '../../shared/toast/toast.service';
 
 @Component({
   selector: 'app-editor-empleado',
-  imports: [RouterLink, LucideArrowLeft, LucideLoaderCircle, LucideSave, LucideStar],
+  imports: [RouterLink, LucideArrowLeft, LucideChevronDown, LucideLoaderCircle, LucideSave, LucideStar],
   templateUrl: './editor-empleado.html',
   styleUrl: './editor-empleado.css',
 })
 export class EditorEmpleado implements OnInit {
   private api = inject(EmpleadoService);
   private tareasApi = inject(TareaService);
+  private gruposApi = inject(GrupoService);
   private cronogramas = inject(CronogramaService);
   private toast = inject(ToastService);
   private router = inject(Router);
@@ -33,7 +36,25 @@ export class EditorEmpleado implements OnInit {
   nombre = signal('');
   /** Todos los puestos de los cronogramas, más los que ya tenía cargados. */
   todos = signal<string[]>([]);
+  /** Lo que sabe: puestos sueltos y grupos. */
   sabe = signal<string[]>([]);
+  grupos = signal<GrupoPuestos[]>([]);
+  /** Clave del puesto → nombre del grupo marcado que lo cubre. */
+  private porGrupo = computed(() => {
+    const m = new Map<string, string>();
+    for (const g of this.grupos()) {
+      if (!this.sabe().includes(g.nombre)) continue;
+      g.puestos.forEach((p) => m.has(clavePuesto(p)) || m.set(clavePuesto(p), g.nombre));
+    }
+    return m;
+  });
+  /** Los puestos que no son de ningún grupo. Los de un grupo se ven al desplegarlo. */
+  sueltos = computed(() => {
+    const deGrupos = new Set(this.grupos().flatMap((g) => g.puestos.map(clavePuesto)));
+    return this.todos().filter((p) => !deGrupos.has(clavePuesto(p)));
+  });
+  /** El grupo desplegado para ver sus puestos. */
+  abierto = signal<string | null>(null);
   principales = signal<string[]>([]);
   /** Las tareas que piden saber, y de esas cuáles sabe. */
   tareasConSaber = signal<Tarea[]>([]);
@@ -44,8 +65,15 @@ export class EditorEmpleado implements OnInit {
   acompanantes = signal<{ id: number; nombre: string }[]>([]);
 
   ngOnInit(): void {
-    forkJoin({ puestos: this.cronogramas.puestos(), empleados: this.api.listar(), tareas: this.tareasApi.listar() }).subscribe({
-      next: ({ puestos, empleados, tareas }) => {
+    forkJoin({
+      puestos: this.cronogramas.puestos(),
+      empleados: this.api.listar(),
+      tareas: this.tareasApi.listar(),
+      grupos: this.gruposApi.listar(),
+    }).subscribe({
+      next: ({ puestos, empleados, tareas, grupos }) => {
+        this.grupos.set(grupos);
+        const esGrupo = (p: string) => grupos.some((g) => clavePuesto(g.nombre) === clavePuesto(p));
         this.tareasConSaber.set(tareas.filter((t) => t.requiereSaber));
         const id = this.id();
         const empleado = id ? empleados.find((e) => e.id === Number(id)) : undefined;
@@ -55,8 +83,8 @@ export class EditorEmpleado implements OnInit {
           return;
         }
         const todos = [...puestos];
-        for (const p of empleado?.puestos ?? []) {
-          if (!todos.some((t) => clavePuesto(t) === clavePuesto(p))) todos.push(p);
+        for (const p of [...(empleado?.puestos ?? []), ...(empleado?.principales ?? []), ...grupos.flatMap((g) => g.puestos)]) {
+          if (!esGrupo(p) && !todos.some((t) => clavePuesto(t) === clavePuesto(p))) todos.push(p);
         }
         this.todos.set(todos);
         this.acompanantes.set(
@@ -68,7 +96,10 @@ export class EditorEmpleado implements OnInit {
           this.acompananteHabitualId.set(empleado.acompananteHabitualId);
           this.nombre.set(empleado.nombre);
           // Se guardan con el nombre de la lista general, para que coincidan con los cronogramas.
-          this.sabe.set(todos.filter((t) => empleado.puestos.some((p) => clavePuesto(p) === clavePuesto(t))));
+          this.sabe.set([
+            ...grupos.filter((g) => empleado.puestos.some((p) => clavePuesto(p) === clavePuesto(g.nombre))).map((g) => g.nombre),
+            ...todos.filter((t) => empleado.puestos.some((p) => clavePuesto(p) === clavePuesto(t))),
+          ]);
           this.principales.set(todos.filter((t) => empleado.principales.some((p) => clavePuesto(p) === clavePuesto(t))));
         }
         this.cargando.set(false);
@@ -94,12 +125,44 @@ export class EditorEmpleado implements OnInit {
     this.tareas.update((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id]));
   }
 
+  /** Los principales que están dentro del grupo. */
+  principalesDe(g: GrupoPuestos): string[] {
+    return this.principales().filter((p) => g.puestos.some((x) => clavePuesto(x) === clavePuesto(p)));
+  }
+
+  /** Sin el grupo marcado: cuántos de sus puestos sabe sueltos. */
+  sueltosDe(g: GrupoPuestos): number {
+    return g.puestos.filter((p) => this.loSabe(p)).length;
+  }
+
+  /** El grupo marcado que cubre este puesto (null si lo sabe suelto o no lo sabe). */
+  grupoDe(puesto: string): string | null {
+    return this.porGrupo().get(clavePuesto(puesto)) ?? null;
+  }
+
+  /** Lo sabe, suelto o por un grupo. */
+  loSabe(puesto: string): boolean {
+    return this.sabe().includes(puesto) || this.grupoDe(puesto) != null;
+  }
+
   alternarSabe(puesto: string): void {
     if (this.sabe().includes(puesto)) {
       this.sabe.update((l) => l.filter((p) => p !== puesto));
-      this.principales.update((l) => l.filter((p) => p !== puesto));
-    } else {
+      if (!this.loSabe(puesto)) this.principales.update((l) => l.filter((p) => p !== puesto));
+    } else if (this.grupoDe(puesto) == null) {
       this.sabe.update((l) => [...l, puesto]);
+    }
+  }
+
+  alternarGrupo(g: GrupoPuestos): void {
+    if (this.sabe().includes(g.nombre)) {
+      this.sabe.update((l) => l.filter((p) => p !== g.nombre));
+      // Los principales que sólo sabía por el grupo dejan de serlo.
+      this.principales.update((l) => l.filter((p) => this.loSabe(p)));
+    } else {
+      // Los puestos sueltos que ya cubre el grupo no hace falta guardarlos aparte.
+      const delGrupo = new Set(g.puestos.map(clavePuesto));
+      this.sabe.update((l) => [...l.filter((p) => !delGrupo.has(clavePuesto(p))), g.nombre]);
     }
   }
 
@@ -108,7 +171,7 @@ export class EditorEmpleado implements OnInit {
       this.principales.update((l) => l.filter((p) => p !== puesto));
       return;
     }
-    if (!this.sabe().includes(puesto)) this.sabe.update((l) => [...l, puesto]);
+    if (!this.loSabe(puesto)) this.sabe.update((l) => [...l, puesto]);
     this.principales.update((l) => [...l, puesto]);
   }
 

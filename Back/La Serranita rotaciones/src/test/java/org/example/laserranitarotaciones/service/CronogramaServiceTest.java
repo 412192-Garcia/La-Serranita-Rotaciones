@@ -16,6 +16,7 @@ import org.example.laserranitarotaciones.model.dto.PresenteDto;
 import org.example.laserranitarotaciones.repository.EmpleadoRepository;
 import org.example.laserranitarotaciones.repository.PuestoParqueRepository;
 import org.example.laserranitarotaciones.model.dto.PuestoParqueDto;
+import org.example.laserranitarotaciones.model.dto.RenombreDto;
 import org.example.laserranitarotaciones.model.entity.Prioridad;
 import org.example.laserranitarotaciones.model.dto.SugerenciaDto;
 import org.example.laserranitarotaciones.model.entity.Afluencia;
@@ -52,6 +53,8 @@ class CronogramaServiceTest {
     private PuestoParqueService puestosParque;
     @Autowired
     private PuestoParqueRepository puestoRepositorio;
+    @Autowired
+    private UnificadorPuestosService unificador;
 
     @BeforeEach
     void limpiar() {
@@ -101,11 +104,38 @@ class CronogramaServiceTest {
         presentes.set(0, new PresenteDto(presentes.get(0).empleadoId(), List.of("toboganes")));
         assertThat(sugerencias.sugerir(new PedidoSugerenciaDto(Afluencia.ALTA, presentes)).get(0).diferencias()).isEmpty();
 
-        // Hoy no puede nada: antes que ponerla donde no puede, conviene el de 2 y dejarla sin puesto.
+        // Hoy no puede nada (y no importa la afluencia): antes que ponerla donde no puede, conviene el de 2
+        // y dejarla sin puesto.
         presentes.set(0, new PresenteDto(presentes.get(0).empleadoId(), List.of()));
-        SugerenciaDto sinAna = sugerencias.sugerir(new PedidoSugerenciaDto(Afluencia.ALTA, presentes)).get(0);
+        SugerenciaDto sinAna = sugerencias.sugerir(new PedidoSugerenciaDto(null, presentes)).get(0);
         assertThat(sinAna.cronograma().nombre()).isEqualTo("Tranqui");
         assertThat(sinAna.diferencias()).contains("Ana queda sin puesto.");
+    }
+
+    @Test
+    void conGenteDeMasNoEligeUnoChicoAunqueAlguienNoSepaUnPuesto() throws Exception {
+        cronogramas.importar(excel());
+        // Dani no sabe Boleteria: en el de 4 queda en Toboganes; el de 2 dejaría a dos sin puesto.
+        List<PresenteDto> presentes = new ArrayList<>();
+        for (String nombre : List.of("Ana", "Beto", "Carlos", "Dani")) {
+            List<String> sabe = nombre.equals("Dani") ? List.of("Toboganes") : List.of("Boleteria", "Toboganes");
+            presentes.add(new PresenteDto(empleados.crear(new EmpleadoDto(null, nombre, sabe, List.of())).id(), null));
+        }
+        assertThat(sugerencias.sugerir(new PedidoSugerenciaDto(Afluencia.BAJA, presentes)).get(0).cronograma().nombre())
+                .isEqualTo("Lleno");
+    }
+
+    @Test
+    void ocultarUnPuestoDeLosFijosNoTocaSuPrioridad() throws Exception {
+        cronogramas.importar(excel());
+        puestosParque.cambiarPrioridad(new PuestoParqueDto("Boleteria", Prioridad.ALTA));
+        puestosParque.cambiarMostrarEnFijos(new PuestoParqueDto("boletería", null, false));
+        assertThat(puestosParque.listar()).contains(new PuestoParqueDto("Boleteria", Prioridad.ALTA, false));
+
+        // Cambiar la prioridad no lo vuelve a mostrar.
+        puestosParque.cambiarPrioridad(new PuestoParqueDto("Boleteria", Prioridad.BAJA));
+        assertThat(puestosParque.listar()).contains(new PuestoParqueDto("Boleteria", Prioridad.BAJA, false));
+        assertThat(puestosParque.listar()).contains(new PuestoParqueDto("Toboganes", Prioridad.MEDIA, true));
     }
 
     @Test
@@ -167,6 +197,30 @@ class CronogramaServiceTest {
 
         empleados.eliminar(ana.id());
         assertThat(empleados.listar()).singleElement().extracting(EmpleadoDto::acompananteHabitualId).isNull();
+    }
+
+    @Test
+    void renombrarJuntaFilasYActualizaEmpleadosYPrioridad() {
+        CronogramaDto c = cronogramas.crear(new CronogramaDto(null, "Base", Afluencia.MEDIA, List.of("11:00", "12:00"),
+                List.of(new PuestoDto("Cajero", List.of("1", "1")),
+                        new PuestoDto("Cajero 2", List.of("9", "")),
+                        new PuestoDto("Canilla o Laberinto", "consultar al encargado", List.of("3", "4"))),
+                null, null, null));
+        EmpleadoDto beto = empleados.crear(new EmpleadoDto(null, "Beto", List.of("Cajero 2"), List.of("Cajero 2")));
+        puestosParque.cambiarPrioridad(new PuestoParqueDto("Cajero 2", Prioridad.ALTA));
+
+        UnificadorPuestosService.Resultado r = unificador.renombrar(new RenombreDto("cajero 2", "Cajero"));
+        unificador.renombrar(new RenombreDto("Canilla o Laberinto", "Canilla"));
+
+        assertThat(r).isEqualTo(new UnificadorPuestosService.Resultado(1, 1));
+        CronogramaDto despues = cronogramas.obtener(c.id());
+        assertThat(despues.puestos()).extracting(PuestoDto::nombre).containsExactly("Cajero", "Canilla");
+        assertThat(despues.puestos().get(0).celdas()).containsExactly("1-9", "1");
+        assertThat(despues.puestos().get(1).nota()).isEqualTo("consultar al encargado");
+        EmpleadoDto betoDespues = empleados.buscar(List.of(beto.id())).get(0);
+        assertThat(betoDespues.puestos()).containsExactly("Cajero");
+        assertThat(betoDespues.principales()).containsExactly("Cajero");
+        assertThat(puestosParque.pesos()).containsEntry("cajero", Prioridad.ALTA.peso()).doesNotContainKey("cajero 2");
     }
 
     @Test

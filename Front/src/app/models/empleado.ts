@@ -1,8 +1,10 @@
 export interface Empleado {
   id: number | null;
   nombre: string;
-  /** Puestos que sabe hacer. */
+  /** Puestos que sabe hacer; puede tener grupos ("Parque"). */
   puestos: string[];
+  /** Lo mismo con cada grupo cambiado por sus puestos. Lo calcula el back. */
+  puedeHacer?: string[];
   /** De los que sabe, en cuáles tiene prioridad. */
   principales: string[];
   /** Está aprendiendo: no ocupa un número del cronograma, acompaña a otro. */
@@ -21,4 +23,9 @@ export function clavePuesto(nombre: string): string {
     .trim()
     .replace(/\s+/g, ' ')
     .toLowerCase();
+}
+
+/** Los puestos uno por uno (sin grupos). */
+export function puedeHacer(e: Empleado): string[] {
+  return e.puedeHacer ?? e.puestos;
 }
