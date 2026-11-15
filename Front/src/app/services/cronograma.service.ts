@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { Borrador, PedidoGenerador, PedidoGeneradorDia } from '../models/generador';
 import { Cronograma, CronogramaResumen, PedidoSugerencia, Sugerencia } from '../models/cronograma';
 
 @Injectable({ providedIn: 'root' })
@@ -33,6 +34,15 @@ export class CronogramaService {
     const datos = new FormData();
     datos.append('archivo', archivo);
     return this.http.post<CronogramaResumen[]>(`${this.url}/importar`, datos);
+  }
+
+  generar(pedido: PedidoGenerador): Observable<Borrador> {
+    return this.http.post<Borrador>(`${this.url}/generar`, pedido);
+  }
+
+  /** Arma un borrador para los que vinieron y reparte los números (no lo guarda). */
+  generarDia(pedido: PedidoGeneradorDia): Observable<Borrador> {
+    return this.http.post<Borrador>(`${this.url}/generar-dia`, pedido);
   }
 
   sugerir(pedido: PedidoSugerencia): Observable<Sugerencia[]> {

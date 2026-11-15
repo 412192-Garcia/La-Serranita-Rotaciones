@@ -7,6 +7,7 @@ import org.example.laserranitarotaciones.model.entity.Prioridad;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,8 +25,14 @@ import java.util.stream.Collectors;
 @Service
 public class AsignadorService {
 
-    private static final int FUERA_DE_SU_PRINCIPAL = 3;
-    private static final int EN_PRINCIPAL_DE_OTRO = 4;
+    private static final int FUERA_DE_SU_PRINCIPAL = 60;
+    private static final int EN_PRINCIPAL_DE_OTRO = 120;
+    /**
+     * Poner a alguien en un puesto que no sabe (o que hoy no puede) pesa mucho: cinco veces la prioridad del
+     * puesto. Que nadie lo haga pesa lo mismo. Así, en la búsqueda, antes conviene un cronograma más chico
+     * con gente libre (un empleado de más pesa 80) que uno con alguien en lo que no sabe.
+     */
+    static final int POR_NO_SABER = 5;
 
     /** Puestos en claves de Nombres.clave(). */
     public record Presente(Long id, String nombre, Set<String> sabe, Set<String> hoy, Set<String> principales) {
@@ -57,7 +64,7 @@ public class AsignadorService {
             for (int j = 0; j < n; j++) {
                 costo[i][j] = j < presentes.size()
                         ? costo(numeros.get(i), presentes.get(j), principalesDeAlguien, pesos)
-                        : numeros.get(i).puestos().keySet().stream().mapToInt(c -> peso(pesos, c)).sum();
+                        : numeros.get(i).puestos().keySet().stream().mapToInt(c -> peso(pesos, c) * POR_NO_SABER).sum();
             }
         }
         int[] reparto = n == 0 ? new int[0] : Hungaro.resolver(costo);
@@ -94,6 +101,35 @@ public class AsignadorService {
         return new Resultado(total, asignacion, avisos);
     }
 
+    /**
+     * Los avisos de un reparto que ya está hecho (después de tocar el cronograma sin cambiar quién hace cada
+     * número, por ejemplo al cerrar un puesto): lo que alguien no sabe o hoy no puede, y quién quedó sin número.
+     */
+    public Resultado conAsignacion(PlanRotacion plan, List<Presente> presentes, List<AsignacionDto> asignacion) {
+        Map<Integer, Numero> porNumero = new HashMap<>();
+        numeros(plan).forEach(x -> porNumero.put(x.numero(), x));
+        Map<Long, Presente> porId = new HashMap<>();
+        presentes.forEach(p -> porId.put(p.id(), p));
+        List<String> avisos = new ArrayList<>();
+        Set<Long> conNumero = new HashSet<>();
+        for (AsignacionDto a : asignacion) {
+            Numero numero = porNumero.get(a.numero());
+            if (a.empleadoId() == null) {
+                if (numero != null) avisos.add("Nadie hace el número " + a.numero() + " (" + String.join(", ", numero.puestos().values()) + ").");
+                continue;
+            }
+            conNumero.add(a.empleadoId());
+            Presente presente = porId.get(a.empleadoId());
+            if (numero == null || presente == null) continue;
+            numero.puestos().forEach((clave, nombre) -> {
+                if (!presente.sabe().contains(clave)) avisos.add(presente.nombre() + " tendría que hacer " + nombre + " y no sabe.");
+                else if (!presente.hoy().contains(clave)) avisos.add(presente.nombre() + " tendría que hacer " + nombre + " y hoy no puede.");
+            });
+        }
+        presentes.stream().filter(p -> !conNumero.contains(p.id())).forEach(p -> avisos.add(p.nombre() + " queda sin puesto."));
+        return new Resultado(0, asignacion, avisos);
+    }
+
     private static int peso(Map<String, Integer> pesos, String clave) {
         return pesos.getOrDefault(clave, Prioridad.MEDIA.peso());
     }
@@ -101,7 +137,7 @@ public class AsignadorService {
     private static int costo(Numero numero, Presente presente, Set<String> principalesDeAlguien, Map<String, Integer> pesos) {
         int c = 0;
         for (String clave : numero.puestos().keySet()) {
-            if (!presente.sabe().contains(clave) || !presente.hoy().contains(clave)) c += peso(pesos, clave);
+            if (!presente.sabe().contains(clave) || !presente.hoy().contains(clave)) c += peso(pesos, clave) * POR_NO_SABER;
         }
         String principal = numero.principal();
         if (principal != null && !presente.principales().contains(principal)) {
@@ -120,7 +156,7 @@ public class AsignadorService {
             Map<String, String> puestos = new LinkedHashMap<>();
             Map<String, Long> horarios = new LinkedHashMap<>();
             for (Turno t : turnos) {
-                if (t.puesto().esDescanso()) continue;
+                if (t.puesto().esDescanso() || t.puesto().esLibre()) continue;
                 String clave = Nombres.clave(t.puesto().nombre());
                 puestos.putIfAbsent(clave, t.puesto().nombre());
                 horarios.merge(clave, 1L, Long::sum);

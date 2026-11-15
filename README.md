@@ -17,17 +17,34 @@ y arma las tarjetas con el nombre de cada uno para imprimir.
   dispositivo hasta el otro día.
 - **Cronogramas**: importar desde Excel, crear, editar, ver y borrar. En el editor se pinta la grilla
   con el número elegido (tocando o arrastrando) y la fila "Sin puesto" muestra a quién falta ubicar.
-- **Grupos de puestos** (en Prioridad de puestos): un nombre para varios puestos, por ejemplo "Parque"
+- **Grupos de puestos** (Configuración → Puestos): un nombre para varios puestos, por ejemplo "Parque"
   para toda la rueda. Quien sabe el grupo sabe todos sus puestos.
-- **Empleados**: nombre, puestos (o grupos) que sabe hacer y, de esos, los principales (ahí tiene prioridad). Un
+- **Empleados** (Configuración): nombre, puestos (o grupos) que sabe hacer y, de esos, los principales (ahí tiene prioridad). Un
   empleado en entrenamiento no ocupa un número del cronograma: acompaña a otro (uno habitual, o el que
   se elija en el día, con cambios por horario) y su tarjeta se arma con la de su acompañante.
-- **Tareas de apertura** (botón en Empleados): nombre, cuántas personas y si pide saber. Se reparten
+- **Generar borrador** (botón en Cronogramas): con la cantidad de empleados, los puestos fijos (y
+  cuántas personas llevan), la rueda en orden (un lugar puede ser varios puestos de la misma persona,
+  y un puesto puede estar en dos lugares si lo hacen dos) y las coberturas del almuerzo, arma: los fijos
+  todo el día; la rueda bajando un lugar por horario, con el primero que rota arrancando en el `*`;
+  descansos de un horario, la primera mitad de la franja para los que rotan y la segunda para los
+  fijos; y, mientras descansan los que rotan, los fijos que cubren pasan a los lugares vacíos. Si hay
+  menos gente que lugares, cierra los de menor prioridad. Se puede partir de un cronograma existente.
+  Lo que hace un fijo sólo una parte del día (Fotos del segundo cajero a la tarde) todavía no lo arma.
+- **Puestos abiertos** (Configuración): según cuántos empleados hay (sin la Tirolesa) y la afluencia,
+  qué puestos funcionan, cuáles son fijos (Cajero, Baños) y quién comparte qué (Travesía, Búsqueda y
+  Laberinto). Se importa del Excel del parque y se corrige a mano. El generador arma con esto los fijos y
+  la rueda.
+- **Tareas de apertura** (Configuración): nombre, cuántas personas y si pide saber. Se reparten
   todas, todos los días, al elegir el cronograma en Armar el día. Al imprimir se guarda quién hizo cada
   una; al repartir se evita repetir lo de los últimos 14 días (más si fue ayer) y se reparte parejo.
-- **Prioridad de puestos** (botón en Cronogramas): alta, media o baja por puesto; media si nunca se
-  cambió. Sólo decide algo cuando el reparto no sale perfecto: qué puesto queda sin nadie o con alguien
-  que no lo sabe. Desde ahí también se renombra un puesto en todos lados, o se junta con otro.
+- **Puestos** (Configuración): la lista de puestos del parque. Los de los cronogramas se agregan
+  solos; los demás se cargan a mano. Cada uno tiene prioridad alta, media o baja (media si nunca se
+  cambió), que sólo decide algo cuando el reparto no sale perfecto: qué puesto queda sin nadie o con
+  alguien que no lo sabe. Ahí también se renombra o junta un puesto en todos lados, y se carga si abre
+  tarde (Tirolesa desde las 13) o tiene un refuerzo (Casa del zorrito: una persona todo el día y más en
+  el evento de 16 a 17), con cuántas personas según la afluencia.
+- **Generar con los que vinieron** (en Armar el día): abre el generador con los presentes; propone
+  fijos, rueda y lo que abre tarde, genera y reparte los números entre ellos.
 
 Nombres estándar: Cajero (sin "1" ni "2": dos cajeros son dos personas en la fila Cajero), Canilla (no
 "Canilla o Laberinto"), y Travesía, Búsqueda y Laberinto como puestos separados.

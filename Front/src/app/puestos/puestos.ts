@@ -1,10 +1,10 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { LucideArrowLeft, LucideEye, LucideEyeOff, LucideLoaderCircle, LucidePencil, LucidePlus, LucideTrash } from '@lucide/angular';
+import { LucideClock, LucideEye, LucideEyeOff, LucideLoaderCircle, LucidePencil, LucidePlus, LucideTrash } from '@lucide/angular';
 import { clavePuesto } from '../models/empleado';
 import { GrupoPuestos } from '../models/grupo';
 import { GrupoService } from '../services/grupo.service';
-import { PRIORIDADES, Prioridad, PuestoParque } from '../models/puesto';
+import { AbreTardePuesto, PRIORIDADES, Prioridad, PuestoParque, TIPOS_HORARIO, TipoHorario, tipoHorario } from '../models/puesto';
 import { mensajeDeError } from '../services/cronograma.service';
 import { PuestoService } from '../services/puesto.service';
 import { ConfirmacionService } from '../shared/confirmacion/confirmacion.service';
@@ -12,7 +12,7 @@ import { ToastService } from '../shared/toast/toast.service';
 
 @Component({
   selector: 'app-puestos',
-  imports: [RouterLink, LucideArrowLeft, LucideEye, LucideEyeOff, LucideLoaderCircle, LucidePencil, LucidePlus, LucideTrash],
+  imports: [RouterLink, LucideClock, LucideEye, LucideEyeOff, LucideLoaderCircle, LucidePencil, LucidePlus, LucideTrash],
   templateUrl: './puestos.html',
   styleUrl: './puestos.css',
 })
@@ -23,6 +23,8 @@ export class Puestos implements OnInit {
   private confirmacion = inject(ConfirmacionService);
 
   readonly prioridades = PRIORIDADES;
+  readonly tiposHorario = TIPOS_HORARIO;
+  readonly tipoHorario = tipoHorario;
 
   cargando = signal(true);
   puestos = signal<PuestoParque[]>([]);
@@ -31,6 +33,86 @@ export class Puestos implements OnInit {
   guardandoNombre = signal(false);
 
   grupos = signal<GrupoPuestos[]>([]);
+
+  nuevoPuesto = signal('');
+  /** El puesto al que se le está cargando el horario de "abre tarde". */
+  editandoTarde = signal<(AbreTardePuesto & { nombre: string }) | null>(null);
+
+  valor(evento: Event): string {
+    return (evento.target as HTMLInputElement).value;
+  }
+
+  crearPuesto(): void {
+    const nombre = this.nuevoPuesto().trim();
+    if (!nombre) return;
+    this.api.crear(nombre).subscribe({
+      next: () => {
+        this.nuevoPuesto.set('');
+        this.toast.exito(`${nombre} agregado.`);
+        this.cargar();
+      },
+      error: (e) => this.toast.error(mensajeDeError(e, 'No se pudo agregar.')),
+    });
+  }
+
+  async borrarPuesto(p: PuestoParque): Promise<void> {
+    const ok = await this.confirmacion.pedir({
+      titulo: 'Borrar puesto',
+      mensaje: `¿Borrar ${p.nombre}? Sale también de lo que sabe cada empleado y de los grupos. Si está en algún cronograma, no se puede.`,
+      aceptar: 'Borrar',
+      peligro: true,
+    });
+    if (!ok) return;
+    this.api.eliminar(p.nombre).subscribe({
+      next: () => {
+        this.toast.exito(`${p.nombre} borrado.`);
+        this.cargar();
+      },
+      error: (e) => this.toast.error(mensajeDeError(e, 'No se pudo borrar.')),
+    });
+  }
+
+  /** "13:00 a 17:00 · 3/4/5". */
+  textoTarde(p: PuestoParque): string {
+    const a = p.abreTarde!;
+    const s = tipoHorario(a.tipo).signo;
+    return `${a.abre}${a.hasta ? ' a ' + a.hasta : ''} · ${s}${a.baja}/${s}${a.media}/${s}${a.alta}`;
+  }
+
+  empezarTarde(p: PuestoParque): void {
+    if (this.editandoTarde()?.nombre === p.nombre) {
+      this.editandoTarde.set(null);
+      return;
+    }
+    this.editandoTarde.set({ nombre: p.nombre, ...(p.abreTarde ?? { abre: '13:00', hasta: null, baja: 1, media: 2, alta: 3, tipo: 'ABRE_TARDE' as TipoHorario }) });
+  }
+
+  cambiarTarde(cambios: Partial<AbreTardePuesto>): void {
+    this.editandoTarde.update((t) => (t ? { ...t, ...cambios } : t));
+  }
+
+  guardarTarde(): void {
+    const t = this.editandoTarde();
+    if (!t) return;
+    const { nombre, ...abreTarde } = t;
+    this.api.cambiarAbreTarde(nombre, abreTarde).subscribe({
+      next: (p) => {
+        this.puestos.update((l) => l.map((x) => (x.nombre === nombre ? { ...x, abreTarde: p.abreTarde } : x)));
+        this.editandoTarde.set(null);
+      },
+      error: (e) => this.toast.error(mensajeDeError(e, 'No se pudo guardar.')),
+    });
+  }
+
+  quitarTarde(p: PuestoParque): void {
+    this.api.cambiarAbreTarde(p.nombre, null).subscribe({
+      next: () => {
+        this.puestos.update((l) => l.map((x) => (x.nombre === p.nombre ? { ...x, abreTarde: null } : x)));
+        this.editandoTarde.set(null);
+      },
+      error: (e) => this.toast.error(mensajeDeError(e, 'No se pudo guardar.')),
+    });
+  }
   /** El grupo que se está creando o cambiando. */
   editandoGrupo = signal<GrupoPuestos | null>(null);
   guardandoGrupo = signal(false);

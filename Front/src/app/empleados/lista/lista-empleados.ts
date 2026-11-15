@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { LucideListChecks, LucideLoaderCircle, LucidePencil, LucidePlus, LucideStar, LucideTrash } from '@lucide/angular';
+import { LucideLoaderCircle, LucidePencil, LucidePlus, LucideStar, LucideTrash } from '@lucide/angular';
 import { forkJoin } from 'rxjs';
 import { Empleado, clavePuesto } from '../../models/empleado';
 import { GrupoPuestos } from '../../models/grupo';
@@ -12,7 +12,7 @@ import { ToastService } from '../../shared/toast/toast.service';
 
 @Component({
   selector: 'app-lista-empleados',
-  imports: [RouterLink, LucideListChecks, LucideLoaderCircle, LucidePencil, LucidePlus, LucideStar, LucideTrash],
+  imports: [RouterLink, LucideLoaderCircle, LucidePencil, LucidePlus, LucideStar, LucideTrash],
   templateUrl: './lista-empleados.html',
   styleUrl: './lista-empleados.css',
 })

@@ -2,11 +2,15 @@ package org.example.laserranitarotaciones.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.example.laserranitarotaciones.model.dto.BorradorDto;
 import org.example.laserranitarotaciones.model.dto.CronogramaDto;
 import org.example.laserranitarotaciones.model.dto.CronogramaResumenDto;
+import org.example.laserranitarotaciones.model.dto.PedidoGeneradorDiaDto;
+import org.example.laserranitarotaciones.model.dto.PedidoGeneradorDto;
 import org.example.laserranitarotaciones.model.dto.PedidoSugerenciaDto;
 import org.example.laserranitarotaciones.model.dto.SugerenciaDto;
 import org.example.laserranitarotaciones.service.CronogramaService;
+import org.example.laserranitarotaciones.service.GeneradorService;
 import org.example.laserranitarotaciones.service.SugerenciaService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -31,6 +35,7 @@ public class CronogramaController {
 
     private final CronogramaService cronogramas;
     private final SugerenciaService sugerencias;
+    private final GeneradorService generador;
 
     @Operation(summary = "Lista los cronogramas")
     @GetMapping
@@ -78,5 +83,17 @@ public class CronogramaController {
     @PostMapping("/sugerir")
     public List<SugerenciaDto> sugerir(@RequestBody PedidoSugerenciaDto pedido) {
         return sugerencias.sugerir(pedido);
+    }
+
+    @Operation(summary = "Arma un borrador para los que vinieron y reparte los números (no lo guarda)")
+    @PostMapping("/generar-dia")
+    public BorradorDto generarConPresentes(@RequestBody PedidoGeneradorDiaDto pedido) {
+        return sugerencias.generarConPresentes(pedido);
+    }
+
+    @Operation(summary = "Arma un borrador de cronograma (no lo guarda)")
+    @PostMapping("/generar")
+    public BorradorDto generar(@RequestBody PedidoGeneradorDto pedido) {
+        return generador.generar(pedido);
     }
 }

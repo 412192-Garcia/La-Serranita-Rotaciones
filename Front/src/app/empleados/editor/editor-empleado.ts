@@ -79,7 +79,7 @@ export class EditorEmpleado implements OnInit {
         const empleado = id ? empleados.find((e) => e.id === Number(id)) : undefined;
         if (id && !empleado) {
           this.toast.error('Ese empleado no existe.');
-          this.router.navigate(['/empleados']);
+          this.router.navigate(['/configuracion/empleados']);
           return;
         }
         const todos = [...puestos];
@@ -106,7 +106,7 @@ export class EditorEmpleado implements OnInit {
       },
       error: (e) => {
         this.toast.error(mensajeDeError(e));
-        this.router.navigate(['/empleados']);
+        this.router.navigate(['/configuracion/empleados']);
       },
     });
   }
@@ -196,7 +196,7 @@ export class EditorEmpleado implements OnInit {
       .subscribe({
         next: () => {
           this.toast.exito('Empleado guardado.');
-          this.router.navigate(['/empleados']);
+          this.router.navigate(['/configuracion/empleados']);
         },
         error: (e) => {
           this.guardando.set(false);

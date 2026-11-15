@@ -3,7 +3,7 @@
 } @else if (empleados().length === 0) {
   <section class="panel vacio">
     <p>Todavía no hay empleados cargados.</p>
-    <a class="btn-primario" routerLink="/empleados/nuevo">Cargar empleados</a>
+    <a class="btn-primario" routerLink="/configuracion/empleados/nuevo">Cargar empleados</a>
   </section>
 } @else {
   <section class="panel preguntas">
@@ -156,13 +156,16 @@
       </div>
     </div>
 
-    <div>
+    <div class="acciones-buscar">
       <button type="button" class="btn-primario" [disabled]="buscando()" (click)="buscar()">
         @if (buscando()) {
           <svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg> Buscando…
         } @else {
           <svg lucideSearch [strokeWidth]="2.5"></svg> Buscar cronograma
         }
+      </button>
+      <button type="button" class="btn-secundario" (click)="generar()">
+        <svg lucideWandSparkles [strokeWidth]="2.5"></svg> Generar con los que vinieron
       </button>
     </div>
   </section>

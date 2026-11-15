@@ -36,4 +36,38 @@ public class PuestoParque {
     /** Si aparece en la columna "Puestos fijos" de los cronogramas. */
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean mostrarEnFijos = true;
+
+    /** Si abre más tarde: a qué hora ("13:00"). null = abierto todo el día. */
+    @Column(length = 5)
+    private String abre;
+
+    /** Hasta qué hora; null = hasta el cierre. */
+    @Column(length = 5)
+    private String hasta;
+
+    /** Cuántas personas lleva según la afluencia (sólo si abre tarde). */
+    private Integer personasBaja;
+    private Integer personasMedia;
+    private Integer personasAlta;
+
+    /** El horario es un refuerzo: fuera de él el puesto sigue abierto con su gente de siempre. */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean refuerzo;
+
+    /** En el horario el puesto tiene personas de menos (las que se indican). */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean menos;
+
+    /** Lugar en el orden de rotación predeterminado (0 = primero); null = no está en el orden. */
+    @Column(name = "orden_rotacion")
+    private Integer ordenRotacion;
+
+    public TipoHorario getTipo() {
+        return menos ? TipoHorario.MENOS : refuerzo ? TipoHorario.REFUERZO : TipoHorario.ABRE_TARDE;
+    }
+
+    public void setTipo(TipoHorario tipo) {
+        refuerzo = tipo == TipoHorario.REFUERZO;
+        menos = tipo == TipoHorario.MENOS;
+    }
 }

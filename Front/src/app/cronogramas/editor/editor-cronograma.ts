@@ -18,6 +18,7 @@ import { CronogramaService, mensajeDeError } from '../../services/cronograma.ser
 import { colorEmpleado, esCerrado, estiloCelda } from '../../shared/colores';
 import { ConfirmacionService } from '../../shared/confirmacion/confirmacion.service';
 import { AtrasService } from '../../shared/modal/atras.service';
+import { BorradorService } from '../../services/borrador.service';
 import { ToastService } from '../../shared/toast/toast.service';
 
 /** Con qué se pinta al tocar una celda. */
@@ -78,6 +79,7 @@ export class EditorCronograma implements OnInit {
   private confirmacion = inject(ConfirmacionService);
   private router = inject(Router);
   private atras = inject(AtrasService);
+  private borradores = inject(BorradorService);
 
   /** De la ruta; sin id es uno nuevo. */
   id = input<string>();
@@ -141,6 +143,17 @@ export class EditorCronograma implements OnInit {
     this.api.puestos().subscribe({ next: (p) => this.puestosConocidos.set(p) });
     const id = this.id();
     if (!id) {
+      // Un borrador del generador entra como nuevo y sin guardar.
+      const borrador = this.borradores.tomar();
+      if (borrador) {
+        this.guardado = this.estado();
+        this.nombre.set(borrador.nombre);
+        this.afluencia.set(borrador.afluencia);
+        this.horarios.set([...borrador.horarios]);
+        this.puestos.set(borrador.puestos.map((p) => ({ ...p, nota: p.nota ?? null, celdas: [...p.celdas] })));
+        this.ajustarRango(borrador.horarios);
+        return;
+      }
       this.armarHorarios();
       this.puestos.set([{ nombre: '', nota: null, celdas: this.horarios().map(() => '') }]);
       this.guardado = this.estado();
@@ -153,11 +166,7 @@ export class EditorCronograma implements OnInit {
         this.afluencia.set(c.afluencia);
         this.horarios.set([...c.horarios]);
         this.puestos.set(c.puestos.map((p) => ({ ...p, nota: p.nota ?? null, celdas: [...p.celdas] })));
-        if (c.horarios.length) {
-          this.desde.set(c.horarios[0]);
-          this.hasta.set(c.horarios[c.horarios.length - 1]);
-          if (c.horarios.length > 1) this.cada.set(aMinutos(c.horarios[1]) - aMinutos(c.horarios[0]));
-        }
+        this.ajustarRango(c.horarios);
         this.guardado = this.estado();
         this.cargando.set(false);
       },
@@ -166,6 +175,13 @@ export class EditorCronograma implements OnInit {
         this.router.navigate(['/cronogramas']);
       },
     });
+  }
+
+  private ajustarRango(horarios: string[]): void {
+    if (!horarios.length) return;
+    this.desde.set(horarios[0]);
+    this.hasta.set(horarios[horarios.length - 1]);
+    if (horarios.length > 1) this.cada.set(aMinutos(horarios[1]) - aMinutos(horarios[0]));
   }
 
   @HostListener('window:beforeunload', ['$event'])

@@ -6,6 +6,7 @@ import org.example.laserranitarotaciones.model.entity.Empleado;
 import org.example.laserranitarotaciones.model.entity.GrupoPuestos;
 import org.example.laserranitarotaciones.repository.EmpleadoRepository;
 import org.example.laserranitarotaciones.repository.GrupoPuestosRepository;
+import org.example.laserranitarotaciones.repository.PuestoParqueRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +29,7 @@ public class GrupoPuestosService {
 
     private final GrupoPuestosRepository repositorio;
     private final EmpleadoRepository empleados;
-    private final CronogramaService cronogramas;
+    private final PuestoParqueRepository puestos;
 
     @Transactional(readOnly = true)
     public List<GrupoDto> listar() {
@@ -110,7 +111,7 @@ public class GrupoPuestosService {
         if (nombre.isEmpty()) throw new ValidacionException("Falta el nombre.");
         if (nombre.length() > 60) throw new ValidacionException("El nombre es muy largo.");
         String clave = Nombres.clave(nombre);
-        if (Nombres.esDescanso(nombre) || cronogramas.puestos().stream().anyMatch(p -> Nombres.clave(p).equals(clave))) {
+        if (Nombres.esDescanso(nombre) || puestos.findByClave(clave).isPresent()) {
             throw new ValidacionException("Ya hay un puesto que se llama " + nombre + ".");
         }
         Optional<GrupoPuestos> otro = repositorio.findAll().stream()

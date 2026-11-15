@@ -1,8 +1,7 @@
 <div class="barra">
   <h2>Empleados</h2>
   <div class="barra-acciones">
-    <a class="btn-secundario" routerLink="/empleados/tareas"><svg lucideListChecks [strokeWidth]="2.5"></svg> Tareas de apertura</a>
-    <a class="btn-primario" routerLink="/empleados/nuevo"><svg lucidePlus [strokeWidth]="2.5"></svg> Nuevo</a>
+    <a class="btn-primario" routerLink="/configuracion/empleados/nuevo"><svg lucidePlus [strokeWidth]="2.5"></svg> Nuevo</a>
   </div>
 </div>
 
@@ -35,7 +34,7 @@
           </div>
         </div>
         <div class="acciones-fila">
-          <a class="btn-icono" [routerLink]="['/empleados', e.id]" title="Editar" aria-label="Editar">
+          <a class="btn-icono" [routerLink]="['/configuracion/empleados', e.id]" title="Editar" aria-label="Editar">
             <svg lucidePencil [strokeWidth]="2.25"></svg>
           </a>
           <button type="button" class="btn-icono peligro" title="Borrar" aria-label="Borrar" (click)="eliminar(e)">

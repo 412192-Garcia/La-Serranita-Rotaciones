@@ -161,6 +161,11 @@ h2 {
   border-left: none;
 }
 
+.opcion.activa.opcion-siempre {
+  background: var(--color-text);
+  color: #fff;
+}
+
 .opcion.activa.opcion-alta {
   background: var(--color-danger);
   color: #fff;
@@ -174,6 +179,94 @@ h2 {
 .opcion.activa.opcion-baja {
   background: var(--color-text-muted);
   color: #fff;
+}
+
+.agregar-puesto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.agregar-puesto input {
+  flex: 1;
+  min-width: 0;
+  max-width: 320px;
+}
+
+.agregar-puesto .btn-chico,
+.tarde-botones .btn-chico {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agregar-puesto svg {
+  width: 15px;
+  height: 15px;
+}
+
+.abre-tarde:not(.activo) {
+  text-decoration: none;
+}
+
+/* Horario especial de un puesto: ocupa todo el ancho, debajo de la fila. */
+.tarde-editor {
+  flex: 1 0 100%;
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-soft);
+  font-size: 0.85rem;
+}
+
+.tarde-editor .dato {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.tarde-editor .en-linea {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-weight: 500;
+}
+
+.tarde-editor .en-linea label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tarde-editor input[type='time'] {
+  width: 110px;
+}
+
+.tarde-editor input[type='number'] {
+  width: 56px;
+}
+
+.tarde-editor .explicacion {
+  flex: 1 0 100%;
+  margin: 0;
+}
+
+.tarde-botones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.ayuda-chica {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
 }
 
 .barra-grupos {
@@ -263,12 +356,16 @@ h3 {
     width: 100%;
   }
 
+  /* Las cuatro prioridades van en su propia línea, de ancho completo. */
   .opciones {
-    flex: 1;
+    flex: 1 0 100%;
   }
 
   .opcion {
     flex: 1;
+    min-width: 0;
+    padding-left: 4px;
+    padding-right: 4px;
   }
 }
 

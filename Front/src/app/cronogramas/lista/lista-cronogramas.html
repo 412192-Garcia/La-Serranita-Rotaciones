@@ -10,8 +10,8 @@
         <svg lucideFileUp [strokeWidth]="2.5"></svg> Importar Excel
       }
     </button>
-    <a class="btn-secundario" routerLink="/cronogramas/prioridades">
-      <svg lucideMapPin [strokeWidth]="2.5"></svg> Prioridad de puestos
+    <a class="btn-secundario" routerLink="/cronogramas/generar">
+      <svg lucideWandSparkles [strokeWidth]="2.5"></svg> Generar borrador
     </a>
     <a class="btn-primario" routerLink="/cronogramas/nuevo">
       <svg lucidePlus [strokeWidth]="2.5"></svg> Nuevo
@@ -31,7 +31,6 @@
       <span>Nombre</span>
       <span>Afluencia</span>
       <span>Empleados</span>
-      <span>Horario</span>
       <span>Puestos fijos</span>
       <span></span>
     </div>
@@ -40,7 +39,6 @@
         <span class="nombre">{{ c.nombre }}</span>
         <span data-label="Afluencia">{{ textoAfluencia(c.afluencia) }}</span>
         <span data-label="Empleados">{{ c.empleados }}</span>
-        <span data-label="Horario">{{ c.desde }} a {{ c.hasta }}</span>
         <span data-label="Puestos fijos">{{ fijosVisibles(c).length ? fijosVisibles(c).join(', ') : '—' }}</span>
         <span class="acciones-fila">
           <a class="btn-icono" [routerLink]="['/cronogramas', c.id]" title="Ver tarjetas" aria-label="Ver tarjetas">

@@ -43,7 +43,7 @@ public class RotacionService {
     public List<String> fijos(PlanRotacion plan) {
         List<String> fijos = new ArrayList<>();
         for (Puesto puesto : plan.puestos()) {
-            if (puesto.esDescanso()) continue;
+            if (puesto.esDescanso() || puesto.esLibre()) continue;
             List<Turno> delPuesto = plan.turnos().stream().filter(t -> t.puesto().equals(puesto)).toList();
             long horariosConAlguien = delPuesto.stream().map(Turno::horario).distinct().count();
             if (horariosConAlguien * 100 < (long) plan.horarios().size() * PORCENTAJE_ABIERTO_FIJO) continue;

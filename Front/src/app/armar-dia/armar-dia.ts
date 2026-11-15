@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, OnInit, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   LucideBan,
   LucideCheck,
@@ -9,6 +9,7 @@ import {
   LucideSearch,
   LucideStar,
   LucideTriangleExclamationPoint,
+  LucideWandSparkles,
   LucideX,
 } from '@lucide/angular';
 import { AFLUENCIAS, Afluencia, Cronograma, Renglon, Sugerencia, puestosPorNumero, textoAfluencia } from '../models/cronograma';
@@ -17,6 +18,7 @@ import { CronogramaService, mensajeDeError } from '../services/cronograma.servic
 import { EmpleadoService } from '../services/empleado.service';
 import { TareaService } from '../services/tarea.service';
 import { GrupoService } from '../services/grupo.service';
+import { DiaService } from '../services/dia.service';
 import { GrupoPuestos } from '../models/grupo';
 import { forkJoin } from 'rxjs';
 import { TareaAsignada } from '../models/tarea';
@@ -69,6 +71,7 @@ function leerDia(): DiaGuardado | null {
     LucideSearch,
     LucideStar,
     LucideTriangleExclamationPoint,
+    LucideWandSparkles,
     LucideX,
   ],
   templateUrl: './armar-dia.html',
@@ -79,6 +82,8 @@ export class ArmarDia implements OnInit {
   private empleadosApi = inject(EmpleadoService);
   private tareasApi = inject(TareaService);
   private gruposApi = inject(GrupoService);
+  private dias = inject(DiaService);
+  private router = inject(Router);
   private toast = inject(ToastService);
 
   readonly afluencias = AFLUENCIAS;
@@ -153,6 +158,15 @@ export class ArmarDia implements OnInit {
         this.empleados.set(l);
         this.descartarMarcasViejas(l);
         this.cargando.set(false);
+        // Vuelve del generador con un cronograma para hoy: se usa como si se hubiera elegido.
+        const generado = this.dias.tomarGenerado();
+        if (generado) {
+          this.elegidaId.set(null);
+          this.asignacion.set(generado.asignacion);
+          this.cronograma.set(generado.cronograma);
+          this.repartirTareas();
+          setTimeout(() => document.getElementById('cronograma-elegido')?.scrollIntoView({ behavior: 'smooth' }));
+        }
       },
       error: (e) => {
         this.toast.error(mensajeDeError(e));
@@ -280,15 +294,19 @@ export class ArmarDia implements OnInit {
 
   // --- Tareas de antes de abrir
 
-  repartirTareas(): void {
-    const presentes = [
+  /** Los que vinieron, para repartir las tareas (los que están en entrenamiento, con su acompañante). */
+  private presentesParaTareas(): { empleadoId: number; acompananteId: number | null }[] {
+    return [
       ...this.presentes().map((e) => ({ empleadoId: e.id!, acompananteId: null })),
       ...this.aprendicesPresentes().map((e) => {
         const primero = [...this.tramos(e)].sort((a, b) => (a.desde ?? '').localeCompare(b.desde ?? ''))[0];
         return { empleadoId: e.id!, acompananteId: primero?.acompananteId ?? null };
       }),
     ];
-    this.tareasApi.repartir(fechaDeHoy(), presentes).subscribe({
+  }
+
+  repartirTareas(): void {
+    this.tareasApi.repartir(fechaDeHoy(), this.presentesParaTareas()).subscribe({
       next: (t) => this.tareasDelDia.set(t),
       error: (e) => this.toast.error(mensajeDeError(e, 'No se pudieron repartir las tareas.')),
     });
@@ -425,6 +443,29 @@ export class ArmarDia implements OnInit {
     });
   }
 
+  /** Los que vinieron, con lo que pueden hacer hoy (null = todo lo que saben). */
+  private presentesDeHoy() {
+    return this.presentes().map((e) => {
+      const no = this.noHoy()[e.id!] ?? [];
+      return { empleadoId: e.id!, puestosHoy: no.length ? puedeHacer(e).filter((p) => !no.includes(clavePuesto(p))) : null };
+    });
+  }
+
+  /** Va al generador con los que vinieron: pregunta fijos, rueda y lo que abre tarde, y reparte los números. */
+  generar(): void {
+    if (this.presentes().length === 0) {
+      this.toast.error('Marcá quién vino hoy.');
+      return;
+    }
+    this.dias.paraGenerar.set({
+      afluencia: this.afluencia(),
+      presentes: this.presentesDeHoy(),
+      empleados: this.empleados(),
+      paraTareas: this.presentesParaTareas(),
+    });
+    this.router.navigate(['/cronogramas/generar'], { queryParams: { dia: 1 } });
+  }
+
   buscar(): void {
     const presentes = this.presentes();
     if (presentes.length === 0) {
@@ -434,13 +475,7 @@ export class ArmarDia implements OnInit {
     this.buscando.set(true);
     this.cronograma.set(null);
     this.elegidaId.set(null);
-    const pedido = {
-      afluencia: this.afluencia(),
-      presentes: presentes.map((e) => {
-        const no = this.noHoy()[e.id!] ?? [];
-        return { empleadoId: e.id!, puestosHoy: no.length ? puedeHacer(e).filter((p) => !no.includes(clavePuesto(p))) : null };
-      }),
-    };
+    const pedido = { afluencia: this.afluencia(), presentes: this.presentesDeHoy() };
     this.api.sugerir(pedido).subscribe({
       next: (s) => {
         this.sugerencias.set(s);

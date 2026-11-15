@@ -1,6 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { LucideArrowLeft, LucideLoaderCircle, LucidePlus, LucideTrash } from '@lucide/angular';
+import { LucideLoaderCircle, LucidePlus, LucideTrash } from '@lucide/angular';
 import { Tarea } from '../../models/tarea';
 import { mensajeDeError } from '../../services/cronograma.service';
 import { TareaService } from '../../services/tarea.service';
@@ -10,7 +9,7 @@ import { ToastService } from '../../shared/toast/toast.service';
 /** Tareas de antes de abrir: se reparten todas, todos los días. */
 @Component({
   selector: 'app-tareas',
-  imports: [RouterLink, LucideArrowLeft, LucideLoaderCircle, LucidePlus, LucideTrash],
+  imports: [LucideLoaderCircle, LucidePlus, LucideTrash],
   templateUrl: './tareas.html',
   styleUrl: './tareas.css',
 })

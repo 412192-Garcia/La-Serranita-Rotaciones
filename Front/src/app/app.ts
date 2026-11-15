@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { LucideCalendarCheck, LucideLayoutList, LucideUsers } from '@lucide/angular';
+import { LucideCalendarCheck, LucideLayoutList, LucideSettings } from '@lucide/angular';
 import { ConfirmacionDialogo } from './shared/confirmacion/confirmacion-dialogo';
 import { ToastHost } from './shared/toast/toast-host';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ConfirmacionDialogo, ToastHost, LucideCalendarCheck, LucideLayoutList, LucideUsers],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ConfirmacionDialogo, ToastHost, LucideCalendarCheck, LucideLayoutList, LucideSettings],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })

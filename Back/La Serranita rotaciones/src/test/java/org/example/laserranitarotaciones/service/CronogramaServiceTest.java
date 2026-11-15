@@ -6,7 +6,10 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.example.laserranitarotaciones.model.dto.BorradorDto;
 import org.example.laserranitarotaciones.model.dto.CronogramaDto;
+import org.example.laserranitarotaciones.model.dto.PedidoGeneradorDiaDto;
+import org.example.laserranitarotaciones.model.dto.PedidoGeneradorDto;
 import org.example.laserranitarotaciones.model.dto.CronogramaResumenDto;
 import org.example.laserranitarotaciones.model.dto.PedidoSugerenciaDto;
 import org.example.laserranitarotaciones.model.dto.PuestoDto;
@@ -17,6 +20,7 @@ import org.example.laserranitarotaciones.repository.EmpleadoRepository;
 import org.example.laserranitarotaciones.repository.PuestoParqueRepository;
 import org.example.laserranitarotaciones.model.dto.PuestoParqueDto;
 import org.example.laserranitarotaciones.model.dto.RenombreDto;
+import org.example.laserranitarotaciones.model.PlanRotacion;
 import org.example.laserranitarotaciones.model.entity.Prioridad;
 import org.example.laserranitarotaciones.model.dto.SugerenciaDto;
 import org.example.laserranitarotaciones.model.entity.Afluencia;
@@ -136,6 +140,92 @@ class CronogramaServiceTest {
         puestosParque.cambiarPrioridad(new PuestoParqueDto("Boleteria", Prioridad.BAJA));
         assertThat(puestosParque.listar()).contains(new PuestoParqueDto("Boleteria", Prioridad.BAJA, false));
         assertThat(puestosParque.listar()).contains(new PuestoParqueDto("Toboganes", Prioridad.MEDIA, true));
+    }
+
+    @Test
+    void losPuestosSonUnaListaCargadaYLosDeLosCronogramasSeAgreganSolos() throws Exception {
+        cronogramas.importar(excel());
+        puestosParque.crear(new PuestoParqueDto("Tirolesa", null));
+        assertThat(cronogramas.puestos()).containsExactly("Boleteria", "Tirolesa", "Toboganes");
+
+        puestosParque.cambiarAbreTarde(new PuestoParqueDto("tirolesa", null, true,
+                new PuestoParqueDto.AbreTarde("13", null, 3, 4, 5)));
+        assertThat(puestosParque.listar()).filteredOn(p -> p.nombre().equals("Tirolesa")).singleElement()
+                .extracting(PuestoParqueDto::abreTarde).isEqualTo(new PuestoParqueDto.AbreTarde("13:00", null, 3, 4, 5));
+
+        // Uno que está en un cronograma no se puede borrar; uno que no, sí (y sale de los empleados).
+        assertThatThrownBy(() -> puestosParque.eliminar("Toboganes")).isInstanceOf(ValidacionException.class);
+        empleados.crear(new EmpleadoDto(null, "Ana", List.of("Tirolesa", "Boleteria"), List.of("Tirolesa")));
+        puestosParque.eliminar("Tirolesa");
+        assertThat(cronogramas.puestos()).containsExactly("Boleteria", "Toboganes");
+        assertThat(empleados.listar().get(0).puestos()).containsExactly("Boleteria");
+        assertThat(empleados.listar().get(0).principales()).isEmpty();
+    }
+
+    @Test
+    void generaConLosQueVinieronYLosReparte() {
+        List<PresenteDto> presentes = new ArrayList<>();
+        for (String nombre : List.of("Ana", "Beto", "Carla")) {
+            List<String> principales = nombre.equals("Ana") ? List.of("Boleteria") : List.of();
+            EmpleadoDto e = empleados.crear(new EmpleadoDto(null, nombre, List.of("Boleteria", "Toboganes", "Pileta"), principales));
+            presentes.add(new PresenteDto(e.id(), null));
+        }
+        var pedido = new PedidoGeneradorDto("Hoy", Afluencia.MEDIA, 99, "10:00", "12:00", 60, "11:00", "11:00",
+                List.of(new PedidoGeneradorDto.Fijo("Boleteria", 1)),
+                List.of(new PedidoGeneradorDto.Lugar(List.of("Toboganes"), true), new PedidoGeneradorDto.Lugar(List.of("Pileta"), false)),
+                List.of());
+        BorradorDto b = sugerencias.generarConPresentes(new PedidoGeneradorDiaDto(pedido, presentes));
+
+        // La cantidad sale de los que vinieron (no del 99), y Ana cae en su principal.
+        assertThat(b.cronograma().empleados()).isEqualTo(3);
+        assertThat(b.asignacion()).extracting(AsignacionDto::nombre).containsExactlyInAnyOrder("Ana", "Beto", "Carla");
+        assertThat(b.asignacion()).filteredOn(a -> a.numero() == 1).singleElement().extracting(AsignacionDto::nombre).isEqualTo("Ana");
+    }
+
+    @Test
+    void unPuestoDePrioridadBajaQueNadieSabeQuedaCerradoYLaPersonaLibre() {
+        puestosParque.crear(new PuestoParqueDto("Pileta", null));
+        puestosParque.cambiarPrioridad(new PuestoParqueDto("Pileta", Prioridad.BAJA));
+        List<PresenteDto> presentes = new ArrayList<>();
+        for (String nombre : List.of("Ana", "Beto", "Carla")) {
+            EmpleadoDto e = empleados.crear(new EmpleadoDto(null, nombre, List.of("Boleteria", "Toboganes"), List.of()));
+            presentes.add(new PresenteDto(e.id(), null));
+        }
+        var pedido = new PedidoGeneradorDto("Hoy", Afluencia.MEDIA, 3, "10:00", "12:00", 60, "11:00", "11:00",
+                List.of(new PedidoGeneradorDto.Fijo("Boleteria", 1)),
+                List.of(new PedidoGeneradorDto.Lugar(List.of("Toboganes"), true), new PedidoGeneradorDto.Lugar(List.of("Pileta"), false)),
+                List.of());
+        BorradorDto b = sugerencias.generarConPresentes(new PedidoGeneradorDiaDto(pedido, presentes));
+
+        // Nadie sabe Pileta (baja): queda cerrada y quien tocaba ahí pasa a Libre; no hay "no sabe".
+        PuestoDto pileta = b.cronograma().puestos().stream().filter(p -> p.nombre().equals("Pileta")).findFirst().orElseThrow();
+        assertThat(pileta.celdas()).containsOnly("Cerrado", "").contains("Cerrado");
+        assertThat(b.cronograma().puestos()).anyMatch(p -> p.nombre().equals("Libre"));
+        assertThat(b.avisos()).noneMatch(a -> a.contains("no sabe")).anyMatch(a -> a.startsWith("Pileta queda cerrado"));
+    }
+
+    @Test
+    void nadieVaAUnPuestoQuePodriaHacerElDeLaEstrella() {
+        List<PresenteDto> presentes = new ArrayList<>();
+        for (String nombre : List.of("Ana", "Beto", "Carla")) {
+            List<String> principales = nombre.equals("Beto") ? List.of("Pileta") : List.of();
+            EmpleadoDto e = empleados.crear(new EmpleadoDto(null, nombre, List.of("Boleteria", "Toboganes", "Pileta"), principales));
+            presentes.add(new PresenteDto(e.id(), null));
+        }
+        // Toboganes y Pileta rotan: sin la estrella, Beto pasaría la mitad del día en Toboganes.
+        var pedido = new PedidoGeneradorDto("Hoy", Afluencia.MEDIA, 3, "10:00", "14:00", 60, "12:00", "12:00",
+                List.of(new PedidoGeneradorDto.Fijo("Boleteria", 1)),
+                List.of(new PedidoGeneradorDto.Lugar(List.of("Toboganes"), true), new PedidoGeneradorDto.Lugar(List.of("Pileta"), false)),
+                List.of());
+        BorradorDto b = sugerencias.generarConPresentes(new PedidoGeneradorDiaDto(pedido, presentes));
+
+        int beto = b.asignacion().stream().filter(a -> "Beto".equals(a.nombre())).findFirst().orElseThrow().numero();
+        PuestoDto pileta = b.cronograma().puestos().stream().filter(p -> p.nombre().equals("Pileta")).findFirst().orElseThrow();
+        PuestoDto descanso = b.cronograma().puestos().stream().filter(p -> p.nombre().equals("Descanso")).findFirst().orElseThrow();
+        for (int k = 0; k < pileta.celdas().size(); k++) {
+            if (PlanRotacion.empleados(descanso.celdas().get(k)).contains(beto)) continue;
+            assertThat(PlanRotacion.empleados(pileta.celdas().get(k))).as("horario " + k).containsExactly(beto);
+        }
     }
 
     @Test

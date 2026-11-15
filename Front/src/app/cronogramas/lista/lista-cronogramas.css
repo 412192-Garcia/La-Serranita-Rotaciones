@@ -41,7 +41,7 @@ h2 {
 
 .fila-simple {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1.2fr 2fr 130px;
+  grid-template-columns: 2fr 1fr 1fr 2.6fr 130px;
   align-items: center;
   gap: 12px;
   padding: 10px 20px;

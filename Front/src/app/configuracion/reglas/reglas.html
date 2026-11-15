@@ -1,0 +1,144 @@
+<input #selector type="file" accept=".xlsx,.xls" hidden (change)="importar($event)" />
+
+<div class="barra">
+  <h2>Puestos abiertos</h2>
+  <div class="barra-acciones">
+    <button type="button" class="btn-secundario" [disabled]="importando()" (click)="confirmarImportar(selector)">
+      @if (importando()) {
+        <svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg> Importando…
+      } @else {
+        <svg lucideFileUp [strokeWidth]="2.5"></svg> Importar Excel
+      }
+    </button>
+    <button type="button" class="btn-primario" (click)="nueva()"><svg lucidePlus [strokeWidth]="2.5"></svg> Regla</button>
+  </div>
+</div>
+<p class="ayuda">
+  Qué puestos funcionan según cuántos empleados hay (sin contar la Tirolesa) y cuánta gente se espera. El generador arma los fijos
+  y la rueda con la regla que corresponde. Pensado para la mañana, más o menos hasta las 12. La rueda arranca en el marcado con *.
+</p>
+
+<section class="panel orden-rotacion">
+  <div class="orden-titulo">
+    <h3>Orden de rotación</h3>
+    <button type="button" class="btn-primario btn-chico" [disabled]="!ordenCambiado() || guardandoOrden()" (click)="guardarOrden()">
+      Guardar orden
+    </button>
+  </div>
+  <p class="ayuda">
+    Arrastrá para cambiar el orden. La rueda de cada regla arranca en su lugar marcado con * y sigue en este orden; lo que no está acá
+    va al final.
+  </p>
+  <ol class="orden" [class.moviendo]="arrastrando() !== null">
+    @for (p of orden(); track p; let i = $index) {
+      <li [attr.data-orden]="i" [class.arrastrado]="arrastrando() === i">
+        <span
+          class="agarre"
+          role="button"
+          tabindex="-1"
+          [attr.aria-label]="'Mover ' + p"
+          (pointerdown)="tomar($event, i)"
+          (pointermove)="mover($event)"
+          (pointerup)="soltar()"
+          (pointercancel)="soltar()"
+        >
+          <svg lucideGripVertical [strokeWidth]="2.25"></svg>
+        </span>
+        <span class="orden-numero">{{ i + 1 }}</span>
+        <span class="orden-nombre">{{ p }}</span>
+        <button type="button" class="btn-mini" [attr.aria-label]="'Quitar ' + p" title="Quitar" (click)="quitarDelOrden(i)">
+          <svg lucideX [strokeWidth]="2.25"></svg>
+        </button>
+      </li>
+    }
+  </ol>
+  @if (fueraDelOrden().length) {
+    <select class="agregar-orden" aria-label="Agregar un puesto al orden" (change)="agregarAlOrden($event)">
+      <option value="">+ Agregar puesto…</option>
+      @for (p of fueraDelOrden(); track p) {
+        <option [value]="p">{{ p }}</option>
+      }
+    </select>
+  }
+</section>
+
+@if (cargando()) {
+  <section class="panel centrado"><svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg></section>
+} @else if (reglas().length === 0 && !editando()) {
+  <section class="panel vacio">Todavía no hay reglas. Importá el Excel de puestos abiertos o agregá una.</section>
+}
+
+@if (editando(); as e) {
+    <section class="panel editor" id="editor-regla">
+      <div class="editor-datos">
+        <label class="dato">
+          <span>Empleados</span>
+          <input type="number" min="1" max="60" [value]="e.empleados" [disabled]="e.id !== null" (input)="cambiar({ empleados: +valor($event) })" />
+        </label>
+        <label class="dato">
+          <span>Afluencia</span>
+          <select [disabled]="e.id !== null" (change)="cambiar({ afluencia: $any(valor($event)) })">
+            @for (a of afluencias; track a.valor) {
+              <option [value]="a.valor" [selected]="e.afluencia === a.valor">{{ a.texto }}</option>
+            }
+          </select>
+        </label>
+        <label class="dato ancho">
+          <span>Fijos (con "x2" si son dos)</span>
+          <input type="text" [value]="e.fijos" (input)="cambiar({ fijos: valor($event) })" />
+        </label>
+      </div>
+      <label class="dato">
+        <span>Rueda en orden, arrancando por el primero: un lugar por línea; con "+" los puestos que hace la misma persona</span>
+        <textarea rows="8" [value]="e.lugares" (input)="cambiar({ lugares: valor($event) })"></textarea>
+      </label>
+      <div class="editor-pie">
+        <span class="ocupa" [class.mal]="ocupa() !== e.empleados">
+          @if (ocupa() !== e.empleados) {
+            <svg lucideTriangleExclamationPoint [strokeWidth]="2.5"></svg>
+          }
+          Ocupa {{ ocupa() }} de {{ e.empleados }} personas
+        </span>
+        <span class="botones">
+          <button type="button" class="btn-secundario btn-chico" (click)="editando.set(null)">Cancelar</button>
+          <button type="button" class="btn-primario btn-chico" (click)="guardar()">Guardar</button>
+        </span>
+      </div>
+    </section>
+}
+
+@for (n of cantidades(); track n) {
+  <section class="panel cantidad">
+    <h3>{{ n }} empleados</h3>
+    <div class="afluencias">
+      @for (a of afluencias; track a.valor) {
+        <div class="afluencia">
+          <div class="afluencia-titulo">
+            <span>{{ a.texto }}</span>
+            <button type="button" class="btn-mini" [attr.aria-label]="'Editar ' + n + ' ' + a.texto" title="Editar" (click)="empezar(n, a.valor)">
+              <svg lucidePencil [strokeWidth]="2.25"></svg>
+            </button>
+            @if (regla(n, a.valor); as r) {
+              <button type="button" class="btn-mini" [attr.aria-label]="'Borrar ' + n + ' ' + a.texto" title="Borrar" (click)="borrar(r)">
+                <svg lucideTrash [strokeWidth]="2.25"></svg>
+              </button>
+            }
+          </div>
+          @if (regla(n, a.valor); as r) {
+            <div class="fijos">Fijos: {{ textoFijos(r) || 'ninguno' }}</div>
+            <div class="lugares">
+              @for (l of r.lugares; track $index) {
+                <span class="lugar" [class.compartido]="l.length > 1">{{ $first ? '*' : '' }}{{ l.join(' + ') }}</span>
+              }
+            </div>
+            @if (personasDe(r) !== r.empleados) {
+              <div class="mal"><svg lucideTriangleExclamationPoint [strokeWidth]="2.5"></svg> Ocupa {{ personasDe(r) }} personas</div>
+            }
+          } @else {
+            <div class="sin-regla">Sin regla</div>
+          }
+        </div>
+      }
+    </div>
+  </section>
+}

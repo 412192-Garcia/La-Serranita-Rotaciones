@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { PuestoParque } from '../models/puesto';
+import { AbreTardePuesto, PuestoParque } from '../models/puesto';
 
 @Injectable({ providedIn: 'root' })
 export class PuestoService {
@@ -11,6 +11,21 @@ export class PuestoService {
 
   listar(): Observable<PuestoParque[]> {
     return this.http.get<PuestoParque[]>(this.url);
+  }
+
+  /** Agrega un puesto a la lista (por ejemplo uno que todavía no está en ningún cronograma). */
+  crear(nombre: string): Observable<PuestoParque> {
+    return this.http.post<PuestoParque>(this.url, { nombre });
+  }
+
+  /** Sólo si ningún cronograma lo usa; sale también de los empleados y los grupos. */
+  eliminar(nombre: string): Observable<void> {
+    return this.http.delete<void>(this.url, { params: { nombre } });
+  }
+
+  /** null = abierto todo el día. */
+  cambiarAbreTarde(nombre: string, abreTarde: AbreTardePuesto | null): Observable<PuestoParque> {
+    return this.http.put<PuestoParque>(`${this.url}/abre-tarde`, { nombre, abreTarde });
   }
 
   cambiarPrioridad(p: PuestoParque): Observable<PuestoParque> {

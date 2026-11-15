@@ -63,8 +63,21 @@ public class UnificadorPuestosService {
 
         Optional<PuestoParque> viejo = prioridades.findByClave(claveDe);
         if (viejo.isPresent() && !claveDe.equals(claveA)) {
-            if (prioridades.findByClave(claveA).isPresent()) {
-                prioridades.delete(viejo.get());
+            Optional<PuestoParque> destino = prioridades.findByClave(claveA);
+            if (destino.isPresent()) {
+                // Se juntan: queda la prioridad más alta de las dos, y el horario si sólo lo tenía el viejo.
+                PuestoParque d = destino.get();
+                PuestoParque v = viejo.get();
+                if (v.getPrioridad().peso() > d.getPrioridad().peso()) d.setPrioridad(v.getPrioridad());
+                if (d.getAbre() == null && v.getAbre() != null) {
+                    d.setAbre(v.getAbre());
+                    d.setHasta(v.getHasta());
+                    d.setPersonasBaja(v.getPersonasBaja());
+                    d.setPersonasMedia(v.getPersonasMedia());
+                    d.setPersonasAlta(v.getPersonasAlta());
+                    d.setTipo(v.getTipo());
+                }
+                prioridades.delete(v);
             } else {
                 viejo.get().setNombre(a);
                 viejo.get().setClave(claveA);

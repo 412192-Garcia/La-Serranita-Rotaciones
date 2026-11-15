@@ -42,4 +42,16 @@ public final class Nombres {
     public static boolean esDescanso(String nombre) {
         return clave(nombre).equals("descanso");
     }
+
+    /** La fila de los que sobran en ese horario: están disponibles, sin puesto. */
+    public static final String LIBRE = "Libre";
+
+    public static boolean esLibre(String nombre) {
+        return clave(nombre).equals("libre");
+    }
+
+    /** Descanso y Libre son filas del cronograma pero no puestos (nadie tiene que saberlos). */
+    public static boolean noEsPuesto(String nombre) {
+        return esDescanso(nombre) || esLibre(nombre);
+    }
 }

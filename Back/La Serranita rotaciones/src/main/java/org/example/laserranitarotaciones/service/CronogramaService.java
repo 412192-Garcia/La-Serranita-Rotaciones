@@ -8,6 +8,10 @@ import org.example.laserranitarotaciones.model.dto.PuestoDto;
 import org.example.laserranitarotaciones.model.entity.Cronograma;
 import org.example.laserranitarotaciones.model.entity.PuestoCronograma;
 import org.example.laserranitarotaciones.repository.CronogramaRepository;
+import org.example.laserranitarotaciones.repository.PuestoParqueRepository;
+import org.example.laserranitarotaciones.model.entity.PuestoParque;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,6 +38,7 @@ public class CronogramaService {
     private final CronogramaRepository repositorio;
     private final RotacionService rotacion;
     private final ImportadorExcelService importador;
+    private final PuestoParqueRepository puestosParque;
 
     @Transactional(readOnly = true)
     public List<CronogramaResumenDto> listar() {
@@ -48,21 +53,26 @@ public class CronogramaService {
         return aDto(buscar(id), true);
     }
 
-    /** Nombres de los puestos de todos los cronogramas, sin Descanso. */
+    /** Los nombres de los puestos del parque (la lista cargada en Puestos). */
     @Transactional(readOnly = true)
     public List<String> puestos() {
         Set<String> nombres = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-        repositorio.findAll().forEach(c -> c.getPuestos().stream()
-                .map(PuestoCronograma::getNombre)
-                .filter(n -> !n.equalsIgnoreCase("Descanso"))
-                .forEach(nombres::add));
+        puestosParque.findAll().stream().map(PuestoParque::getNombre).forEach(nombres::add);
         return new ArrayList<>(nombres);
+    }
+
+    /** Al arrancar: los puestos de los cronogramas que todavía no estén en la lista se agregan. */
+    @EventListener(ApplicationReadyEvent.class)
+    @Transactional
+    public void registrarPuestosDeCronogramas() {
+        repositorio.findAll().forEach(c -> PuestoParqueService.registrar(puestosParque, c));
     }
 
     @Transactional
     public CronogramaDto crear(CronogramaDto dto) {
         Cronograma c = new Cronograma();
         aplicar(c, normalizar(dto));
+        PuestoParqueService.registrar(puestosParque, c);
         return aDto(repositorio.save(c), true);
     }
 
@@ -70,6 +80,7 @@ public class CronogramaService {
     public CronogramaDto actualizar(Long id, CronogramaDto dto) {
         Cronograma c = buscar(id);
         aplicar(c, normalizar(dto));
+        PuestoParqueService.registrar(puestosParque, c);
         return aDto(repositorio.save(c), true);
     }
 
@@ -94,6 +105,7 @@ public class CronogramaService {
             } catch (ValidacionException e) {
                 throw new ValidacionException("Hoja \"" + dto.nombre() + "\": " + e.getMessage());
             }
+            PuestoParqueService.registrar(puestosParque, c);
             guardados.add(resumen(aDto(repositorio.save(c), false)));
         }
         return guardados;

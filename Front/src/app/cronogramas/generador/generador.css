@@ -1,0 +1,311 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+h2 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+}
+
+h3 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+}
+
+.ayuda {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-heading-desc);
+}
+
+.ayuda-chica {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 28px;
+}
+
+.campo-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campo-grupo.partir select {
+  width: min(320px, 100%);
+}
+
+.corto {
+  width: 80px;
+}
+
+.detalle {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.opciones,
+.en-linea {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.columnas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.fila input[type='text'],
+.fila select {
+  flex: 1;
+  min-width: 0;
+  width: 0;
+}
+
+.vinieron {
+  padding: 6px 0;
+  font-size: 0.95rem;
+}
+
+.ayuda-chica.falta {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+.resultado-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.separada {
+  margin-top: 10px;
+}
+
+.btn-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.btn-mini:hover:not(:disabled) {
+  background: var(--color-bg-soft);
+  color: var(--color-text);
+}
+
+.btn-mini:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.btn-mini svg {
+  width: 15px;
+  height: 15px;
+}
+
+.btn-inicio {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px dashed var(--color-border);
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-muted);
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.btn-inicio.marcado {
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent-light, #fdf1e3);
+  color: var(--color-accent);
+}
+
+.btn-chico {
+  align-self: flex-start;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+}
+
+.agregar-grupo {
+  width: auto;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-size: 0.82rem;
+}
+
+/* Horarios especiales: cada uno en una fila con sus campos rotulados; en el celular se acomodan solos. */
+.horario {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.horario .dato {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.horario .dato.puesto {
+  flex: 1 1 180px;
+}
+
+.horario .dato.puesto input {
+  width: 100%;
+}
+
+.horario input[type='time'] {
+  width: 112px;
+}
+
+.horario select.personas {
+  width: 64px;
+}
+
+.horario .quitar {
+  margin-bottom: 4px;
+}
+
+.horario .sabe {
+  flex: 1 0 100%;
+}
+
+.regla {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.regla-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.88rem;
+}
+
+.regla-texto .falta {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+.pie {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.resultado {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scroll-margin-top: 16px;
+}
+
+.resultado-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.avisos {
+  list-style: none;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.avisos li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.avisos svg {
+  width: 15px;
+  height: 15px;
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .columnas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .campo-grupo.partir {
+    width: 100%;
+  }
+
+}
+
+@media (pointer: coarse) {
+  .btn-mini,
+  .btn-inicio {
+    width: 44px;
+    height: 44px;
+  }
+}

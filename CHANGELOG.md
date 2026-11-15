@@ -5,6 +5,87 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 
 ## Sin publicar
 
+- **Generar borrador** (desde Cronogramas): arma un cronograma con las reglas de siempre a partir de la
+  cantidad de empleados, los puestos fijos, el orden de la rueda y quién cubre qué en los descansos.
+  Se puede partir de un cronograma que ya existe y cambiarle, por ejemplo, la cantidad de gente. Si no
+  alcanza la gente para toda la rueda, cierra los puestos de menor prioridad y avisa. El borrador se
+  abre en el editor para corregirlo y guardarlo. Dos del mismo puesto fijo (los dos cajeros) nunca
+  descansan a la vez. A la rueda se le puede agregar un grupo entero (por ejemplo Parque): suma un
+  lugar por cada puesto del grupo que falte. Puestos que abren más tarde, como la Tirolesa (desde las
+  13:00 hasta el cierre): mientras no están abiertos, su gente cubre los almuerzos de los que rotan y si no
+  hay nada que cubrir queda en Libre. Refuerzos, como la Casa
+  del zorrito: abierta todo el día con una persona, y en el evento (16 a 17) se suman más; el resto del
+  día esos de más cubren el parque. Menos gente, lo contrario: un fijo con varios (Cajero) pierde
+  personas desde cierta hora, y esas pasan a cubrir el parque (sólo si hay un lugar vacío que cubrir; si
+  no, se quedan en su puesto). Todo eso va en "Horarios especiales",
+  un panel propio con cada dato rotulado, y en Puestos cada uno elige su tipo.
+- **Armar el día → Generar con los que vinieron**: propone fijos (los principales de los que vinieron),
+  la rueda (los puestos de sus grupos) y lo que abre tarde según la afluencia; se ajusta y se genera, y
+  los números se reparten solos entre ellos. Con "Usar para hoy" queda elegido como cualquier otro.
+- Generar con los que vinieron: después de repartir los números, si dos personas quedan mejor
+  cambiándose de lugar en algún horario (la cajera que sabe Fotos a Fotos, el que no la sabe a Minigolf),
+  se cambian. Si los dos ya están en lo que saben, la rueda no se toca.
+- Un puesto fijo de una persona (Casa del zorrito) ya no queda vacío mientras ella descansa: descansa
+  cuando un fijo de varios está completo (las dos cajeras) y lo cubre uno de ellos; si no se puede, alguien
+  de un lugar de la rueda de menor prioridad.
+- Con "menos gente" en Cajero, si abre un puesto que abre tarde (Fotos a las 17), la cajera que sobra
+  pasa ahí y la persona de Fotos queda para el parque.
+- Generar con los que vinieron: las tarjetas del borrador ya dicen qué tarea de apertura hace cada uno,
+  repartidas igual que en Armar el día.
+- Generar con los que vinieron: las estrellas (puestos principales) mandan. Nunca va otro a un puesto que podría
+  hacer alguien que lo tiene con estrella y está trabajando: se cambian en ese horario (salvo mientras el de
+  la estrella descansa). Si al de la estrella le tocó algo que no sabe y su puesto está vacío o cerrado (Baños
+  en el almuerzo), vuelve a su puesto. En el reparto de números la estrella pesa mucho más que antes.
+- Generar con los que vinieron: un puesto de prioridad media o más que quedó sin nadie en un horario lo cubre
+  alguien que sobra (de Libre, o la segunda cajera). Si no lo sabe, puede ir a donde está otro que sí, y ese
+  pasa al hueco: por ejemplo, la cajera cubre la Casa del zorrito y el que estaba ahí va a Laberinto. Y si
+  alguien quedó en un puesto que no sabe y sobra uno que sí (la segunda cajera), ese entra y el otro va a un
+  hueco que sepa o a Libre.
+- Generar con los que vinieron: un puesto de prioridad baja (Flotante, Fotos) no se le da a alguien que no
+  lo sabe. Primero se prueba cambiarlo con alguien que esté en Libre y lo sepa; si no hay, el puesto queda
+  Cerrado ese rato, la persona pasa a Libre y se avisa ("Flotante de minigolf queda cerrado a las 12:30").
+- Generador: si faltan para la rueda, los de un horario especial que están libres casi todo el día (el refuerzo
+  del zorrito, la de Fotos) rotan con los demás en vez de cerrar puestos. Mientras están en su puesto, ese rato
+  se cierran los lugares de menor prioridad (lo cubre primero alguien que esté libre), sin huecos que vayan
+  pasando de puesto en puesto.
+- Generador: los que sobran en un horario (por ejemplo la gente de la Tirolesa antes de que abra, o la de
+  Fotos) van a una fila **Libre**: quedan disponibles, sin puesto. Ya no se los manda a reforzar un puesto. Salen de
+  Libre para cubrir un almuerzo o un fijo vacío, o para abrir un puesto cerrado (también en el almuerzo) que
+  saben; nunca uno que todavía no abrió, como la Tirolesa antes de las 13. Libre no
+  es un puesto: nadie tiene que saberlo. La cajera que sobra con "menos gente" sólo pasa a un puesto que abre
+  después (Fotos a las 17), no a uno que ya estaba abierto con su gente (la Tirolesa).
+- Generador, almuerzo en tandas (como las planillas de 13 puestos): si hay reglas de puestos abiertos, todos
+  menos las cajeras comen en la primera mitad de la franja (12:00 y 12:30), mitad y mitad; las cajeras después
+  (13:00 y 13:30), y los de la Tirolesa antes de que abra. En cada tanda quedan abiertos los puestos de la regla
+  para la gente que sigue trabajando (con 9: Travesía, Búsqueda y Laberinto con una persona) y lo demás queda
+  Cerrado ese rato; cada uno sigue en lo suyo si está abierto y los demás cubren lo que quedó sin nadie.
+  Un fijo no pierde gente por la regla: si las dos cajeras están trabajando quedan las dos, y lo que falta se
+  cierra en los lugares de menor prioridad (Flotante).
+- Generador: **Guardar como predeterminado** deja lo cargado como lo que se propone la próxima vez: los
+  fijos y la rueda en la regla de puestos abiertos de esa cantidad y afluencia, y los horarios especiales
+  en Puestos.
+- Poner a alguien en un puesto que no sabe pesa cinco veces más en la búsqueda y en el reparto: antes
+  conviene un cronograma más chico con gente libre.
+- **Puestos abiertos** (Configuración): qué puestos funcionan según cuántos empleados hay (sin la
+  Tirolesa) y la afluencia, con los fijos (Cajero y Casa del zorrito, como en las planillas; Baños también desde
+  12 empleados, con menos rota) y quién comparte qué.
+  La rueda arranca en el último puesto que se agregó (marcado con *, por ejemplo Pérgola o Pecera) y sigue el
+  recorrido de las planillas: Carrera, Baños, Entrada, Canilla, Flotante, Minigolf, Travesía, Búsqueda,
+  Laberinto y Tobogán. En el Excel, "Ayudante Tobogán" es la Pérgola. Ese orden de rotación se puede cambiar
+  arriba de todo en Puestos abiertos, arrastrando los puestos (también con el dedo): al guardarlo, la rueda de
+  todas las reglas lo sigue (cada una arranca en el mismo lugar), y también al importar el Excel. Se importa del Excel
+  "Puestos abiertos" (poca gente = baja, mucha = alta; la media empieza igual que la baja) y cada regla se
+  puede corregir. El generador arma los fijos y la rueda con la regla que corresponde, y avisa si no hay
+  una exacta. Pecera y Ayudante Tobogán se agregaron a los puestos. El generador ya no propone Encargado.
+- Nueva pestaña **Configuración** en el menú, con Empleados, Puestos (y sus grupos) y Tareas de
+  apertura. Las direcciones de antes siguen andando.
+- Prioridad **Siempre**, por encima de Alta: el puesto tiene que estar abierto sí o sí. El generador
+  nunca lo cierra por falta de gente (si no alcanza ni para esos, avisa), y en el reparto pesa más que
+  todo lo demás.
+- **Puestos** (antes "Prioridad de puestos") es una lista propia: los de los cronogramas se agregan
+  solos y los demás se agregan a mano (por ejemplo Tirolesa). Se puede borrar un puesto que no esté en
+  ningún cronograma. Ahí se carga si un puesto abre tarde: desde y hasta qué hora, y cuántas personas
+  lleva con afluencia baja, media y alta.
 - **Grupos de puestos** (en Prioridad de puestos): por ejemplo "Parque" = toda la rueda. El empleado que
   sabe un grupo sabe todos sus puestos, también los que se le agreguen después. En el empleado y en
   Armar el día se ve el grupo, no sus puestos; con la flecha se despliega para elegir el principal o
@@ -13,6 +94,7 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 - En **Prioridad de puestos**, "En fijos" elige si un puesto aparece en la columna Puestos fijos de los
   cronogramas. Sirve para los que son fijos siempre, como Cajero. Es sólo lo que se ve: no cambia nada
   más.
+- La lista de cronogramas ya no muestra el horario: el parque abre siempre a la misma hora.
 - **Armar el día**: con gente de más ya no sugiere un cronograma mucho más chico. Dejar a alguien sin
   puesto ahora pesa casi como ponerlo en un puesto que no sabe.
 - Los cronogramas quedan guardados: ya no hace falta elegir el Excel cada vez.
