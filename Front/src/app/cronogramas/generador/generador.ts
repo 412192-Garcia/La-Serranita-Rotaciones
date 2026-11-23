@@ -334,7 +334,7 @@ export class Generador implements OnInit {
     const ok = await this.confirmacion.pedir({
       titulo: 'Guardar como predeterminado',
       mensaje:
-        `Los fijos y la rueda quedan en la regla de ${generales} empleados con afluencia ${af} (Configuración → Puestos abiertos). ` +
+        `Los fijos y la rueda quedan en la regla de ${generales} empleados con afluencia ${af} (Configuración → Reglas). ` +
         (horarios.length ? `Los horarios especiales (${horarios.map((a) => a.puesto.trim()).join(', ')}) quedan en Configuración → Puestos, con las personas para afluencia ${af}. ` : '') +
         (sacados.length ? `${sacados.map((x) => x.nombre).join(', ')} deja de tener horario especial.` : ''),
       aceptar: 'Guardar',

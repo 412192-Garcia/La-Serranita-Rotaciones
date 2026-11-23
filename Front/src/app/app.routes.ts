@@ -30,7 +30,8 @@ export const routes: Routes = [
           { path: 'empleados/:id', loadComponent: editorEmpleado },
           { path: 'puestos', loadComponent: () => import('./puestos/puestos').then((m) => m.Puestos) },
           { path: 'tareas', loadComponent: () => import('./empleados/tareas/tareas').then((m) => m.Tareas) },
-          { path: 'puestos-abiertos', loadComponent: () => import('./configuracion/reglas/reglas').then((m) => m.Reglas) },
+          { path: 'reglas', loadComponent: () => import('./configuracion/reglas/reglas').then((m) => m.Reglas) },
+          { path: 'puestos-abiertos', redirectTo: 'reglas' },
         ],
       },
       // Direcciones de antes.

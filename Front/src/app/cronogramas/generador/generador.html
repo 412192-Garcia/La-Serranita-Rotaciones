@@ -74,7 +74,7 @@
         @if (reglaUsada(); as u) {
           <strong>Puestos abiertos según la regla de {{ u.regla.empleados }} empleados, afluencia {{ textoAfluencia(u.regla.afluencia).toLowerCase() }}.</strong>
           @if (aMano()) {
-            <span class="falta">Con cambios a mano en los fijos o la rueda. "Aplicar puestos abiertos" vuelve a la regla.</span>
+            <span class="falta">Con cambios a mano en los fijos o la rueda. "Aplicar la regla" vuelve a la regla.</span>
           }
           @if (u.regla.empleados !== u.generales) {
             <span class="falta">No hay regla para {{ u.generales }}: se usó la más cercana.</span>
@@ -84,7 +84,7 @@
           <span class="ayuda-chica">Los fijos y la rueda están cargados a mano.</span>
         }
       </div>
-      <button type="button" class="btn-secundario btn-chico" (click)="aplicarRegla()">Aplicar puestos abiertos</button>
+      <button type="button" class="btn-secundario btn-chico" (click)="aplicarRegla()">Aplicar la regla</button>
     </section>
   }
 

@@ -30,7 +30,7 @@ y arma las tarjetas con el nombre de cada uno para imprimir.
   fijos; y, mientras descansan los que rotan, los fijos que cubren pasan a los lugares vacíos. Si hay
   menos gente que lugares, cierra los de menor prioridad. Se puede partir de un cronograma existente.
   Lo que hace un fijo sólo una parte del día (Fotos del segundo cajero a la tarde) todavía no lo arma.
-- **Puestos abiertos** (Configuración): según cuántos vinieron (todos) y la afluencia, qué puestos
+- **Reglas** (Configuración): según cuántos vinieron (todos) y la afluencia, qué puestos
   funcionan, cuáles son fijos (Cajero, Baños), cuántos van a la Tirolesa y quién comparte qué (Travesía,
   Búsqueda y Laberinto). Se ve como una tabla por afluencia: una fila por cantidad y una columna por puesto.
   Se importa del Excel del parque (que cuenta sin la Tirolesa: se le suma su gente) y se corrige a mano. El

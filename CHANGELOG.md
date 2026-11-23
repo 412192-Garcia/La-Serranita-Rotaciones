@@ -5,6 +5,7 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 
 ## Sin publicar
 
+- La pestaña "Puestos abiertos" de Configuración pasa a llamarse **Reglas**.
 - **Login**: para entrar hace falta usuario y contraseña ("No cerrar sesión" la deja abierta 14 días). Es uno
   solo, para la PC del parque, y se configura en el servidor.
 - **Deploy**: la app queda en rotaciones.parquelaserranita.online, en el mismo servidor que Entradas. Al pasar a

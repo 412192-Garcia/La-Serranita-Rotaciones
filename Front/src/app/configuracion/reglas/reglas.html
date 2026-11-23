@@ -1,7 +1,7 @@
 <input #selector type="file" accept=".xlsx,.xls" hidden (change)="importar($event)" />
 
 <div class="barra">
-  <h2>Puestos abiertos</h2>
+  <h2>Reglas</h2>
   <div class="barra-acciones">
     <button type="button" class="btn-secundario" [disabled]="importando()" (click)="confirmarImportar(selector)">
       @if (importando()) {
