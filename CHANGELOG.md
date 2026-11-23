@@ -6,7 +6,7 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 ## Sin publicar
 
 - **Login**: para entrar hace falta usuario y contraseña ("No cerrar sesión" la deja abierta 14 días). Es uno
-  solo, para la PC del parque, y se configura en el servidor. El botón de salir está arriba a la derecha.
+  solo, para la PC del parque, y se configura en el servidor.
 - **Deploy**: la app queda en rotaciones.parquelaserranita.online, en el mismo servidor que Entradas. Al pasar a
   main se arman las imágenes, y scripts/deploy.sh la actualiza en un paso (con backup de la base antes).
 - **Cronograma de hoy** (Armar el día → Generar con los que vinieron), mucho más simple: se genera solo al
