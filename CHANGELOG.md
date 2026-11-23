@@ -5,6 +5,10 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 
 ## Sin publicar
 
+- **La hora de la Tirolesa va en cada regla**: "Tirolesa ×3 · 13:00". En el editor, un puesto fijo puede
+  "abrir más tarde" con su hora (si un día con poca gente conviene abrirla a las 14, va en esa regla). Las reglas
+  que había quedaron con las 13:00. En Puestos, la Tirolesa dice "Horario en Reglas"; si una regla no la trae, ese
+  día no abre.
 - La pestaña "Puestos abiertos" de Configuración pasa a llamarse **Reglas**.
 - **Login**: para entrar hace falta usuario y contraseña ("No cerrar sesión" la deja abierta 14 días). Es uno
   solo, para la PC del parque, y se configura en el servidor.

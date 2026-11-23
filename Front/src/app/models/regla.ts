@@ -1,5 +1,6 @@
 import { Afluencia } from './cronograma';
 import { FijoGenerador } from './generador';
+import { clavePuesto } from './empleado';
 
 /**
  * Qué puestos se abren con tantos empleados (todos los que vinieron) y tal afluencia: los fijos (la Tirolesa
@@ -12,6 +13,13 @@ export interface ReglaApertura {
   afluencia: Afluencia;
   fijos: FijoGenerador[];
   lugares: string[][];
+}
+
+/** Los puestos que en alguna regla abren tarde (Tirolesa): su gente y su hora salen de las reglas. */
+export function puestosDeReglasConHora(reglas: ReglaApertura[]): Set<string> {
+  const claves = new Set<string>();
+  for (const r of reglas) for (const f of r.fijos) if (f.abre) claves.add(clavePuesto(f.puesto));
+  return claves;
 }
 
 /** Cuántas personas ocupa la regla: los fijos más uno por lugar. */

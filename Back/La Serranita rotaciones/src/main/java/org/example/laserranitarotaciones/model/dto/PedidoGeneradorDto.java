@@ -32,7 +32,12 @@ public record PedidoGeneradorDto(
         this(nombre, afluencia, empleados, desde, hasta, cada, descansoDesde, descansoHasta, fijos, rueda, coberturas, List.of());
     }
 
-    public record Fijo(String puesto, int personas) {
+    /** abre: en una regla, desde qué hora ("13:00") para un puesto que abre tarde (Tirolesa); null = todo el día. */
+    public record Fijo(String puesto, int personas, String abre) {
+
+        public Fijo(String puesto, int personas) {
+            this(puesto, personas, null);
+        }
     }
 
     public record Lugar(List<String> puestos, boolean inicia) {

@@ -16,12 +16,12 @@ import {
   LucideX,
 } from '@lucide/angular';
 import { AFLUENCIAS, CronogramaResumen } from '../../models/cronograma';
-import { AbreTardeGenerador, Borrador, PedidoGenerador, pedidoDesde } from '../../models/generador';
+import { AbreTardeGenerador, Borrador, FijoGenerador, PedidoGenerador, pedidoDesde } from '../../models/generador';
 import { PuestoParque, TIPOS_HORARIO, personasSegun, tipoHorario } from '../../models/puesto';
 import { PuestoService } from '../../services/puesto.service';
 import { DiaParaGenerar, DiaService } from '../../services/dia.service';
 import { TareaService } from '../../services/tarea.service';
-import { ReglaApertura, reglaPara } from '../../models/regla';
+import { ReglaApertura, puestosDeReglasConHora, reglaPara } from '../../models/regla';
 import { ReglaService } from '../../services/regla.service';
 import { textoAfluencia } from '../../models/cronograma';
 import { hoyLocal } from '../../shared/fecha';
@@ -291,25 +291,31 @@ export class Generador implements OnInit {
     this.reglaUsada.set({ regla, generales: p.empleados });
     this.aMano.set(false);
     const abiertos = new Set([...regla.fijos.map((f) => clavePuesto(f.puesto)), ...regla.lugares.flat().map(clavePuesto)]);
-    const deTarde = regla.fijos.filter((f) => this.abreTarde(f.puesto));
+    // Lo que abre tarde en la regla (Tirolesa x3 desde las 13:00): su gente y su hora salen de la regla.
+    const esDeTarde = (f: FijoGenerador) => !!f.abre || !!this.abreTarde(f.puesto);
+    const deTarde = regla.fijos.filter(esDeTarde);
+    // Los puestos que manejan las reglas: si esta regla no los trae, ese día no abren.
+    const deReglas = puestosDeReglasConHora(this.reglas());
     // Si la regla abre todo el día un puesto que tiene horario (Fotos con mucha gente), manda la regla: ese día no
     // se usa su horario.
     const todoElDia = new Set(regla.lugares.flat().map(clavePuesto));
     let abrenTarde = p.abrenTarde
       .filter((a) => !(a.tipo === 'ABRE_TARDE' && todoElDia.has(clavePuesto(a.puesto))))
+      .filter((a) => !(deReglas.has(clavePuesto(a.puesto)) && !deTarde.some((f) => clavePuesto(f.puesto) === clavePuesto(a.puesto))))
       .map((a) => (a.tipo === 'REFUERZO' && !abiertos.has(clavePuesto(a.puesto)) ? { ...a, tipo: 'ABRE_TARDE' as const } : a));
     for (const f of deTarde) {
+      const h = this.abreTarde(f.puesto);
+      const abre = f.abre || h?.abre || '13:00';
       const ya = abrenTarde.find((a) => clavePuesto(a.puesto) === clavePuesto(f.puesto));
       if (ya) {
-        abrenTarde = abrenTarde.map((a) => (a === ya ? { ...a, personas: f.personas } : a));
+        abrenTarde = abrenTarde.map((a) => (a === ya ? { ...a, personas: f.personas, abre } : a));
       } else {
-        const h = this.abreTarde(f.puesto)!;
-        abrenTarde = [...abrenTarde, { puesto: f.puesto, personas: f.personas, abre: h.abre, hasta: h.hasta, tipo: 'ABRE_TARDE' }];
+        abrenTarde = [...abrenTarde, { puesto: f.puesto, personas: f.personas, abre, hasta: h?.hasta ?? null, tipo: 'ABRE_TARDE' }];
       }
     }
     return {
       ...p,
-      fijos: regla.fijos.filter((f) => !this.abreTarde(f.puesto)).map((f) => ({ ...f })),
+      fijos: regla.fijos.filter((f) => !esDeTarde(f)).map((f) => ({ puesto: f.puesto, personas: f.personas })),
       rueda: regla.lugares.map((l, i) => ({ puestos: [...l], inicia: i === 0 })),
       abrenTarde,
     };
@@ -349,7 +355,7 @@ export class Generador implements OnInit {
         afluencia: p.afluencia,
         fijos: [
           ...p.fijos.filter((f) => f.puesto.trim()).map((f) => ({ puesto: f.puesto.trim(), personas: f.personas })),
-          ...tardeEnRegla.map((a) => ({ puesto: a.puesto.trim(), personas: a.personas })),
+          ...tardeEnRegla.map((a) => ({ puesto: a.puesto.trim(), personas: a.personas, abre: a.abre })),
         ],
         lugares: p.rueda.map((l) => l.puestos).filter((l) => l.length),
       }),

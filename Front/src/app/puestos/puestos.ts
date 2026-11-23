@@ -17,6 +17,8 @@ import { GrupoService } from '../services/grupo.service';
 import { AbreTardePuesto, PRIORIDADES, Prioridad, PuestoParque, TIPOS_HORARIO, TipoHorario, tipoHorario } from '../models/puesto';
 import { mensajeDeError } from '../services/cronograma.service';
 import { PuestoService } from '../services/puesto.service';
+import { ReglaService } from '../services/regla.service';
+import { puestosDeReglasConHora } from '../models/regla';
 import { ConfirmacionService } from '../shared/confirmacion/confirmacion.service';
 import { ToastService } from '../shared/toast/toast.service';
 
@@ -40,6 +42,13 @@ import { ToastService } from '../shared/toast/toast.service';
 export class Puestos implements OnInit {
   private api = inject(PuestoService);
   private gruposApi = inject(GrupoService);
+  private reglasApi = inject(ReglaService);
+  /** Los puestos cuya gente y hora salen de las Reglas (la Tirolesa): acá no se les carga horario. */
+  private deReglas = signal<Set<string>>(new Set());
+
+  enReglas(p: PuestoParque): boolean {
+    return this.deReglas().has(clavePuesto(p.nombre));
+  }
   private toast = inject(ToastService);
   private confirmacion = inject(ConfirmacionService);
 
@@ -188,6 +197,7 @@ export class Puestos implements OnInit {
 
   ngOnInit(): void {
     this.cargar();
+    this.reglasApi.listar().subscribe({ next: (r) => this.deReglas.set(puestosDeReglasConHora(r)), error: () => {} });
   }
 
   cambiar(puesto: PuestoParque, prioridad: Prioridad): void {

@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Qué puestos se abren con tantos empleados y tal afluencia (sin contar la Tirolesa): los fijos y los
- * lugares de la rueda. Viene de la tabla "Puestos abiertos" del parque.
+ * Qué puestos se abren con tantos empleados (todos) y tal afluencia: los fijos (la Tirolesa con su gente y su
+ * hora) y los lugares de la rueda. Viene de la tabla "Puestos abiertos" del parque.
  */
 @Entity
 @Table(name = "reglas_apertura")
@@ -41,7 +41,7 @@ public class ReglaApertura {
     @Column(nullable = false, columnDefinition = "varchar(10)")
     private Afluencia afluencia;
 
-    /** "Cajero|2": puesto y cuántas personas. */
+    /** "Cajero|2": puesto y cuántas personas; "Tirolesa|3|13:00": y desde qué hora, si abre tarde. */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "regla_apertura_fijos", joinColumns = @JoinColumn(name = "id_regla"))
     @OrderColumn(name = "orden")

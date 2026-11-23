@@ -33,7 +33,8 @@ export class EditorRegla implements OnInit {
 
   empleados = signal(1);
   afluencia = signal<Afluencia>('MEDIA');
-  fijos = signal<{ puesto: string; personas: number }[]>([]);
+  /** abre: si abre tarde (Tirolesa), desde qué hora; vacío = todo el día. */
+  fijos = signal<{ puesto: string; personas: number; abre?: string | null }[]>([]);
   lugares = signal<string[][]>([]);
 
   esNueva = computed(() => this.regla().id == null);
@@ -65,11 +66,23 @@ export class EditorRegla implements OnInit {
       .sort((a, b) => a.localeCompare(b));
   }
 
-  /** "abre 13:00" para los que tienen horario (la Tirolesa). */
-  horario(puesto: string): string | null {
+  /** La hora con que se propone abrir tarde: la que tiene en Puestos, o las 13. */
+  private horaSugerida(puesto: string): string {
     const p = this.catalogo().find((x) => clavePuesto(x.nombre) === clavePuesto(puesto));
-    if (!p?.abreTarde || p.abreTarde.tipo !== 'ABRE_TARDE') return null;
-    return p.abreTarde.hasta ? `de ${p.abreTarde.abre} a ${p.abreTarde.hasta}` : `desde las ${p.abreTarde.abre}`;
+    return p?.abreTarde?.tipo === 'ABRE_TARDE' ? p.abreTarde.abre : '13:00';
+  }
+
+  /** Desde qué hora abre ese fijo; vacío = todo el día. */
+  cambiarAbre(i: number, abre: string | null): void {
+    this.fijos.update((l) => l.map((f, j) => (j === i ? { ...f, abre: abre || null } : f)));
+  }
+
+  abreTarde(i: number): void {
+    this.cambiarAbre(i, this.horaSugerida(this.fijos()[i].puesto));
+  }
+
+  valor(evento: Event): string {
+    return (evento.target as HTMLInputElement).value;
   }
 
   enFijos = computed(() => this.fijos().reduce((s, f) => s + f.personas, 0));
@@ -80,9 +93,6 @@ export class EditorRegla implements OnInit {
   /** El renglón de la rueda en el que se está sumando otro puesto (se abre con el +). */
   sumandoEn = signal<number | null>(null);
 
-  esDeTarde(puesto: string): boolean {
-    return this.horario(puesto) != null;
-  }
 
   /** Lo que falta arreglar para poder guardar. */
   problemas = computed(() => {
@@ -116,7 +126,11 @@ export class EditorRegla implements OnInit {
     const select = evento.target as HTMLSelectElement;
     const puesto = select.value;
     select.value = '';
-    if (puesto) this.fijos.update((l) => [...l, { puesto, personas: 1 }]);
+    if (!puesto) return;
+    // Un puesto que abre tarde (Tirolesa) entra ya con su hora.
+    const p = this.catalogo().find((x) => clavePuesto(x.nombre) === clavePuesto(puesto));
+    const abre = p?.abreTarde?.tipo === 'ABRE_TARDE' ? p.abreTarde.abre : null;
+    this.fijos.update((l) => [...l, { puesto, personas: 1, abre }]);
   }
 
   personas(i: number, delta: number): void {

@@ -562,6 +562,10 @@ public class GeneradorService {
             // en los que están para los puestos generales. La Tirolesa la manejan sus horarios, no la regla.
             Set<String> deTarde = new HashSet<>();
             for (Tarde t : tardes) deTarde.add(Nombres.clave(t.puesto()));
+            // Lo que en la regla abre tarde (Tirolesa desde las 13:00) también.
+            for (ReglaAperturaDto r : reglasDelDia) {
+                for (PedidoGeneradorDto.Fijo f : r.fijos()) if (f.abre() != null) deTarde.add(Nombres.clave(f.puesto()));
+            }
             ReglaAperturaDto regla = reglaPara(reglasDelDia, trabajan.size(), deTarde);
 
             List<Abierto> abiertos = new ArrayList<>();

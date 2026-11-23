@@ -60,17 +60,23 @@
           </span>
         }
         <div class="ajustes">
-        <button
-          type="button"
-          class="en-fijos abre-tarde"
-          [class.activo]="p.abreTarde"
-          [attr.aria-expanded]="editandoTarde()?.nombre === p.nombre"
-          title="Horario especial: abre tarde, refuerzo o menos gente"
-          (click)="empezarTarde(p)"
-        >
-          <svg lucideClock [strokeWidth]="2.25"></svg>
-          {{ p.abreTarde ? tipoHorario(p.abreTarde.tipo).texto + ' · ' + textoTarde(p) : 'Horario' }}
-        </button>
+        @if (enReglas(p)) {
+          <a class="en-fijos abre-tarde activo" routerLink="/configuracion/reglas" title="La gente y la hora de apertura salen de cada regla">
+            <svg lucideClock [strokeWidth]="2.25"></svg> Horario en Reglas
+          </a>
+        } @else {
+          <button
+            type="button"
+            class="en-fijos abre-tarde"
+            [class.activo]="p.abreTarde"
+            [attr.aria-expanded]="editandoTarde()?.nombre === p.nombre"
+            title="Horario especial: abre tarde, refuerzo o menos gente"
+            (click)="empezarTarde(p)"
+          >
+            <svg lucideClock [strokeWidth]="2.25"></svg>
+            {{ p.abreTarde ? tipoHorario(p.abreTarde.tipo).texto + ' · ' + textoTarde(p) : 'Horario' }}
+          </button>
+        }
         <button
           type="button"
           class="en-fijos abre-tarde"

@@ -4,6 +4,8 @@ import { TipoHorario } from './puesto';
 export interface FijoGenerador {
   puesto: string;
   personas: number;
+  /** En una regla: desde qué hora abre ("13:00") un puesto que abre tarde (Tirolesa); vacío = todo el día. */
+  abre?: string | null;
 }
 
 /** Un lugar de la rueda: uno o varios puestos que hace la misma persona. */

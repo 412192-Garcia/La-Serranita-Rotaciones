@@ -33,14 +33,20 @@
           <h4>Fijos</h4>
           <span class="cuenta-bloque">{{ enFijos() }} {{ enFijos() === 1 ? 'persona' : 'personas' }}</span>
         </div>
-        <p class="ayuda-chica">La misma gente todo el día. La Tirolesa va acá con su gente.</p>
+        <p class="ayuda-chica">La misma gente todo el día. Los que abren más tarde (Tirolesa) llevan su hora: hasta entonces, su gente cubre el parque.</p>
         <div class="lista">
           @for (f of fijos(); track f.puesto; let i = $index) {
-            <div class="fila-fijo" [class.tarde]="esDeTarde(f.puesto)">
+            <div class="fila-fijo" [class.tarde]="!!f.abre">
               <span class="nombre">
                 {{ f.puesto }}
-                @if (horario(f.puesto); as h) {
-                  <span class="horario">abre {{ h }}; antes cubren el parque</span>
+                @if (f.abre) {
+                  <span class="abre">
+                    abre a las
+                    <input type="time" [attr.aria-label]="'Hora en que abre ' + f.puesto" [value]="f.abre" (change)="cambiarAbre(i, valor($event))" />
+                    <button type="button" class="btn-texto" (click)="cambiarAbre(i, null)">todo el día</button>
+                  </span>
+                } @else {
+                  <button type="button" class="btn-texto abre-tarde" (click)="abreTarde(i)">Abre más tarde</button>
                 }
               </span>
               <span class="contador" role="group" [attr.aria-label]="'Personas en ' + f.puesto">

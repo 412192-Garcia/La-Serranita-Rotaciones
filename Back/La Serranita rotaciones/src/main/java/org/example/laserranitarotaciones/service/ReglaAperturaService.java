@@ -148,7 +148,13 @@ public class ReglaAperturaService {
         for (PedidoGeneradorDto.Fijo f : dto.fijos() == null ? List.<PedidoGeneradorDto.Fijo>of() : dto.fijos()) {
             if (f.puesto() == null || f.puesto().isBlank()) continue;
             if (f.personas() < 1 || f.personas() > 5) throw new ValidacionException("Un fijo lleva de 1 a 5 personas.");
-            fijos.add(nombre(f.puesto()) + "|" + f.personas());
+            String abre = null;
+            if (f.abre() != null && !f.abre().isBlank()) {
+                java.time.LocalTime h = ImportadorExcelService.parsearHora(f.abre());
+                if (h == null) throw new ValidacionException("\"" + f.abre() + "\" no es un horario (" + f.puesto().trim() + ").");
+                abre = RotacionService.formatear(h);
+            }
+            fijos.add(nombre(f.puesto()) + "|" + f.personas() + (abre == null ? "" : "|" + abre));
         }
         List<String> lugares = new ArrayList<>();
         for (List<String> l : dto.lugares() == null ? List.<List<String>>of() : dto.lugares()) {
@@ -225,7 +231,7 @@ public class ReglaAperturaService {
             if (fijos.stream().anyMatch(f -> Nombres.clave(f.puesto()).equals(p.getClave()))) continue;
             Integer n = r.afluencia() == Afluencia.BAJA ? p.getPersonasBaja() : r.afluencia() == Afluencia.ALTA ? p.getPersonasAlta() : p.getPersonasMedia();
             int personas = n == null ? 1 : n;
-            fijos.add(new PedidoGeneradorDto.Fijo(p.getNombre(), personas));
+            fijos.add(new PedidoGeneradorDto.Fijo(p.getNombre(), personas, p.getAbre()));
             suma += personas;
         }
         return new ReglaAperturaDto(r.id(), r.empleados() + suma, r.afluencia(), fijos, r.lugares());
@@ -343,7 +349,8 @@ public class ReglaAperturaService {
     static ReglaAperturaDto aDto(ReglaApertura r) {
         List<PedidoGeneradorDto.Fijo> fijos = r.getFijos().stream().map(f -> {
             String[] partes = f.split("\\|");
-            return new PedidoGeneradorDto.Fijo(partes[0], partes.length > 1 ? Integer.parseInt(partes[1]) : 1);
+            return new PedidoGeneradorDto.Fijo(partes[0], partes.length > 1 ? Integer.parseInt(partes[1]) : 1,
+                    partes.length > 2 && !partes[2].isBlank() ? partes[2] : null);
         }).toList();
         List<List<String>> lugares = r.getLugares().stream().map(l -> List.of(l.split("\\+"))).toList();
         return new ReglaAperturaDto(r.getId(), r.getEmpleados(), r.getAfluencia(), fijos, lugares);

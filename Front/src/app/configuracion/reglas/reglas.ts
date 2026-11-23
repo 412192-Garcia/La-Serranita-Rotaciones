@@ -184,7 +184,7 @@ export class Reglas implements OnInit {
       vistos.add(clavePuesto(p));
       lista.push(p);
     };
-    for (const r of reglas) for (const f of r.fijos) sumar(this.esDeTarde(f.puesto) ? tarde : fijos, f.puesto);
+    for (const r of reglas) for (const f of r.fijos) sumar(f.abre || this.esDeTarde(f.puesto) ? tarde : fijos, f.puesto);
     for (const r of reglas) for (const l of r.lugares) for (const p of l) sumar(rueda, p);
     const orden = this.orden().map(clavePuesto);
     const lugar = (p: string) => {
@@ -202,12 +202,14 @@ export class Reglas implements OnInit {
       .map((r) => {
         const celdas = new Map<string, Celda>();
         for (const f of r.fijos) {
-          const tarde = this.esDeTarde(f.puesto);
+          const tarde = !!f.abre || this.esDeTarde(f.puesto);
           celdas.set(clavePuesto(f.puesto), {
-            texto: tarde ? `×${f.personas}` : f.personas > 1 ? `Fijo ×${f.personas}` : 'Fijo',
+            texto: tarde ? `×${f.personas}${f.abre ? ' · ' + f.abre : ''}` : f.personas > 1 ? `Fijo ×${f.personas}` : 'Fijo',
             clase: tarde ? 'tarde' : 'fijo',
             inicia: false,
-            detalle: tarde ? `${f.personas} en ${f.puesto} cuando abre` : `${f.personas === 1 ? 'Una persona' : f.personas + ' personas'} todo el día`,
+            detalle: tarde
+              ? `${f.personas} en ${f.puesto}${f.abre ? ' desde las ' + f.abre : ' cuando abre'}; antes cubren el parque`
+              : `${f.personas === 1 ? 'Una persona' : f.personas + ' personas'} todo el día`,
           });
         }
         // Los lugares de un solo puesto: "Rota".

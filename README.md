@@ -31,7 +31,7 @@ y arma las tarjetas con el nombre de cada uno para imprimir.
   menos gente que lugares, cierra los de menor prioridad. Se puede partir de un cronograma existente.
   Lo que hace un fijo sólo una parte del día (Fotos del segundo cajero a la tarde) todavía no lo arma.
 - **Reglas** (Configuración): según cuántos vinieron (todos) y la afluencia, qué puestos
-  funcionan, cuáles son fijos (Cajero, Baños), cuántos van a la Tirolesa y quién comparte qué (Travesía,
+  funcionan, cuáles son fijos (Cajero, Baños), cuántos van a la Tirolesa y desde qué hora, y quién comparte qué (Travesía,
   Búsqueda y Laberinto). Se ve como una tabla por afluencia: una fila por cantidad y una columna por puesto.
   Se importa del Excel del parque (que cuenta sin la Tirolesa: se le suma su gente) y se corrige a mano. El
   generador arma con esto los fijos, la gente de la Tirolesa y la rueda.
