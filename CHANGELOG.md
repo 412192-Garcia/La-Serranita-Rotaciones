@@ -5,6 +5,7 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 
 ## Sin publicar
 
+- Producción: el backend acepta los pedidos de rotaciones.parquelaserranita.online (antes el login decía "No se pudo entrar.").
 - Reglas, más prolijo: encabezado como en las demás pantallas, la tabla arriba y el orden de rotación plegado al
   final (con el recorrido en una línea). Lo que cambia en el día va en pastillas con la hora adelante y un color por
   tipo. En el editor, cada sección con su ícono y los horarios con la hora primero y botones Abre / + Suma / − Saca.
