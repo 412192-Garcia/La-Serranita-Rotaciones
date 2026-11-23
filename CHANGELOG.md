@@ -5,6 +5,9 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 
 ## Sin publicar
 
+- **Show del zorrito** (y cualquier puesto con roles): nunca lo hace alguien que no lo sabe; si no hay quien,
+  se pide un refuerzo. Con dos en el Show son Zorrito y Presentador (Ayudante recién desde el tercero), aunque
+  el segundo no esté preparado: igual queda el aviso para elegir a mano.
 - Producción: el backend acepta los pedidos de rotaciones.parquelaserranita.online (antes el login decía "No se pudo entrar.").
 - Reglas, más prolijo: encabezado como en las demás pantallas, la tabla arriba y el orden de rotación plegado al
   final (con el recorrido en una línea). Lo que cambia en el día va en pastillas con la hora adelante y un color por

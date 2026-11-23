@@ -30,15 +30,6 @@ final class RolesPuesto {
     record Config(String puesto, List<String> roles, String resto) {
     }
 
-    /** Clave del puesto → cómo se llama el resto (Ayudante), de los que lo tienen. */
-    static Map<String, String> restos(Map<String, Config> configs) {
-        Map<String, String> restos = new HashMap<>();
-        configs.forEach((clave, c) -> {
-            if (c.resto() != null && !c.resto().isBlank()) restos.put(clave, c.resto());
-        });
-        return restos;
-    }
-
     /** Cómo se busca un rol sabido: "clave del puesto|clave del rol". */
     static String clave(String puesto, String rol) {
         return Nombres.clave(puesto) + "|" + Nombres.clave(rol);
@@ -364,26 +355,44 @@ final class RolesPuesto {
     }
 
     /**
-     * En la tarjeta, al lado del puesto va el rol: "Show del zorrito (Zorrito)". restos: clave del puesto → cómo se
-     * llama el resto (Ayudante); los de la celda sin rol llevan ese.
+     * Quién hace qué en una celda: los que tienen rol, con el suyo; los demás, en orden, primero los roles que
+     * faltan (con dos en el Show: Zorrito y Presentador, aunque el segundo no esté preparado) y después el resto
+     * (Ayudante). Sin rol si no hay más nombres.
+     */
+    static Map<Integer, String> rolesDeCelda(Config c, Map<String, Integer> asignados, String celda) {
+        Map<Integer, String> roles = new LinkedHashMap<>();
+        List<Integer> nums = numeros(celda);
+        if (asignados != null) asignados.forEach((rol, n) -> {
+            if (n != null && nums.contains(n)) roles.put(n, rol);
+        });
+        List<String> faltan = new ArrayList<>(c.roles().stream().filter(r -> !roles.containsValue(r)).toList());
+        for (int n : nums) {
+            if (roles.containsKey(n)) continue;
+            if (!faltan.isEmpty()) roles.put(n, faltan.remove(0));
+            else if (c.resto() != null && !c.resto().isBlank()) roles.put(n, c.resto());
+        }
+        return roles;
+    }
+
+    /**
+     * En la tarjeta, al lado del puesto va el rol: "Show del zorrito (Zorrito)". configs: clave del puesto → sus
+     * roles; los de la celda sin rol llevan el que falta o el del resto (rolesDeCelda).
      */
     static List<TarjetaDto> conRoles(List<TarjetaDto> tarjetas, List<PuestoDto> puestos, List<String> horarios,
-                                     Map<String, String> restos) {
+                                     Map<String, Config> configs) {
         if (tarjetas == null) return null;
         Map<Integer, List<String[]>> marcas = new HashMap<>(); // número → (hora, puesto, rol) a marcar
         for (PuestoDto p : puestos) {
-            if (p.roles() == null) continue;
-            String resto = restos.get(Nombres.clave(p.nombre()));
-            for (int k = 0; k < p.roles().size() && k < horarios.size(); k++) {
-                Map<String, Integer> m = p.roles().get(k);
-                if (m == null) continue;
+            Config c = configs.get(Nombres.clave(p.nombre()));
+            if (c == null && p.roles() == null) continue;
+            for (int k = 0; k < p.celdas().size() && k < horarios.size(); k++) {
+                Map<String, Integer> m = p.roles() == null || k >= p.roles().size() ? null : p.roles().get(k);
+                // Sin configuración (un cronograma viejo): sólo los roles que ya tiene.
+                Config este = c != null ? c : new Config(p.nombre(), m == null ? List.of() : List.copyOf(m.keySet()), null);
                 String hora = horarios.get(k);
                 String nombre = p.nombre();
-                m.forEach((rol, n) -> marcas.computeIfAbsent(n, x -> new ArrayList<>()).add(new String[]{hora, nombre, rol}));
-                if (resto == null || k >= p.celdas().size()) continue;
-                for (int n : numeros(p.celdas().get(k))) {
-                    if (!m.containsValue(n)) marcas.computeIfAbsent(n, x -> new ArrayList<>()).add(new String[]{hora, nombre, resto});
-                }
+                rolesDeCelda(este, m, p.celdas().get(k))
+                        .forEach((n, rol) -> marcas.computeIfAbsent(n, x -> new ArrayList<>()).add(new String[]{hora, nombre, rol}));
             }
         }
         if (marcas.isEmpty()) return tarjetas;

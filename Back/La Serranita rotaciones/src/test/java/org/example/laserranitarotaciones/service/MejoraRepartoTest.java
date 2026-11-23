@@ -1,6 +1,7 @@
 package org.example.laserranitarotaciones.service;
 
 import org.example.laserranitarotaciones.model.dto.PuestoDto;
+import org.example.laserranitarotaciones.model.entity.Prioridad;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -96,6 +97,29 @@ class MejoraRepartoTest {
         assertThat(r.get(2).celdas()).containsExactly("", "", "4", "");
         assertThat(r.get(3).celdas()).containsExactly("", "", "", "5");
         assertThat(r.get(4).celdas()).containsExactly("2", "", "3", "3");
+    }
+
+    @Test
+    void unPuestoConRolesNoLoHaceQuienNoLoSabe() {
+        // Show del zorrito (Media, con roles): el 1 lo sabe; el 2 no, y en Libre nadie lo sabe.
+        List<PuestoDto> puestos = List.of(
+                new PuestoDto("Show del zorrito", null, false, List.of("1-2")),
+                new PuestoDto("Minigolf", null, false, List.of("3")),
+                new PuestoDto("Libre", null, false, List.of("4")));
+        var sabe = persona(1, "CZ1", "Show del zorrito");
+        var nancy = persona(2, "Nancy", "Minigolf", "Baños");
+        var p3 = persona(3, "P3", "Minigolf");
+        var p4 = persona(4, "P4", "Entrada");
+        Map<String, Integer> pesos = Map.of("show del zorrito", Prioridad.MEDIA.peso());
+        var porNumero = Map.of(1, sabe, 2, nancy, 3, p3, 4, p4);
+
+        // Sin marcarlo, como es Media, queda como está.
+        assertThat(MejoraReparto.siempreConQuienSabe(puestos, porNumero, pesos)).isSameAs(puestos);
+        // Marcado (tiene roles): Nancy sale a Minigolf, que sabe, y nadie que lo sepa la reemplaza: el show queda
+        // con uno y el otro lugar es para un refuerzo.
+        List<PuestoDto> r = MejoraReparto.siempreConQuienSabe(puestos, porNumero, pesos, Set.of("show del zorrito"));
+        assertThat(r.get(0).celdas()).containsExactly("1");
+        assertThat(r.get(1).celdas().get(0) + "|" + r.get(2).celdas().get(0)).isIn("2-3|4", "3|2-4", "3|4-2");
     }
 
     @Test

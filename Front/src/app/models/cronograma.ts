@@ -23,18 +23,27 @@ export interface Puesto {
 }
 
 /**
- * Cada uno de la celda con su rol: primero los roles (Zorrito, Presentador) y después el resto con el nombre del
- * resto (Ayudante). Vacío si el puesto no tiene roles en esa celda.
+ * Cada uno de la celda con su rol: primero los que tienen rol; los demás, en orden, los roles que faltan (con dos
+ * en el Show: Zorrito y Presentador) y después el resto (Ayudante). Vacío si el puesto no tiene roles.
  */
-export function rolesDeCelda(p: Puesto, i: number, resto: string | null = null): { rol: string; numero: number }[] {
-  const m = p.roles?.[i];
-  if (!m || !Object.keys(m).length) return [];
-  const conRol = Object.entries(m).map(([rol, numero]) => ({ rol, numero }));
-  const usados = new Set(conRol.map((r) => r.numero));
-  const demas = (p.celdas[i] ?? '')
+export function rolesDeCelda(
+  p: Puesto,
+  i: number,
+  resto: string | null = null,
+  roles: string[] = [],
+): { rol: string; numero: number }[] {
+  const m = p.roles?.[i] ?? {};
+  if (!roles.length && !Object.keys(m).length) return [];
+  const numeros = (p.celdas[i] ?? '')
     .split('-')
-    .filter((n) => /^\d+$/.test(n.trim()) && !usados.has(Number(n)))
-    .map((n) => ({ rol: resto ?? '', numero: Number(n) }));
+    .filter((n) => /^\d+$/.test(n.trim()))
+    .map(Number);
+  const conRol = Object.entries(m)
+    .filter(([, numero]) => numeros.includes(numero))
+    .map(([rol, numero]) => ({ rol, numero }));
+  const usados = new Set(conRol.map((r) => r.numero));
+  const faltan = roles.filter((r) => !conRol.some((c) => c.rol === r));
+  const demas = numeros.filter((n) => !usados.has(n)).map((numero) => ({ rol: faltan.shift() ?? resto ?? '', numero }));
   return [...conRol, ...demas];
 }
 

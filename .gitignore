@@ -9,3 +9,6 @@ docker-compose.override.yml
 
 # Excel de prueba
 /ejemplo/
+
+# Migración de datos de la PC al VPS: queda sólo en la PC
+scripts/migrar-datos.py

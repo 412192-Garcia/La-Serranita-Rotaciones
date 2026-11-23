@@ -160,9 +160,15 @@ class RolesPuestoTest {
         assertThat(RolesPuesto.conRoles(tarjetas, puestos, HORAS).get(0).renglones().get(1).texto())
                 .isEqualTo("Al ser cubierto por 5 rote a Show del zorrito (Zorrito)");
 
-        // El otro de la celda, sin rol, es Ayudante.
+        // El otro de la celda, sin rol: con dos, hace el rol que falta (Presentador); con tres, el tercero es Ayudante.
         List<TarjetaDto> delUno = List.of(new TarjetaDto(1, null, List.of(new RenglonDto("16:00", "Rote a Show del zorrito"))));
-        assertThat(RolesPuesto.conRoles(delUno, puestos, HORAS, Map.of(Nombres.clave("Show del zorrito"), "Ayudante"))
+        Map<String, RolesPuesto.Config> configs = Map.of(Nombres.clave("Show del zorrito"), SHOW);
+        assertThat(RolesPuesto.conRoles(delUno, puestos, HORAS, configs)
+                .get(0).renglones().get(0).texto()).isEqualTo("Rote a Show del zorrito (Presentador)");
+        List<PuestoDto> conTres = List.of(new PuestoDto("Show del zorrito", null, false, List.of("", "1-2-3"),
+                List.of(Map.of(), Map.of("Zorrito", 2))));
+        List<TarjetaDto> delTres = List.of(new TarjetaDto(3, null, List.of(new RenglonDto("16:00", "Rote a Show del zorrito"))));
+        assertThat(RolesPuesto.conRoles(delTres, conTres, HORAS, configs)
                 .get(0).renglones().get(0).texto()).isEqualTo("Rote a Show del zorrito (Ayudante)");
     }
 

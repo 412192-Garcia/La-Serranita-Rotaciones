@@ -203,6 +203,15 @@ final class MejoraReparto {
      */
     static List<PuestoDto> siempreConQuienSabe(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero,
                                                Map<String, Integer> pesos) {
+        return siempreConQuienSabe(puestos, porNumero, pesos, Set.of());
+    }
+
+    /**
+     * Igual, y también para los puestos de tambien (claves): los que tienen roles, como el Show del zorrito, no
+     * los hace alguien que no los sabe; antes, refuerzo.
+     */
+    static List<PuestoDto> siempreConQuienSabe(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero,
+                                               Map<String, Integer> pesos, Set<String> tambien) {
         int libre = -1;
         for (int f = 0; f < puestos.size(); f++) if (Nombres.esLibre(puestos.get(f).nombre())) libre = f;
         List<List<Set<Integer>>> filas = new ArrayList<>();
@@ -216,7 +225,8 @@ final class MejoraReparto {
             return q != null && q.hoy().contains(Nombres.clave(puestos.get(f).nombre()));
         };
         java.util.function.IntPredicate esSiempre = f -> !Nombres.noEsPuesto(puestos.get(f).nombre())
-                && pesos.getOrDefault(Nombres.clave(puestos.get(f).nombre()), Prioridad.MEDIA.peso()) >= Prioridad.SIEMPRE.peso();
+                && (pesos.getOrDefault(Nombres.clave(puestos.get(f).nombre()), Prioridad.MEDIA.peso()) >= Prioridad.SIEMPRE.peso()
+                || tambien.contains(Nombres.clave(puestos.get(f).nombre())));
         boolean cambio = false;
         for (int f = 0; f < puestos.size(); f++) {
             if (!esSiempre.test(f)) continue;

@@ -138,9 +138,11 @@ public class SugerenciaService {
                 .map(t -> Nombres.clave(t.puesto())).collect(Collectors.toSet());
         conEstrellas = MejoraReparto.cubrirHuecos(conEstrellas, porNumero, pesos, noAbrir);
         MejoraReparto.Cierre cierre = MejoraReparto.cerrarBajos(conEstrellas, porNumero, pesos);
-        // El Cajero (y lo que tiene que estar siempre) nunca lo hace alguien que no sabe: antes, refuerzo.
+        // El Cajero (y lo que tiene que estar siempre) nunca lo hace alguien que no sabe: antes, refuerzo. Tampoco
+        // un puesto con roles (el Show del zorrito): no se improvisa.
+        Map<String, RolesPuesto.Config> configs = puestos.roles();
         List<PuestoDto> finales = cerrarVaciosBajos(MejoraReparto.siempreConQuienSabe(
-                MejoraReparto.cubrirHuecos(cierre.puestos(), porNumero, pesos, noAbrir), porNumero, pesos), pesos);
+                MejoraReparto.cubrirHuecos(cierre.puestos(), porNumero, pesos, noAbrir), porNumero, pesos, configs.keySet()), pesos);
         // Sólo se avisa lo que sigue cerrado (si alguien de Libre lo volvió a abrir, no).
         Map<String, Set<Integer>> cerradosPorNoSaber = new java.util.TreeMap<>();
         cierre.cerrados().forEach((puesto, ks) -> finales.stream().filter(x -> x.nombre().equals(puesto)).findFirst().ifPresent(x -> {
@@ -156,7 +158,6 @@ public class SugerenciaService {
         }
         // Los roles (Zorrito, Presentador): con la gente ya puesta, quién hace cada uno. Puede traer a alguien de
         // Libre o cambiarlo por otro; lo que nadie puede hacer queda para elegir a mano.
-        Map<String, RolesPuesto.Config> configs = puestos.roles();
         List<FaltanteRolDto> faltantes = List.of();
         if (!configs.isEmpty()) {
             Map<Integer, AsignadorService.Presente> conNumero = porNumero(reparto.asignacion(), porId);
@@ -164,7 +165,7 @@ public class SugerenciaService {
             boolean movio = !celdas(conRoles).equals(celdas(c.puestos()));
             PlanRotacion plan = PlanRotacion.de(c.horarios(), conRoles);
             c = new CronogramaDto(null, c.nombre(), c.afluencia(), c.horarios(), conRoles, rotacion.cantidadEmpleados(plan),
-                    rotacion.fijos(plan), RolesPuesto.conRoles(rotacion.armarTarjetas(plan), conRoles, c.horarios(), RolesPuesto.restos(configs)));
+                    rotacion.fijos(plan), RolesPuesto.conRoles(rotacion.armarTarjetas(plan), conRoles, c.horarios(), configs));
             if (movio) reparto = asignador.conAsignacion(plan, presentes, reparto.asignacion());
             faltantes = RolesPuesto.faltantes(conRoles, configs, c.horarios());
         }
@@ -218,7 +219,7 @@ public class SugerenciaService {
         avisos.addAll(asignador.conAsignacion(plan, presentes, asignacion).avisos());
         CronogramaDto c = new CronogramaDto(viejo.id(), viejo.nombre(), viejo.afluencia(), viejo.horarios(), nuevos,
                 rotacion.cantidadEmpleados(plan), rotacion.fijos(plan),
-                RolesPuesto.conRoles(rotacion.armarTarjetas(plan), nuevos, viejo.horarios(), RolesPuesto.restos(configs)));
+                RolesPuesto.conRoles(rotacion.armarTarjetas(plan), nuevos, viejo.horarios(), configs));
         return new BorradorDto(c, avisos, asignacion, faltantes, refuerzos);
     }
 

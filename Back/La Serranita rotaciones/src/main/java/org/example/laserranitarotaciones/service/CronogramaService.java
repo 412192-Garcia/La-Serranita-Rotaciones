@@ -124,13 +124,15 @@ public class CronogramaService {
                 c.fijos());
     }
 
-    /** Clave del puesto → cómo se llama el resto de su gente (Ayudante), de los que tienen roles. */
-    private java.util.Map<String, String> restos() {
-        java.util.Map<String, String> restos = new java.util.HashMap<>();
+    /** Clave del puesto → sus roles (Zorrito, Presentador) y cómo se llama el resto (Ayudante). */
+    private java.util.Map<String, RolesPuesto.Config> roles() {
+        java.util.Map<String, RolesPuesto.Config> roles = new java.util.HashMap<>();
         puestosParque.findAll().forEach(p -> {
-            if (!p.getRoles().isEmpty() && p.getRolResto() != null) restos.put(p.getClave(), p.getRolResto());
+            if (!p.getRoles().isEmpty()) {
+                roles.put(p.getClave(), new RolesPuesto.Config(p.getNombre(), java.util.List.copyOf(p.getRoles()), p.getRolResto()));
+            }
         });
-        return restos;
+        return roles;
     }
 
     private Cronograma buscar(Long id) {
@@ -146,7 +148,7 @@ public class CronogramaService {
         PlanRotacion plan = PlanRotacion.de(horarios, puestos);
         return new CronogramaDto(c.getId(), c.getNombre(), c.getAfluencia(), horarios, puestos,
                 rotacion.cantidadEmpleados(plan), rotacion.fijos(plan),
-                conTarjetas ? RolesPuesto.conRoles(rotacion.armarTarjetas(plan), puestos, horarios, restos()) : null);
+                conTarjetas ? RolesPuesto.conRoles(rotacion.armarTarjetas(plan), puestos, horarios, roles()) : null);
     }
 
     private static void aplicar(Cronograma c, CronogramaDto dto) {

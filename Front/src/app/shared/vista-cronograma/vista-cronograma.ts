@@ -48,12 +48,13 @@ export class VistaCronograma {
   imprimio = output<void>();
 
   readonly estiloCelda = estiloCelda;
-  /** Clave del puesto → cómo se llama el resto de su gente (Ayudante). */
-  private restos = signal<Map<string, string>>(new Map());
+  /** Clave del puesto → sus roles (Zorrito, Presentador) y cómo se llama el resto (Ayudante). */
+  private conRoles = signal<Map<string, { roles: string[]; resto: string | null }>>(new Map());
 
   /** Cada uno de la celda con su rol (vacío si el puesto no tiene roles ahí). */
   rolesDeCelda(p: Cronograma['puestos'][number], i: number): { rol: string; numero: number }[] {
-    return rolesDeCelda(p, i, this.restos().get(clavePuesto(p.nombre)) ?? null);
+    const c = this.conRoles().get(clavePuesto(p.nombre));
+    return rolesDeCelda(p, i, c?.resto ?? null, c?.roles ?? []);
   }
 
   vista = signal<Vista>('tarjetas');
@@ -87,7 +88,12 @@ export class VistaCronograma {
     inject(PuestoService)
       .listar()
       .subscribe({
-        next: (l) => this.restos.set(new Map(l.filter((p) => p.rolResto).map((p) => [clavePuesto(p.nombre), p.rolResto!]))),
+        next: (l) =>
+          this.conRoles.set(
+            new Map(
+              l.filter((p) => p.roles?.length).map((p) => [clavePuesto(p.nombre), { roles: p.roles ?? [], resto: p.rolResto ?? null }]),
+            ),
+          ),
         error: () => {},
       });
     effect(() => {
