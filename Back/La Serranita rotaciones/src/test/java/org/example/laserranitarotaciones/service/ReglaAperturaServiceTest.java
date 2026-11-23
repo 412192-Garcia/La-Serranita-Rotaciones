@@ -52,6 +52,25 @@ class ReglaAperturaServiceTest {
     }
 
     @Test
+    void laReglaGuardaLaHoraDeLaTirolesaYLosHorariosDelDia() {
+        ReglaAperturaDto r = reglas.guardar(new ReglaAperturaDto(null, 9, Afluencia.MEDIA,
+                List.of(new PedidoGeneradorDto.Fijo("Cajero", 2), new PedidoGeneradorDto.Fijo("Tirolesa", 3, "14:00")),
+                List.of(List.of("Entrada"), List.of("Minigolf"), List.of("Tobogán"), List.of("Carrera")),
+                List.of(new ReglaAperturaDto.Horario("Cajero", org.example.laserranitarotaciones.model.entity.TipoHorario.MENOS, 1, "16:00", null),
+                        new ReglaAperturaDto.Horario("Show del zorrito", org.example.laserranitarotaciones.model.entity.TipoHorario.ABRE_TARDE, 3, "16", "17:00"))));
+
+        ReglaAperturaDto leida = reglas.listar().stream().filter(x -> x.id().equals(r.id())).findFirst().orElseThrow();
+        assertThat(leida.fijos()).contains(new PedidoGeneradorDto.Fijo("Tirolesa", 3, "14:00"));
+        assertThat(leida.horarios()).containsExactly(
+                new ReglaAperturaDto.Horario("Cajero", org.example.laserranitarotaciones.model.entity.TipoHorario.MENOS, 1, "16:00", null),
+                new ReglaAperturaDto.Horario("Show del zorrito", org.example.laserranitarotaciones.model.entity.TipoHorario.ABRE_TARDE, 3, "16:00", "17:00"));
+
+        assertThatThrownBy(() -> reglas.guardar(new ReglaAperturaDto(r.id(), 9, Afluencia.MEDIA, leida.fijos(), leida.lugares(),
+                List.of(new ReglaAperturaDto.Horario("Fotos", org.example.laserranitarotaciones.model.entity.TipoHorario.ABRE_TARDE, 1, "17:00", "16:00")))))
+                .hasMessage("Fotos: tiene que terminar después de empezar.");
+    }
+
+    @Test
     void importaLaTablaDePuestosAbiertos() throws Exception {
         ReglaAperturaService.Importacion r = reglas.importar(excel());
         assertThat(r.avisos()).isEmpty();

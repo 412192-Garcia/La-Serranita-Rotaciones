@@ -80,6 +80,60 @@
 
       <section class="bloque">
         <div class="bloque-titulo">
+          <h4>Horarios</h4>
+          <span class="cuenta-bloque">{{ horarios().length }}</span>
+        </div>
+        <p class="ayuda-chica">
+          Lo que cambia en el día: un puesto que abre un rato (Show del zorrito), uno que suma gente o uno que pierde (un cajero que se va
+          a las 16). Esa gente sale de la rueda o vuelve a ella: no suma a la cuenta.
+        </p>
+        <div class="lista">
+          @for (h of horarios(); track $index; let i = $index) {
+            <div class="fila-horario" [class]="'fila-horario tipo-' + h.tipo.toLowerCase()">
+              <span class="nombre">{{ h.puesto }}</span>
+              <select class="tipo" [attr.aria-label]="'Qué pasa con ' + h.puesto" (change)="cambiarHorario(i, { tipo: $any(valor($event)) })">
+                @for (t of tiposHorario; track t.valor) {
+                  <option [value]="t.valor" [selected]="h.tipo === t.valor">{{ t.texto }}</option>
+                }
+              </select>
+              <span class="contador" role="group" [attr.aria-label]="'Personas en ' + h.puesto">
+                <button type="button" class="btn-cont" aria-label="Una menos" [disabled]="h.personas <= 1" (click)="personasHorario(i, -1)">
+                  <svg lucideMinus [strokeWidth]="2.5"></svg>
+                </button>
+                <strong>{{ h.tipo === 'MENOS' ? '−' : h.tipo === 'REFUERZO' ? '+' : '' }}{{ h.personas }}</strong>
+                <button type="button" class="btn-cont" aria-label="Una más" [disabled]="h.personas >= 10" (click)="personasHorario(i, 1)">
+                  <svg lucidePlus [strokeWidth]="2.5"></svg>
+                </button>
+              </span>
+              <span class="horas">
+                de
+                <input type="time" [attr.aria-label]="'Desde qué hora, ' + h.puesto" [value]="h.desde" (change)="cambiarHorario(i, { desde: valor($event) })" />
+                a
+                <input type="time" [attr.aria-label]="'Hasta qué hora, ' + h.puesto" [value]="h.hasta ?? ''" (change)="cambiarHorario(i, { hasta: valor($event) || null })" />
+                @if (!h.hasta) {
+                  <span class="cierre">el cierre</span>
+                }
+              </span>
+              <button type="button" class="btn-quitar" [attr.aria-label]="'Quitar el horario de ' + h.puesto" title="Quitar" (click)="quitarHorario(i)">
+                <svg lucideX [strokeWidth]="2.5"></svg>
+              </button>
+            </div>
+          }
+        </div>
+        <label class="agregar">
+          <svg lucidePlus [strokeWidth]="2.5"></svg>
+          <span>Agregar horario</span>
+          <select aria-label="Agregar un horario" (change)="agregarHorario($event)">
+            <option value=""></option>
+            @for (p of todosLosPuestos(); track p) {
+              <option [value]="p">{{ p }}</option>
+            }
+          </select>
+        </label>
+      </section>
+
+      <section class="bloque">
+        <div class="bloque-titulo">
           <h4>Rueda</h4>
           <span class="cuenta-bloque">{{ lugares().length }} {{ lugares().length === 1 ? 'persona' : 'personas' }}</span>
         </div>

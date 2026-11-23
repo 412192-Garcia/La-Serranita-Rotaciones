@@ -1,7 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
-  LucideClock,
   LucideEye,
   LucideEyeOff,
   LucideLoaderCircle,
@@ -14,11 +13,9 @@ import {
 import { clavePuesto } from '../models/empleado';
 import { GrupoPuestos } from '../models/grupo';
 import { GrupoService } from '../services/grupo.service';
-import { AbreTardePuesto, PRIORIDADES, Prioridad, PuestoParque, TIPOS_HORARIO, TipoHorario, tipoHorario } from '../models/puesto';
+import { PRIORIDADES, Prioridad, PuestoParque } from '../models/puesto';
 import { mensajeDeError } from '../services/cronograma.service';
 import { PuestoService } from '../services/puesto.service';
-import { ReglaService } from '../services/regla.service';
-import { puestosDeReglasConHora } from '../models/regla';
 import { ConfirmacionService } from '../shared/confirmacion/confirmacion.service';
 import { ToastService } from '../shared/toast/toast.service';
 
@@ -26,8 +23,7 @@ import { ToastService } from '../shared/toast/toast.service';
   selector: 'app-puestos',
   imports: [
     RouterLink,
-    LucideClock,
-    LucideEye,
+      LucideEye,
     LucideEyeOff,
     LucideLoaderCircle,
     LucidePencil,
@@ -42,19 +38,10 @@ import { ToastService } from '../shared/toast/toast.service';
 export class Puestos implements OnInit {
   private api = inject(PuestoService);
   private gruposApi = inject(GrupoService);
-  private reglasApi = inject(ReglaService);
-  /** Los puestos cuya gente y hora salen de las Reglas (la Tirolesa): acá no se les carga horario. */
-  private deReglas = signal<Set<string>>(new Set());
-
-  enReglas(p: PuestoParque): boolean {
-    return this.deReglas().has(clavePuesto(p.nombre));
-  }
   private toast = inject(ToastService);
   private confirmacion = inject(ConfirmacionService);
 
   readonly prioridades = PRIORIDADES;
-  readonly tiposHorario = TIPOS_HORARIO;
-  readonly tipoHorario = tipoHorario;
 
   cargando = signal(true);
   puestos = signal<PuestoParque[]>([]);
@@ -65,8 +52,6 @@ export class Puestos implements OnInit {
   grupos = signal<GrupoPuestos[]>([]);
 
   nuevoPuesto = signal('');
-  /** El puesto al que se le está cargando el horario de "abre tarde". */
-  editandoTarde = signal<(AbreTardePuesto & { nombre: string }) | null>(null);
 
   valor(evento: Event): string {
     return (evento.target as HTMLInputElement).value;
@@ -102,47 +87,6 @@ export class Puestos implements OnInit {
     });
   }
 
-  /** "13:00 a 17:00 · 3/4/5". */
-  textoTarde(p: PuestoParque): string {
-    const a = p.abreTarde!;
-    const s = tipoHorario(a.tipo).signo;
-    return `${a.abre}${a.hasta ? ' a ' + a.hasta : ''} · ${s}${a.baja}/${s}${a.media}/${s}${a.alta}`;
-  }
-
-  empezarTarde(p: PuestoParque): void {
-    if (this.editandoTarde()?.nombre === p.nombre) {
-      this.editandoTarde.set(null);
-      return;
-    }
-    this.editandoTarde.set({ nombre: p.nombre, ...(p.abreTarde ?? { abre: '13:00', hasta: null, baja: 1, media: 2, alta: 3, tipo: 'ABRE_TARDE' as TipoHorario }) });
-  }
-
-  cambiarTarde(cambios: Partial<AbreTardePuesto>): void {
-    this.editandoTarde.update((t) => (t ? { ...t, ...cambios } : t));
-  }
-
-  guardarTarde(): void {
-    const t = this.editandoTarde();
-    if (!t) return;
-    const { nombre, ...abreTarde } = t;
-    this.api.cambiarAbreTarde(nombre, abreTarde).subscribe({
-      next: (p) => {
-        this.puestos.update((l) => l.map((x) => (x.nombre === nombre ? { ...x, abreTarde: p.abreTarde } : x)));
-        this.editandoTarde.set(null);
-      },
-      error: (e) => this.toast.error(mensajeDeError(e, 'No se pudo guardar.')),
-    });
-  }
-
-  quitarTarde(p: PuestoParque): void {
-    this.api.cambiarAbreTarde(p.nombre, null).subscribe({
-      next: () => {
-        this.puestos.update((l) => l.map((x) => (x.nombre === p.nombre ? { ...x, abreTarde: null } : x)));
-        this.editandoTarde.set(null);
-      },
-      error: (e) => this.toast.error(mensajeDeError(e, 'No se pudo guardar.')),
-    });
-  }
   // --- Roles (Show del zorrito: Zorrito, Presentador; el resto, Ayudantes)
 
   /** El puesto al que se le están cargando los roles. */
@@ -197,7 +141,6 @@ export class Puestos implements OnInit {
 
   ngOnInit(): void {
     this.cargar();
-    this.reglasApi.listar().subscribe({ next: (r) => this.deReglas.set(puestosDeReglasConHora(r)), error: () => {} });
   }
 
   cambiar(puesto: PuestoParque, prioridad: Prioridad): void {

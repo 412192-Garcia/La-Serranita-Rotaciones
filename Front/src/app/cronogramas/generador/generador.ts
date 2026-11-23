@@ -245,7 +245,7 @@ export class Generador implements OnInit {
         this.grupos.set(grupos);
         this.catalogo.set(catalogo);
         this.reglas.set(reglas);
-        this.pedido.set(this.propuesta(dia ? this.pedidoDelDia(dia) : { ...structuredClone(VACIO), abrenTarde: this.abrenTardeDePuestos(VACIO.afluencia) }));
+        this.pedido.set(this.propuesta(dia ? this.pedidoDelDia(dia) : structuredClone(VACIO)));
         // Con los que vinieron se genera solo: lo técnico queda en "Ajustes avanzados".
         if (dia) this.generar(false);
       },
@@ -253,28 +253,16 @@ export class Generador implements OnInit {
     });
   }
 
-  /** Los puestos que abren tarde (cargados en Puestos), con las personas de esta afluencia. */
-  private abrenTardeDePuestos(afluencia: PedidoGenerador['afluencia']): AbreTardeGenerador[] {
-    return this.catalogo()
-      .filter((p) => p.abreTarde)
-      .map((p) => ({
-        puesto: p.nombre,
-        personas: personasSegun(p.abreTarde!, afluencia),
-        abre: p.abreTarde!.abre,
-        hasta: p.abreTarde!.hasta,
-        tipo: p.abreTarde!.tipo,
-      }));
+  /** Los puestos que en alguna regla abren tarde (Tirolesa, Show, Fotos): no se proponen como fijos ni en la rueda. */
+  private puestosDeTarde(): Set<string> {
+    const s = puestosDeReglasConHora(this.reglas());
+    for (const r of this.reglas()) for (const h of r.horarios ?? []) if (h.tipo === 'ABRE_TARDE') s.add(clavePuesto(h.puesto));
+    return s;
   }
 
   /** Con reglas, los fijos y la rueda salen de la que corresponde; sin reglas, se completa el refuerzo como antes. */
   private propuesta(p: PedidoGenerador): PedidoGenerador {
     return this.reglas().length ? this.conRegla(p) : this.conFijosDeRefuerzo(p);
-  }
-
-  /** Si el puesto abre tarde (Tirolesa): en la regla va con su gente, pero en el pedido va con su horario. */
-  private abreTarde(puesto: string): AbreTardePuesto | null {
-    const p = this.catalogo().find((x) => clavePuesto(x.nombre) === clavePuesto(puesto));
-    return p?.abreTarde?.tipo === 'ABRE_TARDE' ? p.abreTarde : null;
   }
 
   /**
@@ -291,31 +279,27 @@ export class Generador implements OnInit {
     this.reglaUsada.set({ regla, generales: p.empleados });
     this.aMano.set(false);
     const abiertos = new Set([...regla.fijos.map((f) => clavePuesto(f.puesto)), ...regla.lugares.flat().map(clavePuesto)]);
-    // Lo que abre tarde en la regla (Tirolesa x3 desde las 13:00): su gente y su hora salen de la regla.
-    const esDeTarde = (f: FijoGenerador) => !!f.abre || !!this.abreTarde(f.puesto);
-    const deTarde = regla.fijos.filter(esDeTarde);
-    // Los puestos que manejan las reglas: si esta regla no los trae, ese día no abren.
-    const deReglas = puestosDeReglasConHora(this.reglas());
-    // Si la regla abre todo el día un puesto que tiene horario (Fotos con mucha gente), manda la regla: ese día no
-    // se usa su horario.
+    // Todos los horarios salen de la regla: la Tirolesa (fijo con hora, con su gente) y los del día (Show, Fotos,
+    // un cajero menos). Si la regla abre todo el día un puesto que tiene horario (Fotos con mucha gente), manda eso.
     const todoElDia = new Set(regla.lugares.flat().map(clavePuesto));
-    let abrenTarde = p.abrenTarde
-      .filter((a) => !(a.tipo === 'ABRE_TARDE' && todoElDia.has(clavePuesto(a.puesto))))
-      .filter((a) => !(deReglas.has(clavePuesto(a.puesto)) && !deTarde.some((f) => clavePuesto(f.puesto) === clavePuesto(a.puesto))))
-      .map((a) => (a.tipo === 'REFUERZO' && !abiertos.has(clavePuesto(a.puesto)) ? { ...a, tipo: 'ABRE_TARDE' as const } : a));
-    for (const f of deTarde) {
-      const h = this.abreTarde(f.puesto);
-      const abre = f.abre || h?.abre || '13:00';
-      const ya = abrenTarde.find((a) => clavePuesto(a.puesto) === clavePuesto(f.puesto));
-      if (ya) {
-        abrenTarde = abrenTarde.map((a) => (a === ya ? { ...a, personas: f.personas, abre } : a));
-      } else {
-        abrenTarde = [...abrenTarde, { puesto: f.puesto, personas: f.personas, abre, hasta: h?.hasta ?? null, tipo: 'ABRE_TARDE' }];
-      }
-    }
+    const abrenTarde: AbreTardeGenerador[] = [
+      ...regla.fijos
+        .filter((f) => f.abre)
+        .map((f) => ({ puesto: f.puesto, personas: f.personas, abre: f.abre!, hasta: null, tipo: 'ABRE_TARDE' as const })),
+      ...(regla.horarios ?? [])
+        .filter((h) => !(h.tipo === 'ABRE_TARDE' && todoElDia.has(clavePuesto(h.puesto))))
+        .map((h) => ({
+          puesto: h.puesto,
+          personas: h.personas,
+          abre: h.desde,
+          hasta: h.hasta,
+          // Un refuerzo de un puesto que la regla no abre queda sólo para su horario.
+          tipo: h.tipo === 'REFUERZO' && !abiertos.has(clavePuesto(h.puesto)) ? ('ABRE_TARDE' as const) : h.tipo,
+        })),
+    ];
     return {
       ...p,
-      fijos: regla.fijos.filter((f) => !esDeTarde(f)).map((f) => ({ puesto: f.puesto, personas: f.personas })),
+      fijos: regla.fijos.filter((f) => !f.abre).map((f) => ({ puesto: f.puesto, personas: f.personas })),
       rueda: regla.lugares.map((l, i) => ({ puestos: [...l], inicia: i === 0 })),
       abrenTarde,
     };
@@ -324,9 +308,8 @@ export class Generador implements OnInit {
   guardandoPredeterminado = signal(false);
 
   /**
-   * Lo que está cargado pasa a ser lo que se propone la próxima vez: los horarios especiales quedan en
-   * Puestos (con las personas de esta afluencia) y los fijos y la rueda en la regla de puestos abiertos de
-   * esta cantidad y afluencia. Los horarios que se sacaron del formulario se borran de Puestos.
+   * Lo que está cargado pasa a ser la regla de esta cantidad y afluencia: fijos, rueda y horarios (la Tirolesa, que
+   * abre tarde y sigue hasta el cierre, va como fijo con su hora).
    */
   async guardarPredeterminado(): Promise<void> {
     const p = this.pedido();
@@ -334,20 +317,14 @@ export class Generador implements OnInit {
     const af = textoAfluencia(p.afluencia).toLowerCase();
     // En la regla, la Tirolesa (abre tarde y sigue hasta el cierre) va con su gente, como un puesto más.
     const tardeEnRegla = p.abrenTarde.filter((a) => a.puesto.trim() && a.tipo === 'ABRE_TARDE' && !a.hasta && a.abre <= '14:00');
-    const horarios = p.abrenTarde.filter((a) => a.puesto.trim());
-    const enForm = new Set(horarios.map((a) => clavePuesto(a.puesto)));
-    const sacados = this.catalogo().filter((x) => x.abreTarde && !enForm.has(clavePuesto(x.nombre)));
+    const horarios = p.abrenTarde.filter((a) => a.puesto.trim() && !tardeEnRegla.includes(a));
     const ok = await this.confirmacion.pedir({
       titulo: 'Guardar como predeterminado',
-      mensaje:
-        `Los fijos y la rueda quedan en la regla de ${generales} empleados con afluencia ${af} (Configuración → Reglas). ` +
-        (horarios.length ? `Los horarios especiales (${horarios.map((a) => a.puesto.trim()).join(', ')}) quedan en Configuración → Puestos, con las personas para afluencia ${af}. ` : '') +
-        (sacados.length ? `${sacados.map((x) => x.nombre).join(', ')} deja de tener horario especial.` : ''),
+      mensaje: `Los fijos, la rueda y los horarios quedan en la regla de ${generales} empleados con afluencia ${af} (Configuración → Reglas).`,
       aceptar: 'Guardar',
     });
     if (!ok) return;
 
-    const porClave = new Map(this.catalogo().map((x) => [clavePuesto(x.nombre), x]));
     const pedidos = [
       this.reglasApi.guardar({
         id: null,
@@ -358,27 +335,13 @@ export class Generador implements OnInit {
           ...tardeEnRegla.map((a) => ({ puesto: a.puesto.trim(), personas: a.personas, abre: a.abre })),
         ],
         lugares: p.rueda.map((l) => l.puestos).filter((l) => l.length),
+        horarios: horarios.map((a) => ({ puesto: a.puesto.trim(), tipo: a.tipo, personas: a.personas, desde: a.abre, hasta: a.hasta })),
       }),
-      ...horarios.map((a) => {
-        const antes = porClave.get(clavePuesto(a.puesto))?.abreTarde;
-        const cfg: AbreTardePuesto = {
-          abre: a.abre,
-          hasta: a.hasta,
-          tipo: a.tipo,
-          baja: antes?.baja ?? a.personas,
-          media: antes?.media ?? a.personas,
-          alta: antes?.alta ?? a.personas,
-        };
-        cfg[p.afluencia === 'BAJA' ? 'baja' : p.afluencia === 'ALTA' ? 'alta' : 'media'] = a.personas;
-        return this.puestosApi.cambiarAbreTarde(a.puesto.trim(), cfg);
-      }),
-      ...sacados.map((x) => this.puestosApi.cambiarAbreTarde(x.nombre, null)),
     ];
     this.guardandoPredeterminado.set(true);
     forkJoin(pedidos).subscribe({
       next: () => {
-        forkJoin({ catalogo: this.puestosApi.listar(), reglas: this.reglasApi.listar() }).subscribe(({ catalogo, reglas }) => {
-          this.catalogo.set(catalogo);
+        this.reglasApi.listar().subscribe((reglas) => {
           this.reglas.set(reglas);
           const regla = reglaPara(reglas, generales, p.afluencia);
           if (regla) this.reglaUsada.set({ regla, generales });
@@ -412,9 +375,9 @@ export class Generador implements OnInit {
    * son Cajero x2); la rueda, los puestos de los grupos que saben (Parque) que no sean fijos ni abran tarde.
    */
   private pedidoDelDia(dia: DiaParaGenerar): PedidoGenerador {
-    const abrenTarde = this.abrenTardeDePuestos(dia.afluencia);
-    // Los que abren tarde no son fijos ni rotan; un refuerzo o uno con menos gente sí tienen su gente de todo el día.
-    const tarde = new Set(abrenTarde.filter((a) => a.tipo === 'ABRE_TARDE').map((a) => clavePuesto(a.puesto)));
+    // Los horarios salen de la regla (propuesta()). Los que abren tarde no se proponen como fijos ni en la rueda.
+    const abrenTarde: AbreTardeGenerador[] = [];
+    const tarde = this.puestosDeTarde();
     const deGrupos = new Set(this.grupos().flatMap((g) => g.puestos.map(clavePuesto)));
     const porId = new Map(dia.empleados.map((e) => [e.id!, e]));
     const fijos = new Map<string, { puesto: string; personas: number }>();
@@ -487,7 +450,7 @@ export class Generador implements OnInit {
   partirDe(evento: Event): void {
     const id = Number((evento.target as HTMLSelectElement).value);
     if (!id) {
-      this.pedido.set(this.propuesta({ ...structuredClone(VACIO), abrenTarde: this.abrenTardeDePuestos(VACIO.afluencia) }));
+      this.pedido.set(this.propuesta(structuredClone(VACIO)));
       return;
     }
     this.api.obtener(id).subscribe({
@@ -504,17 +467,9 @@ export class Generador implements OnInit {
     this.pedido.update((p) => ({ ...p, ...cambios }));
   }
 
-  /** La afluencia cambia cuántos van a los que abren tarde (lo cargado en Puestos); después se ajusta a mano. */
+  /** La afluencia elige otra regla (con sus fijos, rueda y horarios): "Aplicar la regla" o el modo simple la aplican. */
   cambiarAfluencia(afluencia: PedidoGenerador['afluencia']): void {
-    const porClave = new Map(this.catalogo().filter((p) => p.abreTarde).map((p) => [clavePuesto(p.nombre), p.abreTarde!]));
-    this.pedido.update((p) => ({
-      ...p,
-      afluencia,
-      abrenTarde: p.abrenTarde.map((a) => {
-        const config = porClave.get(clavePuesto(a.puesto));
-        return config ? { ...a, personas: personasSegun(config, afluencia) } : a;
-      }),
-    }));
+    this.pedido.update((p) => ({ ...p, afluencia }));
   }
 
   // --- Abren más tarde

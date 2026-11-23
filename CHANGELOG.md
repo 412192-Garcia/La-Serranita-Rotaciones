@@ -5,10 +5,13 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 
 ## Sin publicar
 
-- **La hora de la Tirolesa va en cada regla**: "Tirolesa ×3 · 13:00". En el editor, un puesto fijo puede
-  "abrir más tarde" con su hora (si un día con poca gente conviene abrirla a las 14, va en esa regla). Las reglas
-  que había quedaron con las 13:00. En Puestos, la Tirolesa dice "Horario en Reglas"; si una regla no la trae, ese
-  día no abre.
+- **Todos los horarios van en las reglas**, no en Puestos: cada regla dice a qué hora abre la Tirolesa y con
+  cuántos ("Tirolesa ×3 · 13:00") y qué cambia en el día: un cajero que se va a las 16 ("Cajero −1 desde 16:00"),
+  el Show del zorrito de 16 a 17 con 3, Fotos desde las 17, un refuerzo. Así, con poca gente, una regla puede abrir
+  la Tirolesa a las 14 o no sacar un cajero. En la tabla se ven en la columna "En el día" y en el editor hay una
+  sección Horarios. Las reglas que había quedaron con los horarios que tenía Puestos (con las personas de su
+  afluencia). Puestos ya no tiene horario. Al importar el Excel, cada regla copia los de la regla de antes más
+  parecida.
 - La pestaña "Puestos abiertos" de Configuración pasa a llamarse **Reglas**.
 - **Login**: para entrar hace falta usuario y contraseña ("No cerrar sesión" la deja abierta 14 días). Es uno
   solo, para la PC del parque, y se configura en el servidor.

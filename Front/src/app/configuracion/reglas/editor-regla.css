@@ -532,3 +532,70 @@ button {
     min-height: 36px;
   }
 }
+
+/* --- Horarios */
+
+.fila-horario {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 8px 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  border-left: 6px solid #7aa7d6;
+  background: var(--color-card-bg);
+}
+
+.fila-horario.tipo-menos {
+  border-left-color: #c9a227;
+}
+
+.fila-horario.tipo-refuerzo {
+  border-left-color: #6bbf7a;
+}
+
+.fila-horario .nombre {
+  flex: 1;
+  min-width: 120px;
+  font-weight: 700;
+}
+
+.fila-horario .tipo {
+  font-size: 0.85rem;
+  padding: 4px 6px;
+}
+
+.horas {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.horas input {
+  font-size: 0.9rem;
+  padding: 2px 6px;
+}
+
+.cierre {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* En pantalla ancha, cada horario en columnas parejas: puesto, qué pasa, personas, horas y quitar. */
+@media (min-width: 601px) {
+  .fila-horario {
+    display: grid;
+    grid-template-columns: minmax(100px, 1fr) auto auto auto auto;
+  }
+
+  .fila-horario .nombre {
+    min-width: 0;
+  }
+
+  .horas {
+    white-space: nowrap;
+  }
+}

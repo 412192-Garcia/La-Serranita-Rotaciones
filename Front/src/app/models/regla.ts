@@ -1,6 +1,7 @@
 import { Afluencia } from './cronograma';
 import { FijoGenerador } from './generador';
 import { clavePuesto } from './empleado';
+import { TipoHorario } from './puesto';
 
 /**
  * Qué puestos se abren con tantos empleados (todos los que vinieron) y tal afluencia: los fijos (la Tirolesa
@@ -13,6 +14,28 @@ export interface ReglaApertura {
   afluencia: Afluencia;
   fijos: FijoGenerador[];
   lugares: string[][];
+  /** Lo que cambia en el día (Show del zorrito de 16 a 17 con 3, un cajero menos desde las 16). */
+  horarios?: HorarioRegla[];
+}
+
+/**
+ * Un horario especial de la regla. ABRE_TARDE: abre en ese horario (Show, Fotos); REFUERZO: van personas de más;
+ * MENOS: un fijo con varios pierde personas. Esa gente sale de la rueda o vuelve a ella. hasta: null = hasta el cierre.
+ */
+export interface HorarioRegla {
+  puesto: string;
+  tipo: TipoHorario;
+  personas: number;
+  desde: string;
+  hasta: string | null;
+}
+
+/** "Show del zorrito 16:00 a 17:00 · 3", "Cajero −1 desde 16:00". */
+export function textoHorario(h: HorarioRegla): string {
+  const cuando = h.hasta ? `${h.desde} a ${h.hasta}` : `desde ${h.desde}`;
+  if (h.tipo === 'MENOS') return `${h.puesto} −${h.personas} ${cuando}`;
+  if (h.tipo === 'REFUERZO') return `${h.puesto} +${h.personas} ${cuando}`;
+  return `${h.puesto} ${cuando} · ${h.personas}`;
 }
 
 /** Los puestos que en alguna regla abren tarde (Tirolesa): su gente y su hora salen de las reglas. */

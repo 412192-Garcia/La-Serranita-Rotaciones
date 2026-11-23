@@ -14,6 +14,7 @@ import org.example.laserranitarotaciones.model.entity.Afluencia;
 import org.example.laserranitarotaciones.model.entity.Prioridad;
 import org.example.laserranitarotaciones.model.entity.PuestoParque;
 import org.example.laserranitarotaciones.model.entity.ReglaApertura;
+import org.example.laserranitarotaciones.model.entity.TipoHorario;
 import org.example.laserranitarotaciones.repository.PuestoParqueRepository;
 import org.example.laserranitarotaciones.repository.ReglaAperturaRepository;
 import org.springframework.stereotype.Service;
@@ -163,12 +164,29 @@ public class ReglaAperturaService {
         }
         if (fijos.isEmpty() && lugares.isEmpty()) throw new ValidacionException("La regla no tiene ningún puesto.");
 
+        List<String> horarios = new ArrayList<>();
+        for (ReglaAperturaDto.Horario h : dto.horarios() == null ? List.<ReglaAperturaDto.Horario>of() : dto.horarios()) {
+            if (h == null || h.puesto() == null || h.puesto().isBlank()) continue;
+            String puesto = nombre(h.puesto());
+            if (h.personas() < 1 || h.personas() > 10) throw new ValidacionException(puesto + ": las personas van de 1 a 10.");
+            java.time.LocalTime desde = h.desde() == null ? null : ImportadorExcelService.parsearHora(h.desde());
+            if (desde == null) throw new ValidacionException(puesto + ": falta desde qué hora.");
+            java.time.LocalTime hasta = h.hasta() == null || h.hasta().isBlank() ? null : ImportadorExcelService.parsearHora(h.hasta());
+            if (h.hasta() != null && !h.hasta().isBlank() && hasta == null) throw new ValidacionException(puesto + ": \"" + h.hasta() + "\" no es un horario.");
+            if (hasta != null && !hasta.isAfter(desde)) throw new ValidacionException(puesto + ": tiene que terminar después de empezar.");
+            TipoHorario tipo = h.tipo() == null ? TipoHorario.ABRE_TARDE : h.tipo();
+            horarios.add(puesto + "|" + tipo.name() + "|" + h.personas() + "|" + RotacionService.formatear(desde) + "|"
+                    + (hasta == null ? "" : RotacionService.formatear(hasta)));
+        }
+
         r.setEmpleados(dto.empleados());
         r.setAfluencia(dto.afluencia());
         r.getFijos().clear();
         r.getFijos().addAll(fijos);
         r.getLugares().clear();
         r.getLugares().addAll(lugares);
+        r.getHorarios().clear();
+        r.getHorarios().addAll(horarios);
         return aDto(repositorio.save(r));
     }
 
@@ -197,6 +215,9 @@ public class ReglaAperturaService {
         if (leidas.isEmpty()) {
             throw new ValidacionException("No se encontró la tabla: hace falta una fila con Empleados, Afluencia y Puestos abiertos.");
         }
+        // Lo que no viene en la tabla (la Tirolesa con su hora, los horarios del día) se copia de la regla de antes más
+        // parecida: misma afluencia y la cantidad más cercana.
+        List<ReglaAperturaDto> viejas = repositorio.findAll().stream().map(ReglaAperturaService::aDto).toList();
         repositorio.deleteAll();
         repositorio.flush();
         Map<Integer, ReglaAperturaDto> bajas = new HashMap<>();
@@ -204,14 +225,14 @@ public class ReglaAperturaService {
         // La tabla del parque cuenta sin la Tirolesa: se le suma su gente (según la afluencia) para que la regla cuente
         // a todos.
         for (ReglaAperturaDto r : leidas) {
-            guardar(conTardes(r));
+            guardar(conTardes(r, viejas));
             if (r.afluencia() == Afluencia.BAJA) bajas.put(r.empleados(), r);
             if (r.afluencia() == Afluencia.MEDIA) medias.add(r.empleados());
         }
         int total = leidas.size();
         for (ReglaAperturaDto b : bajas.values()) {
             if (medias.contains(b.empleados())) continue;
-            guardar(conTardes(new ReglaAperturaDto(null, b.empleados(), Afluencia.MEDIA, b.fijos(), b.lugares())));
+            guardar(conTardes(new ReglaAperturaDto(null, b.empleados(), Afluencia.MEDIA, b.fijos(), b.lugares()), viejas));
             total++;
         }
         return new Importacion(total, avisos);
@@ -222,8 +243,25 @@ public class ReglaAperturaService {
      * el cierre, desde temprano (la Tirolesa, desde las 13): se agregan como fijos con las personas de esa afluencia
      * y se suman a los empleados.
      */
-    private ReglaAperturaDto conTardes(ReglaAperturaDto r) {
+    private ReglaAperturaDto conTardes(ReglaAperturaDto r, List<ReglaAperturaDto> viejas) {
         List<PedidoGeneradorDto.Fijo> fijos = new ArrayList<>(r.fijos());
+        // Con reglas de antes: de la más parecida, los fijos que abren tarde y los horarios del día.
+        ReglaAperturaDto parecida = viejas.stream().filter(v -> v.afluencia() == r.afluencia())
+                .min(Comparator.comparingInt(v -> Math.abs((v.empleados() - v.fijos().stream().filter(f -> f.abre() != null)
+                        .mapToInt(PedidoGeneradorDto.Fijo::personas).sum()) - r.empleados()))).orElse(null);
+        if (parecida != null) {
+            int suma = 0;
+            for (PedidoGeneradorDto.Fijo f : parecida.fijos()) {
+                if (f.abre() == null || fijos.stream().anyMatch(x -> Nombres.clave(x.puesto()).equals(Nombres.clave(f.puesto())))) continue;
+                fijos.add(f);
+                suma += f.personas();
+            }
+            Set<String> todoElDia = new java.util.HashSet<>();
+            r.lugares().forEach(l -> l.forEach(p -> todoElDia.add(Nombres.clave(p))));
+            List<ReglaAperturaDto.Horario> horarios = parecida.horarios().stream()
+                    .filter(h -> !(h.tipo() == TipoHorario.ABRE_TARDE && todoElDia.contains(Nombres.clave(h.puesto())))).toList();
+            return new ReglaAperturaDto(r.id(), r.empleados() + suma, r.afluencia(), fijos, r.lugares(), horarios);
+        }
         int suma = 0;
         for (PuestoParque p : puestos.findAll()) {
             if (p.getAbre() == null || p.getTipo() != org.example.laserranitarotaciones.model.entity.TipoHorario.ABRE_TARDE
@@ -353,6 +391,11 @@ public class ReglaAperturaService {
                     partes.length > 2 && !partes[2].isBlank() ? partes[2] : null);
         }).toList();
         List<List<String>> lugares = r.getLugares().stream().map(l -> List.of(l.split("\\+"))).toList();
-        return new ReglaAperturaDto(r.getId(), r.getEmpleados(), r.getAfluencia(), fijos, lugares);
+        List<ReglaAperturaDto.Horario> horarios = r.getHorarios().stream().map(h -> {
+            String[] p = h.split("\\|", -1);
+            return new ReglaAperturaDto.Horario(p[0], TipoHorario.valueOf(p[1]), Integer.parseInt(p[2]), p[3],
+                    p.length > 4 && !p[4].isBlank() ? p[4] : null);
+        }).toList();
+        return new ReglaAperturaDto(r.getId(), r.getEmpleados(), r.getAfluencia(), fijos, lugares, horarios);
     }
 }

@@ -60,23 +60,6 @@
           </span>
         }
         <div class="ajustes">
-        @if (enReglas(p)) {
-          <a class="en-fijos abre-tarde activo" routerLink="/configuracion/reglas" title="La gente y la hora de apertura salen de cada regla">
-            <svg lucideClock [strokeWidth]="2.25"></svg> Horario en Reglas
-          </a>
-        } @else {
-          <button
-            type="button"
-            class="en-fijos abre-tarde"
-            [class.activo]="p.abreTarde"
-            [attr.aria-expanded]="editandoTarde()?.nombre === p.nombre"
-            title="Horario especial: abre tarde, refuerzo o menos gente"
-            (click)="empezarTarde(p)"
-          >
-            <svg lucideClock [strokeWidth]="2.25"></svg>
-            {{ p.abreTarde ? tipoHorario(p.abreTarde.tipo).texto + ' · ' + textoTarde(p) : 'Horario' }}
-          </button>
-        }
         <button
           type="button"
           class="en-fijos abre-tarde"
@@ -116,45 +99,6 @@
           }
         </div>
         </div>
-        @if (editandoTarde(); as t) {
-          @if (t.nombre === p.nombre) {
-            <div class="tarde-editor">
-              <label class="dato">
-                <span>Tipo</span>
-                <select (change)="cambiarTarde({ tipo: $any(valor($event)) })">
-                  @for (x of tiposHorario; track x.valor) {
-                    <option [value]="x.valor" [selected]="t.tipo === x.valor">{{ x.texto }}</option>
-                  }
-                </select>
-              </label>
-              <label class="dato"><span>Desde</span><input type="time" [value]="t.abre" (change)="cambiarTarde({ abre: valor($event) })" /></label>
-              <label class="dato"><span>Hasta</span><input type="time" [value]="t.hasta ?? ''" (change)="cambiarTarde({ hasta: valor($event) || null })" /></label>
-              <span class="dato personas-afluencia">
-                <span>{{ tipoHorario(t.tipo).personas }} según la afluencia</span>
-                <span class="en-linea">
-                  <label>baja <input type="number" min="1" max="10" [value]="t.baja" (input)="cambiarTarde({ baja: +valor($event) })" /></label>
-                  <label>media <input type="number" min="1" max="10" [value]="t.media" (input)="cambiarTarde({ media: +valor($event) })" /></label>
-                  <label>alta <input type="number" min="1" max="10" [value]="t.alta" (input)="cambiarTarde({ alta: +valor($event) })" /></label>
-                </span>
-              </span>
-              <p class="ayuda-chica explicacion">
-                @switch (t.tipo) {
-                  @case ('ABRE_TARDE') { Cerrado fuera de ese horario; mientras tanto su gente cubre el parque. }
-                  @case ('REFUERZO') { Abierto todo el día con su gente de siempre; en ese horario van personas de más. }
-                  @case ('MENOS') { Para un fijo con varios: en ese horario se sacan personas, que pasan a cubrir el parque. }
-                }
-                Sin "hasta", hasta el cierre.
-              </p>
-              <span class="tarde-botones">
-                @if (p.abreTarde) {
-                  <button type="button" class="btn-secundario btn-chico" (click)="quitarTarde(p)">Abierto todo el día</button>
-                }
-                <button type="button" class="btn-secundario btn-chico" (click)="editandoTarde.set(null)">Cancelar</button>
-                <button type="button" class="btn-primario btn-chico" (click)="guardarTarde()">Guardar</button>
-              </span>
-            </div>
-          }
-        }
         @if (editandoRoles(); as r) {
           @if (r.nombre === p.nombre) {
             <div class="tarde-editor roles-editor">
@@ -187,7 +131,7 @@
               </label>
               <p class="ayuda-chica explicacion">
                 Cada rol lo hace alguien preparado (se marca en cada empleado). El resto lo hace cualquiera que sepa el puesto; cuántos van
-                depende de las personas del horario del puesto. Si un día no vino nadie preparado, al generar se pregunta quién lo cubre.
+                depende de las personas que le da cada regla en su horario. Si un día no vino nadie preparado, al generar se pregunta quién lo cubre.
               </p>
               <span class="tarde-botones">
                 @if (p.roles?.length) {

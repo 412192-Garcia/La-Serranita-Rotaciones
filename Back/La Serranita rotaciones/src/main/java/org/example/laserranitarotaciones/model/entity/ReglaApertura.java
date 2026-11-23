@@ -54,4 +54,11 @@ public class ReglaApertura {
     @OrderColumn(name = "orden")
     @Column(name = "lugar", nullable = false, length = 250)
     private List<String> lugares = new ArrayList<>();
+
+    /** "Show del zorrito|ABRE_TARDE|3|16:00|17:00", "Cajero|MENOS|1|16:00|": lo que cambia en el día. */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "regla_apertura_horarios", joinColumns = @JoinColumn(name = "id_regla"))
+    @OrderColumn(name = "orden")
+    @Column(name = "horario", nullable = false, length = 120)
+    private List<String> horarios = new ArrayList<>();
 }

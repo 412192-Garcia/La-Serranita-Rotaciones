@@ -30,7 +30,7 @@ export interface PuestoParque {
 export type TipoHorario = 'ABRE_TARDE' | 'REFUERZO' | 'MENOS';
 
 export const TIPOS_HORARIO: { valor: TipoHorario; texto: string; personas: string; signo: string }[] = [
-  { valor: 'ABRE_TARDE', texto: 'Abre tarde', personas: 'Personas', signo: '' },
+  { valor: 'ABRE_TARDE', texto: 'Abre en ese horario', personas: 'Personas', signo: '' },
   { valor: 'REFUERZO', texto: 'Refuerzo (+)', personas: 'De más', signo: '+' },
   { valor: 'MENOS', texto: 'Menos gente (−)', personas: 'De menos', signo: '−' },
 ];

@@ -10,7 +10,7 @@ import {
   LucideX,
 } from '@lucide/angular';
 import { AFLUENCIAS, Afluencia, textoAfluencia } from '../../models/cronograma';
-import { ReglaApertura, personasDe } from '../../models/regla';
+import { ReglaApertura, personasDe, textoHorario } from '../../models/regla';
 import { clavePuesto } from '../../models/empleado';
 import { PuestoParque } from '../../models/puesto';
 import { mensajeDeError } from '../../services/cronograma.service';
@@ -37,6 +37,8 @@ interface FilaRegla {
    */
   segmentos: { span: number; celda: Celda; puestos: string; barras?: { desde: number; hasta: number; inicia: boolean; detalle: string }[] }[];
   mal: boolean;
+  /** Lo que cambia en el día, en texto ("Cajero −1 desde 16:00"). */
+  horarios: string[];
 }
 
 
@@ -269,7 +271,7 @@ export class Reglas implements OnInit {
           }
           segmentos.push({ span: 1, celda: celdas.get(clave) ?? this.cerrado, puestos: columnas[i] });
         }
-        return { regla: r, segmentos, mal: personasDe(r) !== r.empleados };
+        return { regla: r, segmentos, mal: personasDe(r) !== r.empleados, horarios: (r.horarios ?? []).map(textoHorario) };
       }),
   );
 

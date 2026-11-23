@@ -31,7 +31,7 @@ y arma las tarjetas con el nombre de cada uno para imprimir.
   menos gente que lugares, cierra los de menor prioridad. Se puede partir de un cronograma existente.
   Lo que hace un fijo sólo una parte del día (Fotos del segundo cajero a la tarde) todavía no lo arma.
 - **Reglas** (Configuración): según cuántos vinieron (todos) y la afluencia, qué puestos
-  funcionan, cuáles son fijos (Cajero, Baños), cuántos van a la Tirolesa y desde qué hora, y quién comparte qué (Travesía,
+  funcionan, cuáles son fijos (Cajero, Baños), cuántos van a la Tirolesa y desde qué hora, quién comparte qué y lo que cambia en el día (horarios) (Travesía,
   Búsqueda y Laberinto). Se ve como una tabla por afluencia: una fila por cantidad y una columna por puesto.
   Se importa del Excel del parque (que cuenta sin la Tirolesa: se le suma su gente) y se corrige a mano. El
   generador arma con esto los fijos, la gente de la Tirolesa y la rueda.
@@ -41,9 +41,8 @@ y arma las tarjetas con el nombre de cada uno para imprimir.
 - **Puestos** (Configuración): la lista de puestos del parque. Los de los cronogramas se agregan
   solos; los demás se cargan a mano. Cada uno tiene prioridad alta, media o baja (media si nunca se
   cambió), que sólo decide algo cuando el reparto no sale perfecto: qué puesto queda sin nadie o con
-  alguien que no lo sabe. Ahí también se renombra o junta un puesto en todos lados, y se carga si abre
-  tarde (Tirolesa desde las 13) o tiene un refuerzo (Casa del zorrito: una persona todo el día y más en
-  el evento de 16 a 17), con cuántas personas según la afluencia. Con "Roles" un puesto tiene roles
+  alguien que no lo sabe. Ahí también se renombra o junta un puesto en todos lados. Los horarios (a qué
+  hora abre la Tirolesa, el Show del zorrito, un cajero que se va a las 16) van en cada regla. Con "Roles" un puesto tiene roles
   que necesitan a alguien preparado (Show del zorrito: Zorrito y Presentador; el resto, Ayudantes); en
   cada empleado se marca para cuáles está preparado.
 - **Generar con los que vinieron** (en Armar el día): abre el generador con los presentes; propone

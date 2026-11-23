@@ -2,8 +2,8 @@ import { Component, computed, input, OnInit, output, signal } from '@angular/cor
 import { LucideChevronDown, LucideChevronUp, LucideMinus, LucidePlus, LucideX } from '@lucide/angular';
 import { AFLUENCIAS, Afluencia, textoAfluencia } from '../../models/cronograma';
 import { clavePuesto } from '../../models/empleado';
-import { PuestoParque } from '../../models/puesto';
-import { ReglaApertura } from '../../models/regla';
+import { PuestoParque, TIPOS_HORARIO, TipoHorario } from '../../models/puesto';
+import { HorarioRegla, ReglaApertura } from '../../models/regla';
 import { Modal } from '../../shared/modal/modal';
 
 /**
@@ -36,6 +36,8 @@ export class EditorRegla implements OnInit {
   /** abre: si abre tarde (Tirolesa), desde qué hora; vacío = todo el día. */
   fijos = signal<{ puesto: string; personas: number; abre?: string | null }[]>([]);
   lugares = signal<string[][]>([]);
+  horarios = signal<HorarioRegla[]>([]);
+  readonly tiposHorario = TIPOS_HORARIO;
 
   esNueva = computed(() => this.regla().id == null);
 
@@ -45,6 +47,7 @@ export class EditorRegla implements OnInit {
     this.afluencia.set(r.afluencia);
     this.fijos.set(r.fijos.map((f) => ({ ...f })));
     this.lugares.set(r.lugares.map((l) => [...l]));
+    this.horarios.set((r.horarios ?? []).map((h) => ({ ...h })));
   }
 
   /** Los puestos que todavía no están en la regla. */
@@ -94,6 +97,34 @@ export class EditorRegla implements OnInit {
   sumandoEn = signal<number | null>(null);
 
 
+  // --- Horarios (lo que cambia en el día)
+
+  /** Todos los puestos, para elegir el de un horario. */
+  todosLosPuestos = computed(() => this.catalogo().map((p) => p.nombre).sort((a, b) => a.localeCompare(b)));
+
+  agregarHorario(evento: Event): void {
+    const select = evento.target as HTMLSelectElement;
+    const puesto = select.value;
+    select.value = '';
+    if (!puesto) return;
+    // Un puesto fijo con varios suele perder gente (Cajero); el resto, abrir en un horario (Show, Fotos).
+    const fijo = this.fijos().find((f) => clavePuesto(f.puesto) === clavePuesto(puesto));
+    const tipo: TipoHorario = fijo && fijo.personas > 1 ? 'MENOS' : 'ABRE_TARDE';
+    this.horarios.update((l) => [...l, { puesto, tipo, personas: 1, desde: '16:00', hasta: null }]);
+  }
+
+  cambiarHorario(i: number, cambios: Partial<HorarioRegla>): void {
+    this.horarios.update((l) => l.map((h, j) => (j === i ? { ...h, ...cambios } : h)));
+  }
+
+  personasHorario(i: number, delta: number): void {
+    this.horarios.update((l) => l.map((h, j) => (j === i ? { ...h, personas: Math.min(10, Math.max(1, h.personas + delta)) } : h)));
+  }
+
+  quitarHorario(i: number): void {
+    this.horarios.update((l) => l.filter((_, j) => j !== i));
+  }
+
   /** Lo que falta arreglar para poder guardar. */
   problemas = computed(() => {
     const lista: string[] = [];
@@ -102,6 +133,14 @@ export class EditorRegla implements OnInit {
     const otra = this.reglas().find((r) => r.id !== this.regla().id && r.empleados === n && r.afluencia === this.afluencia());
     if (otra) lista.push(`Ya hay una regla para ${n} con afluencia ${textoAfluencia(this.afluencia()).toLowerCase()}.`);
     if (!this.fijos().length && !this.lugares().length) lista.push('Agregá algún puesto.');
+    for (const h of this.horarios()) {
+      if (!h.desde) lista.push(`${h.puesto}: falta desde qué hora.`);
+      else if (h.hasta && h.hasta <= h.desde) lista.push(`${h.puesto}: tiene que terminar después de empezar.`);
+      if (h.tipo === 'MENOS') {
+        const fijo = this.fijos().find((f) => clavePuesto(f.puesto) === clavePuesto(h.puesto));
+        if (!fijo || fijo.personas - h.personas < 1) lista.push(`${h.puesto}: para sacarle ${h.personas}, tiene que ser fijo con más gente.`);
+      }
+    }
     const ocupa = this.ocupa();
     if (ocupa !== n) {
       const dif = Math.abs(ocupa - n);
@@ -186,6 +225,7 @@ export class EditorRegla implements OnInit {
       afluencia: this.afluencia(),
       fijos: this.fijos(),
       lugares: this.lugares(),
+      horarios: this.horarios(),
     });
   }
 }

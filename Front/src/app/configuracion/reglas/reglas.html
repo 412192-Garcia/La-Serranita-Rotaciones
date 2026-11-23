@@ -98,6 +98,7 @@
               @for (c of columnas(); track c) {
                 <th class="col-puesto">{{ c }}</th>
               }
+              <th class="col-horarios">En el día</th>
               <th class="col-acciones" aria-label="Acciones"></th>
             </tr>
           </thead>
@@ -141,6 +142,13 @@
                     </td>
                   }
                 }
+                <td class="col-horarios">
+                  @for (h of f.horarios; track $index) {
+                    <span class="horario-dia">{{ h }}</span>
+                  } @empty {
+                    <span class="sin-horarios">—</span>
+                  }
+                </td>
                 <td class="col-acciones">
                   <button type="button" class="btn-mini" [attr.aria-label]="'Editar la de ' + f.regla.empleados" title="Editar" (click)="empezar(f.regla.empleados, vista())">
                     <svg lucidePencil [strokeWidth]="2.25"></svg>
@@ -152,7 +160,7 @@
               </tr>
               @if (f.mal) {
                 <tr class="fila-nota">
-                  <td [attr.colspan]="columnas().length + 2">
+                  <td [attr.colspan]="columnas().length + 3">
                     <span class="mal">Ocupa {{ personasDe(f.regla) }} personas, no {{ f.regla.empleados }}.</span>
                   </td>
                 </tr>

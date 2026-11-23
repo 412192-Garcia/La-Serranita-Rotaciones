@@ -473,3 +473,28 @@ td.celda-barras {
 .barra .arranca {
   margin-right: 0;
 }
+
+table.reglas .col-horarios {
+  min-width: 190px;
+  text-align: left;
+  white-space: normal;
+  font-weight: 400;
+}
+
+table.reglas thead th.col-horarios {
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  vertical-align: bottom;
+}
+
+.horario-dia {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.sin-horarios {
+  color: var(--color-text-muted);
+}
