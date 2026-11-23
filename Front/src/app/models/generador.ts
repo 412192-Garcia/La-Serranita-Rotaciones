@@ -76,6 +76,8 @@ export interface PedidoCubrirRol {
   rol: string;
   celdas: number[];
   empleadoId: number;
+  /** Los refuerzos que se pedían: donde faltaba gente, se sigue pidiendo si no entró nadie. */
+  refuerzos?: Refuerzo[];
 }
 
 export interface FaltanteRol {

@@ -16,6 +16,9 @@
         <div class="datos">
           <div class="titulo">
             <strong>{{ e.nombre }}</strong>
+            @if (e.apodo) {
+              <span class="apodo">"{{ e.apodo }}"</span>
+            }
             @if (e.enEntrenamiento) {
               <span class="badge-entrenamiento">En entrenamiento{{ nombreDe(e.acompananteHabitualId) ? ' · acompaña a ' + nombreDe(e.acompananteHabitualId) : '' }}</span>
             }

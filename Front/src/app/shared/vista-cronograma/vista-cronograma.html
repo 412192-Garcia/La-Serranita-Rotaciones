@@ -71,7 +71,8 @@
               </th>
               @for (c of p.celdas; track $index; let i = $index) {
                 @let e = estiloCelda(c);
-                @if (refuerzos().get(p.nombre)?.has(i)) {
+                @let pideRefuerzo = refuerzos().get(p.nombre)?.has(i);
+                @if (pideRefuerzo && !c.trim()) {
                   <td class="refuerzo" title="Quedó sin nadie: pedí un refuerzo">Refuerzo</td>
                 } @else {
                 @let conRol = rolesDeCelda(p, i);
@@ -82,6 +83,9 @@
                     }
                   } @else {
                     {{ c }}
+                  }
+                  @if (pideRefuerzo) {
+                    <span class="falta-uno" title="Falta gente: pedí un refuerzo">+ Refuerzo</span>
                   }
                 </td>
                 }

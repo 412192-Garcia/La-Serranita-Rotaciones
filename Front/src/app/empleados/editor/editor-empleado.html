@@ -1,158 +1,183 @@
 <div class="barra">
   <a class="btn-secundario" routerLink="/configuracion/empleados"><svg lucideArrowLeft [strokeWidth]="2.5"></svg> Volver</a>
-  <h2>{{ id() ? 'Editar empleado' : 'Nuevo empleado' }}</h2>
+  <h2>{{ id() ? nombre() || 'Editar empleado' : 'Nuevo empleado' }}</h2>
 </div>
 
 @if (cargando()) {
   <section class="panel centrado"><svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg></section>
 } @else {
-  <section class="panel formulario">
-    <div class="campo-grupo">
-      <label class="etiqueta" for="nombre">Nombre</label>
-      <input id="nombre" type="text" maxlength="60" [value]="nombre()" [class.con-error]="errorNombre()" (input)="cambiarNombre($event)" />
-      @if (errorNombre()) {
-        <span class="error-campo">{{ errorNombre() }}</span>
-      }
+  <section class="panel bloque">
+    <h3><svg lucideIdCard [strokeWidth]="2.25"></svg> Datos</h3>
+    <div class="datos">
+      <div class="dato">
+        <label class="etiqueta" for="nombre">Nombre</label>
+        <input id="nombre" type="text" maxlength="60" [value]="nombre()" [class.con-error]="errorNombre()" (input)="cambiarNombre($event)" />
+        @if (errorNombre()) {
+          <span class="error-campo">{{ errorNombre() }}</span>
+        }
+      </div>
+      <div class="dato">
+        <label class="etiqueta" for="apodo">Apodo <span class="opcional">(opcional)</span></label>
+        <input id="apodo" type="text" maxlength="30" placeholder="Para lo impreso" [value]="apodo()" (input)="cambiarApodo($event)" />
+        <span class="ayuda">En las tarjetas va: <strong>{{ enLoImpreso() }}</strong></span>
+      </div>
     </div>
 
-    <div class="campo-grupo">
-      <label class="entrenamiento">
-        <input type="checkbox" [checked]="enEntrenamiento()" (change)="enEntrenamiento.set(!enEntrenamiento())" />
-        En entrenamiento
+    <div class="entrenamiento" [class.activo]="enEntrenamiento()">
+      <label class="interruptor">
+        <input type="checkbox" role="switch" [checked]="enEntrenamiento()" (change)="enEntrenamiento.set(!enEntrenamiento())" />
+        <span class="pista" aria-hidden="true"></span>
+        <span><svg lucideGraduationCap [strokeWidth]="2.25"></svg> En entrenamiento</span>
       </label>
       @if (enEntrenamiento()) {
-        <p class="ayuda">No ocupa un lugar en el cronograma: acompaña a otro y su tarjeta es la de esa persona.</p>
-        <label class="etiqueta" for="acompanante">Acompaña normalmente a</label>
-        <select id="acompanante" (change)="cambiarAcompanante($event)">
-          <option value="" [selected]="acompananteHabitualId() == null">Se elige cada día</option>
-          @for (a of acompanantes(); track a.id) {
-            <option [value]="a.id" [selected]="acompananteHabitualId() === a.id">{{ a.nombre }}</option>
-          }
-        </select>
+        <p class="ayuda">No ocupa un número del cronograma: acompaña a otro y lleva su tarjeta.</p>
+        <div class="dato">
+          <label class="etiqueta" for="acompanante">Acompaña normalmente a</label>
+          <select id="acompanante" (change)="cambiarAcompanante($event)">
+            <option value="" [selected]="acompananteHabitualId() == null">Se elige cada día</option>
+            @for (a of acompanantes(); track a.id) {
+              <option [value]="a.id" [selected]="acompananteHabitualId() === a.id">{{ a.nombre }}</option>
+            }
+          </select>
+        </div>
       }
     </div>
+  </section>
 
-    <div class="campo-grupo">
-      <span class="etiqueta">Puestos que sabe hacer</span>
-      <p class="ayuda">
-        Tocá un puesto para marcarlo. Con la estrella queda como principal: ahí tiene prioridad.
-        @if (grupos().length) {
-          Los grupos (con flecha) incluyen varios puestos: marcá el grupo si los sabe todos, o desplegalo para marcar sólo algunos o elegir el principal.
-        }
-      </p>
-      @if (todos().length === 0) {
-        <p class="ayuda">Primero cargá algún cronograma para ver los puestos.</p>
-      }
-      <div class="puestos">
-        @for (g of grupos(); track g.id) {
-          <div class="puesto grupo" [class.activo]="sabe().includes(g.nombre)" [class.parcial]="!sabe().includes(g.nombre) && sueltosDe(g) > 0">
-            <button type="button" class="puesto-nombre" [title]="g.puestos.join(', ')" [attr.aria-pressed]="sabe().includes(g.nombre)" (click)="alternarGrupo(g)">
-              @if (principalesDe(g).length) {
-                <svg lucideStar class="estrella-chica" [strokeWidth]="2.25" [attr.aria-label]="'Principal: ' + principalesDe(g).join(', ')"></svg>
-              }
-              {{ g.nombre }}
-              @if (!sabe().includes(g.nombre) && sueltosDe(g) > 0) {
-                <span class="cuenta">{{ sueltosDe(g) }}/{{ g.puestos.length }}</span>
-              }
-            </button>
-            <button
-              type="button"
-              class="estrella desplegar"
-              [class.abierto]="abierto() === g.nombre"
-              [attr.aria-expanded]="abierto() === g.nombre"
-              [attr.aria-label]="'Ver los puestos de ' + g.nombre"
-              (click)="abierto.set(abierto() === g.nombre ? null : g.nombre)"
-            >
-              <svg lucideChevronDown [strokeWidth]="2.25"></svg>
-            </button>
-          </div>
-        }
-        @for (p of sueltos(); track p) {
-          <div class="puesto" [class.activo]="loSabe(p)">
-            <button type="button" class="puesto-nombre" [attr.aria-pressed]="loSabe(p)" (click)="alternarSabe(p)">
-              {{ p }}
-            </button>
-            <button
-              type="button"
-              class="estrella"
-              [class.marcada]="principales().includes(p)"
-              [attr.aria-pressed]="principales().includes(p)"
-              [attr.aria-label]="'Principal: ' + p"
-              title="Principal"
-              (click)="alternarPrincipal(p)"
-            >
-              <svg lucideStar [strokeWidth]="2.25"></svg>
-            </button>
-          </div>
-        }
-      </div>
-      @for (g of grupos(); track g.id) {
-        @if (abierto() === g.nombre) {
-          <div class="puestos del-grupo">
-            <span class="del-grupo-titulo">{{ g.nombre }}:</span>
-            @for (p of g.puestos; track p) {
-              <div class="puesto" [class.activo]="loSabe(p)">
-                @if (sabe().includes(g.nombre)) {
-                  <!-- Con el grupo marcado los sabe todos: sólo se elige el principal. -->
-                  <span class="puesto-nombre fijo">{{ p }}</span>
-                } @else {
-                  <button type="button" class="puesto-nombre" [attr.aria-pressed]="loSabe(p)" (click)="alternarSabe(p)">{{ p }}</button>
-                }
-                <button
-                  type="button"
-                  class="estrella"
-                  [class.marcada]="principales().includes(p)"
-                  [attr.aria-pressed]="principales().includes(p)"
-                  [attr.aria-label]="'Principal: ' + p"
-                  title="Principal"
-                  (click)="alternarPrincipal(p)"
-                >
-                  <svg lucideStar [strokeWidth]="2.25"></svg>
-                </button>
-              </div>
-            }
-          </div>
-        }
-      }
+  <section class="panel bloque">
+    <div class="titulo-bloque">
+      <h3><svg lucideMapPin [strokeWidth]="2.25"></svg> Puestos que sabe</h3>
+      <span class="resumen">{{ resumenPuestos() }}</span>
     </div>
-
-    @if (conRoles().length) {
-      <div class="campo-grupo">
-        <span class="etiqueta">Roles para los que está preparado</span>
-        <p class="ayuda">El resto de la gente del puesto lo hace cualquiera que lo sepa.</p>
-        @for (p of conRoles(); track p.nombre) {
-          <div class="puestos roles-de">
-            <span class="del-grupo-titulo">{{ p.nombre }}:</span>
-            @for (r of p.roles; track r) {
-              <div class="puesto" [class.activo]="tieneRol(p.nombre, r)">
-                <button type="button" class="puesto-nombre" [attr.aria-pressed]="tieneRol(p.nombre, r)" (click)="alternarRol(p.nombre, r)">
-                  {{ r }}
-                </button>
-              </div>
-            }
-          </div>
-        }
-      </div>
+    <p class="ayuda">
+      Tocá un puesto para marcarlo. La <svg lucideStar class="estrella-chica" [strokeWidth]="2.25"></svg> lo deja como principal: ahí tiene prioridad.
+      @if (grupos().length) {
+        Un grupo (con flecha) son varios puestos: marcalo si los sabe todos, o desplegalo para elegir algunos.
+      }
+    </p>
+    @if (todos().length === 0) {
+      <p class="ayuda">Primero cargá algún cronograma para ver los puestos.</p>
     }
-
-    @if (tareasConSaber().length) {
-      <div class="campo-grupo">
-        <span class="etiqueta">Tareas de apertura que sabe hacer</span>
-        <div class="puestos">
-          @for (t of tareasConSaber(); track t.id) {
-            <div class="puesto" [class.activo]="tareas().includes(t.id!)">
-              <button type="button" class="puesto-nombre" [attr.aria-pressed]="tareas().includes(t.id!)" (click)="alternarTarea(t.id!)">{{ t.nombre }}</button>
+    <div class="puestos">
+      @for (g of grupos(); track g.id) {
+        <div class="puesto grupo" [class.activo]="sabe().includes(g.nombre)" [class.parcial]="!sabe().includes(g.nombre) && sueltosDe(g) > 0">
+          <button type="button" class="puesto-nombre" [title]="g.puestos.join(', ')" [attr.aria-pressed]="sabe().includes(g.nombre)" (click)="alternarGrupo(g)">
+            @if (principalesDe(g).length) {
+              <svg lucideStar class="estrella-chica" [strokeWidth]="2.25" [attr.aria-label]="'Principal: ' + principalesDe(g).join(', ')"></svg>
+            }
+            {{ g.nombre }}
+            @if (!sabe().includes(g.nombre) && sueltosDe(g) > 0) {
+              <span class="cuenta">{{ sueltosDe(g) }}/{{ g.puestos.length }}</span>
+            }
+          </button>
+          <button
+            type="button"
+            class="estrella desplegar"
+            [class.abierto]="abierto() === g.nombre"
+            [attr.aria-expanded]="abierto() === g.nombre"
+            [attr.aria-label]="'Ver los puestos de ' + g.nombre"
+            (click)="abierto.set(abierto() === g.nombre ? null : g.nombre)"
+          >
+            <svg lucideChevronDown [strokeWidth]="2.25"></svg>
+          </button>
+        </div>
+      }
+      @for (p of sueltos(); track p) {
+        <div class="puesto" [class.activo]="loSabe(p)">
+          <button type="button" class="puesto-nombre" [attr.aria-pressed]="loSabe(p)" (click)="alternarSabe(p)">
+            {{ p }}
+          </button>
+          <button
+            type="button"
+            class="estrella"
+            [class.marcada]="principales().includes(p)"
+            [attr.aria-pressed]="principales().includes(p)"
+            [attr.aria-label]="'Principal: ' + p"
+            title="Principal"
+            (click)="alternarPrincipal(p)"
+          >
+            <svg lucideStar [strokeWidth]="2.25"></svg>
+          </button>
+        </div>
+      }
+    </div>
+    @for (g of grupos(); track g.id) {
+      @if (abierto() === g.nombre) {
+        <div class="puestos del-grupo">
+          <span class="del-grupo-titulo">{{ g.nombre }}</span>
+          @for (p of g.puestos; track p) {
+            <div class="puesto" [class.activo]="loSabe(p)">
+              @if (sabe().includes(g.nombre)) {
+                <!-- Con el grupo marcado los sabe todos: sólo se elige el principal. -->
+                <span class="puesto-nombre fijo">{{ p }}</span>
+              } @else {
+                <button type="button" class="puesto-nombre" [attr.aria-pressed]="loSabe(p)" (click)="alternarSabe(p)">{{ p }}</button>
+              }
+              <button
+                type="button"
+                class="estrella"
+                [class.marcada]="principales().includes(p)"
+                [attr.aria-pressed]="principales().includes(p)"
+                [attr.aria-label]="'Principal: ' + p"
+                title="Principal"
+                (click)="alternarPrincipal(p)"
+              >
+                <svg lucideStar [strokeWidth]="2.25"></svg>
+              </button>
             </div>
           }
         </div>
-      </div>
+      }
     }
   </section>
+
+  @if (rolesQueSabe().length) {
+    <section class="panel bloque">
+      <div class="titulo-bloque">
+        <h3><svg lucideDrama [strokeWidth]="2.25"></svg> Roles</h3>
+        <span class="resumen">{{ roles().length ? roles().length + ' marcado' + (roles().length === 1 ? '' : 's') : 'Ninguno' }}</span>
+      </div>
+      <p class="ayuda">Para qué está preparado dentro de un puesto. El resto del puesto lo hace cualquiera que lo sepa.</p>
+      <div class="roles">
+        @for (p of rolesQueSabe(); track p.nombre) {
+          <div class="fila-roles">
+            <span class="del-grupo-titulo">{{ p.nombre }}</span>
+            <div class="puestos">
+              @for (r of p.roles; track r) {
+                <div class="puesto" [class.activo]="tieneRol(p.nombre, r)">
+                  <button type="button" class="puesto-nombre" [attr.aria-pressed]="tieneRol(p.nombre, r)" (click)="alternarRol(p.nombre, r)">
+                    {{ r }}
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  @if (tareasConSaber().length) {
+    <section class="panel bloque">
+      <div class="titulo-bloque">
+        <h3><svg lucideClipboardList [strokeWidth]="2.25"></svg> Tareas de apertura</h3>
+        <span class="resumen">{{ tareas().length }} de {{ tareasConSaber().length }}</span>
+      </div>
+      <div class="puestos">
+        @for (t of tareasConSaber(); track t.id) {
+          <div class="puesto" [class.activo]="tareas().includes(t.id!)">
+            <button type="button" class="puesto-nombre" [attr.aria-pressed]="tareas().includes(t.id!)" (click)="alternarTarea(t.id!)">{{ t.nombre }}</button>
+          </div>
+        }
+      </div>
+    </section>
+  }
 
   <div class="pie">
     @if (error()) {
       <span class="error-campo">{{ error() }}</span>
     }
+    <a class="btn-secundario" routerLink="/configuracion/empleados">Cancelar</a>
     <button type="button" class="btn-primario" [disabled]="guardando()" (click)="guardar()">
       @if (guardando()) {
         <svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg> Guardando…

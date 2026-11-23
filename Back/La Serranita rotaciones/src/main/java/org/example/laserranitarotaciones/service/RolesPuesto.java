@@ -164,8 +164,9 @@ final class RolesPuesto {
     /**
      * Trae a la celda (fila i, horario k) a alguien preparado para el rol: primero de Libre; si no, de otro puesto,
      * a cambio de uno del puesto sin rol que sepa lo que el otro hacía; o, si nadie del puesto lo sabe, lo cubre
-     * uno de Libre que sí (y uno del puesto sin rol pasa a Libre). Sacar a alguien de su estrella, sólo si no hay
-     * otra; nunca del almuerzo. Devuelve el número traído o null.
+     * uno de Libre que sí (y uno del puesto sin rol pasa a Libre), o uno de otro puesto que sí (y el sin rol va a ese
+     * puesto, si lo sabe: Santiago presenta, Camila deja Entrada por la Casa del zorrito y Tomás pasa a Entrada).
+     * Sacar a alguien de su estrella, sólo si no hay otra; nunca del almuerzo. Devuelve el número traído o null.
      */
     private static Integer traer(List<PuestoDto> puestos, List<List<String>> celdas, int i, int k, Config c, String rol,
                                  Map<String, Integer> elegido, Map<Integer, AsignadorService.Presente> porNumero,
@@ -176,7 +177,8 @@ final class RolesPuesto {
         int mejorX = -1;
         int mejorY = -1;
         int mejorCosto = Integer.MAX_VALUE;
-        int mejorZ = -1; // de Libre, cubre lo que deja el traído
+        int mejorZ = -1; // de Libre o de otro puesto, cubre lo que deja el traído
+        int filaZ = -1;
         int filaLibre = -1;
         for (int j = 0; j < puestos.size(); j++) if (Nombres.esLibre(puestos.get(j).nombre()) && k < celdas.get(j).size()) filaLibre = j;
         for (int j = 0; j < puestos.size(); j++) {
@@ -214,17 +216,45 @@ final class RolesPuesto {
                     hallado = true;
                     break;
                 }
-                if (hallado || filaLibre < 0 || costo + 1 >= mejorCosto) continue;
+                if (hallado || costo + 1 >= mejorCosto) continue;
                 // Nadie del puesto sabe lo que él hacía: lo cubre uno de Libre que sí (la otra cajera en la Casa).
-                for (int z : numeros(celdas.get(filaLibre).get(k))) {
-                    AsignadorService.Presente pz = porNumero.get(z);
-                    if (pz == null || !pz.sabe().contains(claveJ) || !pz.hoy().contains(claveJ)) continue;
-                    mejorCosto = costo + 1;
-                    mejorFila = j;
-                    mejorX = x;
-                    mejorY = sinRol.isEmpty() ? -1 : sinRol.get(0);
-                    mejorZ = z;
-                    break;
+                if (filaLibre >= 0) {
+                    for (int z : numeros(celdas.get(filaLibre).get(k))) {
+                        AsignadorService.Presente pz = porNumero.get(z);
+                        if (pz == null || !pz.sabe().contains(claveJ) || !pz.hoy().contains(claveJ)) continue;
+                        mejorCosto = costo + 1;
+                        mejorFila = j;
+                        mejorX = x;
+                        mejorY = sinRol.isEmpty() ? -1 : sinRol.get(0);
+                        mejorZ = z;
+                        filaZ = filaLibre;
+                        hallado = true;
+                        break;
+                    }
+                }
+                if (hallado || costo + 2 >= mejorCosto) continue;
+                // O uno de otro puesto que sabe lo que él hacía, y a ese puesto va uno del de roles sin rol que lo sepa.
+                for (int m = 0; m < puestos.size() && !hallado; m++) {
+                    if (m == i || m == j || k >= celdas.get(m).size() || Nombres.noEsPuesto(puestos.get(m).nombre())) continue;
+                    String claveM = Nombres.clave(puestos.get(m).nombre());
+                    for (int z : numeros(celdas.get(m).get(k))) {
+                        AsignadorService.Presente pz = porNumero.get(z);
+                        if (pz == null || !pz.sabe().contains(claveJ) || !pz.hoy().contains(claveJ)
+                                || pz.principales().contains(claveM)) continue;
+                        Integer y = sinRol.stream().filter(n -> {
+                            AsignadorService.Presente py = porNumero.get(n);
+                            return py != null && py.sabe().contains(claveM) && py.hoy().contains(claveM);
+                        }).findFirst().orElse(null);
+                        if (y == null) continue;
+                        mejorCosto = costo + 2;
+                        mejorFila = j;
+                        mejorX = x;
+                        mejorY = y;
+                        mejorZ = z;
+                        filaZ = m;
+                        hallado = true;
+                        break;
+                    }
                 }
             }
         }
@@ -233,10 +263,11 @@ final class RolesPuesto {
             mover(celdas, mejorFila, i, k, mejorX, mejorY);
             return mejorX;
         }
-        // x deja su puesto y va al de roles; z sale de Libre y cubre el puesto de x; y (sin rol) pasa a Libre.
+        // x deja su puesto y va al de roles; z sale de Libre (o de otro puesto) y cubre el puesto de x; y (sin rol)
+        // pasa a Libre (o al puesto que dejó z).
         mover(celdas, mejorFila, i, k, mejorX, -1);
-        mover(celdas, filaLibre, mejorFila, k, mejorZ, -1);
-        if (mejorY >= 0) mover(celdas, i, filaLibre, k, mejorY, -1);
+        mover(celdas, filaZ, mejorFila, k, mejorZ, -1);
+        if (mejorY >= 0) mover(celdas, i, filaZ, k, mejorY, -1);
         return mejorX;
     }
 

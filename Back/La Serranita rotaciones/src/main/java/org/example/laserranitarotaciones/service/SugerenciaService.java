@@ -136,13 +136,18 @@ public class SugerenciaService {
         Set<String> noAbrir = (p.abrenTarde() == null ? List.<PedidoGeneradorDto.AbreTarde>of() : p.abrenTarde()).stream()
                 .filter(t -> t.tipo() == null || t.tipo() == org.example.laserranitarotaciones.model.entity.TipoHorario.ABRE_TARDE)
                 .map(t -> Nombres.clave(t.puesto())).collect(Collectors.toSet());
-        conEstrellas = MejoraReparto.cubrirHuecos(conEstrellas, porNumero, pesos, noAbrir);
+        // De la Tirolesa o el Show (puestos con roles) no se saca a nadie para cubrir otra cosa.
+        Map<String, RolesPuesto.Config> configs = puestos.roles();
+        conEstrellas = MejoraReparto.cubrirHuecos(conEstrellas, porNumero, pesos, noAbrir, configs.keySet());
         MejoraReparto.Cierre cierre = MejoraReparto.cerrarBajos(conEstrellas, porNumero, pesos);
         // El Cajero (y lo que tiene que estar siempre) nunca lo hace alguien que no sabe: antes, refuerzo. Tampoco
         // un puesto con roles (el Show del zorrito): no se improvisa.
-        Map<String, RolesPuesto.Config> configs = puestos.roles();
+        List<PuestoDto> antesDeSaber = MejoraReparto.cubrirHuecos(cierre.puestos(), porNumero, pesos, noAbrir, configs.keySet());
+        // Cuántos tenía que haber en esos puestos: si al sacar al que no sabe quedan menos, se pide un refuerzo
+        // aunque quede alguien (el Show con dos de los tres).
+        Map<String, List<Integer>> esperados = cuantos(antesDeSaber, pesos, configs.keySet());
         List<PuestoDto> finales = cerrarVaciosBajos(MejoraReparto.siempreConQuienSabe(
-                MejoraReparto.cubrirHuecos(cierre.puestos(), porNumero, pesos, noAbrir), porNumero, pesos, configs.keySet()), pesos);
+                antesDeSaber, porNumero, pesos, configs.keySet()), pesos);
         // Sólo se avisa lo que sigue cerrado (si alguien de Libre lo volvió a abrir, no).
         Map<String, Set<Integer>> cerradosPorNoSaber = new java.util.TreeMap<>();
         cierre.cerrados().forEach((puesto, ks) -> finales.stream().filter(x -> x.nombre().equals(puesto)).findFirst().ifPresent(x -> {
@@ -169,14 +174,43 @@ public class SugerenciaService {
             if (movio) reparto = asignador.conAsignacion(plan, presentes, reparto.asignacion());
             faltantes = RolesPuesto.faltantes(conRoles, configs, c.horarios());
         }
+        // Los que quedaron en Libre ayudan en lo que saben (Nancy en Baños), o toman el puesto de uno que así vuelve
+        // a su estrella (la cajera que sale va a Fotos y Nancy vuelve a Baños).
+        Map<Integer, AsignadorService.Presente> quienEs = porNumero(reparto.asignacion(), porId);
+        Set<String> deLaRueda = (p.rueda() == null ? List.<PedidoGeneradorDto.Lugar>of() : p.rueda()).stream()
+                .flatMap(l -> l.puestos().stream()).map(Nombres::clave).collect(Collectors.toSet());
+        // Y en la rueda nadie repite el mismo puesto dos medias horas seguidas (los cambios de arriba lo pueden dejar).
+        // Un puesto que abre tarde con una persona hasta el cierre (Fotos) lo hace la misma todo ese rato.
+        List<PuestoDto> armado = c.puestos();
+        Set<String> hastaElCierre = new HashSet<>();
+        for (PedidoGeneradorDto.AbreTarde t : p.abrenTarde() == null ? List.<PedidoGeneradorDto.AbreTarde>of() : p.abrenTarde()) {
+            boolean abre = t.tipo() == null || t.tipo() == org.example.laserranitarotaciones.model.entity.TipoHorario.ABRE_TARDE;
+            if (!abre || t.hasta() != null || t.personas() != 1 || configs.containsKey(Nombres.clave(t.puesto()))) continue;
+            armado = MejoraReparto.unoHastaElCierre(armado, quienEs, pesos, t.puesto(), configs.keySet());
+            hastaElCierre.add(Nombres.clave(t.puesto()));
+        }
+        // Lo que tiene que estar completo (Tirolesa, Cajero) y quedó con menos: cierra uno de prioridad baja y ese completa.
+        Set<String> intocables = new HashSet<>(configs.keySet());
+        intocables.addAll(hastaElCierre);
+        // Y nadie hace un puesto de prioridad baja con su estrella abierta (la cajera vuelve al Cajero, Pecera cierra).
+        List<PuestoDto> conAyuda = MejoraReparto.sinRepetir(MejoraReparto.completarConBajos(
+                MejoraReparto.estrellaAntesQueBajo(MejoraReparto.libresAyudan(armado, quienEs, pesos, hastaElCierre),
+                        quienEs, pesos, intocables), quienEs, pesos, esperados, intocables),
+                quienEs, deLaRueda);
+        if (!conAyuda.equals(c.puestos())) {
+            PlanRotacion plan = PlanRotacion.de(c.horarios(), conAyuda);
+            c = new CronogramaDto(null, c.nombre(), c.afluencia(), c.horarios(), conAyuda, rotacion.cantidadEmpleados(plan),
+                    rotacion.fijos(plan), RolesPuesto.conRoles(rotacion.armarTarjetas(plan), conAyuda, c.horarios(), configs));
+            reparto = asignador.conAsignacion(plan, presentes, reparto.asignacion());
+        }
         // Los avisos del generador son de cómo está cargado (reglas, horarios): van aparte de los del día.
         List<String> avisos = new ArrayList<>();
         List<String> horarios = c.horarios();
         cerradosPorNoSaber.forEach((puesto, ks) -> avisos.add(puesto + " queda cerrado a las "
                 + RotacionService.enumerar(ks.stream().sorted().map(horarios::get).toList()) + ": nadie de los que tocaba ahí lo sabe."));
         faltantes.forEach(f -> avisos.add(RolesPuesto.aviso(f)));
-        // Lo que quedó sin nadie después de probar todo: se pide un refuerzo.
-        List<RefuerzoDto> refuerzos = refuerzos(c.puestos(), c.horarios());
+        // Lo que quedó sin nadie (o con menos gente de la que va) después de probar todo: se pide un refuerzo.
+        List<RefuerzoDto> refuerzos = refuerzos(c.puestos(), c.horarios(), esperados);
         refuerzos.forEach(r -> avisos.add(aviso(r)));
         avisos.addAll(reparto.avisos());
         return new BorradorDto(c, avisos, reparto.asignacion(), faltantes, refuerzos, borrador.avisos());
@@ -209,12 +243,13 @@ public class SugerenciaService {
         List<String> avisos = new ArrayList<>(pedido.avisos() == null ? List.of() : pedido.avisos());
         asignador.conAsignacion(planViejo, presentes, asignacion).avisos().forEach(avisos::remove);
         RolesPuesto.faltantes(viejo.puestos(), configs, viejo.horarios()).forEach(f -> avisos.remove(RolesPuesto.aviso(f)));
-        refuerzos(viejo.puestos(), viejo.horarios()).forEach(r -> avisos.remove(aviso(r)));
+        List<RefuerzoDto> viejos = pedido.refuerzos() == null ? refuerzos(viejo.puestos(), viejo.horarios()) : pedido.refuerzos();
+        viejos.forEach(r -> avisos.remove(aviso(r)));
 
         PlanRotacion plan = PlanRotacion.de(viejo.horarios(), nuevos);
         List<FaltanteRolDto> faltantes = RolesPuesto.faltantes(nuevos, configs, viejo.horarios());
         faltantes.forEach(f -> avisos.add(RolesPuesto.aviso(f)));
-        List<RefuerzoDto> refuerzos = refuerzos(nuevos, viejo.horarios());
+        List<RefuerzoDto> refuerzos = refuerzos(nuevos, viejo.horarios(), esperadosDe(viejos, viejo.puestos()));
         refuerzos.forEach(r -> avisos.add(aviso(r)));
         avisos.addAll(asignador.conAsignacion(plan, presentes, asignacion).avisos());
         CronogramaDto c = new CronogramaDto(viejo.id(), viejo.nombre(), viejo.afluencia(), viejo.horarios(), nuevos,
@@ -254,21 +289,59 @@ public class SugerenciaService {
 
     /** Los puestos con algún horario sin nadie (ni Cerrado): ahí hace falta un refuerzo. */
     static List<RefuerzoDto> refuerzos(List<PuestoDto> puestos, List<String> horarios) {
+        return refuerzos(puestos, horarios, Map.of());
+    }
+
+    /**
+     * Los puestos con algún horario sin nadie (ni Cerrado), o con menos gente de la esperada (esperados: puesto →
+     * cuántos por horario): ahí hace falta un refuerzo.
+     */
+    static List<RefuerzoDto> refuerzos(List<PuestoDto> puestos, List<String> horarios, Map<String, List<Integer>> esperados) {
         List<RefuerzoDto> refuerzos = new ArrayList<>();
         for (PuestoDto p : puestos) {
             if (Nombres.noEsPuesto(p.nombre())) continue;
+            List<Integer> esperado = esperados.getOrDefault(p.nombre(), List.of());
             List<Integer> ks = new ArrayList<>();
             for (int k = 0; k < p.celdas().size() && k < horarios.size(); k++) {
                 String celda = p.celdas().get(k);
-                if (!PlanRotacion.esCerrado(celda) && PlanRotacion.empleados(celda).isEmpty()) ks.add(k);
+                if (PlanRotacion.esCerrado(celda)) continue;
+                int hay = PlanRotacion.empleados(celda).size();
+                if (hay == 0 || (k < esperado.size() && hay < esperado.get(k))) ks.add(k);
             }
             if (!ks.isEmpty()) refuerzos.add(new RefuerzoDto(p.nombre(), ks, ks.stream().map(horarios::get).toList()));
         }
         return refuerzos;
     }
 
+    /** Por cada puesto que tiene que estar siempre o tiene roles: cuántos hay en cada horario. */
+    private static Map<String, List<Integer>> cuantos(List<PuestoDto> puestos, Map<String, Integer> pesos, Set<String> conRoles) {
+        Map<String, List<Integer>> m = new HashMap<>();
+        for (PuestoDto p : puestos) {
+            String clave = Nombres.clave(p.nombre());
+            if (Nombres.noEsPuesto(p.nombre())) continue;
+            if (pesos.getOrDefault(clave, Prioridad.MEDIA.peso()) < Prioridad.SIEMPRE.peso() && !conRoles.contains(clave)) continue;
+            m.put(p.nombre(), p.celdas().stream().map(c -> PlanRotacion.esCerrado(c) ? 0 : PlanRotacion.empleados(c).size()).toList());
+        }
+        return m;
+    }
+
+    /** Al cubrir un rol a mano: lo que se esperaba donde ya se pedía refuerzo (uno más de los que había). */
+    private static Map<String, List<Integer>> esperadosDe(List<RefuerzoDto> refuerzos, List<PuestoDto> puestos) {
+        Map<String, List<Integer>> m = new HashMap<>();
+        for (RefuerzoDto r : refuerzos) {
+            puestos.stream().filter(p -> p.nombre().equals(r.puesto())).findFirst().ifPresent(p -> {
+                List<Integer> e = new ArrayList<>();
+                for (int k = 0; k < p.celdas().size(); k++) {
+                    e.add(r.celdas().contains(k) ? PlanRotacion.empleados(p.celdas().get(k)).size() + 1 : 0);
+                }
+                m.put(p.nombre(), e);
+            });
+        }
+        return m;
+    }
+
     static String aviso(RefuerzoDto r) {
-        return r.puesto() + " queda sin nadie a las " + RotacionService.enumerar(r.horas()) + ": pedí un refuerzo.";
+        return "Falta gente en " + r.puesto() + " a las " + RotacionService.enumerar(r.horas()) + ": pedí un refuerzo.";
     }
 
     /** Las posiciones de los horarios que caen en los descansos (desde incluido, hasta no). */
@@ -313,7 +386,7 @@ public class SugerenciaService {
             Set<String> sabe = claves(e.puedeHacer()); // con los grupos ya cambiados por sus puestos
             Set<String> hoy = p.puestosHoy() == null ? new HashSet<>(sabe) : claves(p.puestosHoy());
             hoy.retainAll(sabe);
-            presentes.add(new AsignadorService.Presente(e.id(), e.nombre(), sabe, hoy, claves(e.principales())));
+            presentes.add(new AsignadorService.Presente(e.id(), e.nombreCorto(), sabe, hoy, claves(e.principales())));
         }
         if (presentes.isEmpty()) throw new ValidacionException("Vinieron sólo empleados en entrenamiento.");
         return presentes;

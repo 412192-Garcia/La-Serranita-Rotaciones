@@ -28,6 +28,10 @@ public class Empleado {
     @Column(nullable = false, length = 60)
     private String nombre;
 
+    /** Cómo se lo llama en lo impreso (tarjetas y planilla); null: el nombre. */
+    @Column(length = 30)
+    private String apodo;
+
     /** Puestos que sabe hacer. */
     @ElementCollection
     @CollectionTable(name = "empleado_puestos", joinColumns = @JoinColumn(name = "id_empleado"))

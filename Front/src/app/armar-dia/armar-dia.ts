@@ -13,7 +13,7 @@ import {
   LucideX,
 } from '@lucide/angular';
 import { AFLUENCIAS, Afluencia, Cronograma, Renglon, Sugerencia, puestosPorNumero, textoAfluencia } from '../models/cronograma';
-import { Empleado, clavePuesto, puedeHacer } from '../models/empleado';
+import { Empleado, clavePuesto, nombreCorto, puedeHacer } from '../models/empleado';
 import { CronogramaService, mensajeDeError } from '../services/cronograma.service';
 import { EmpleadoService } from '../services/empleado.service';
 import { TareaService } from '../services/tarea.service';
@@ -126,7 +126,7 @@ export class ArmarDia implements OnInit {
     return c ? puestosPorNumero(c) : new Map<number, string[]>();
   });
   nombres = computed(() => {
-    const porId = new Map(this.empleados().map((e) => [e.id!, e.nombre]));
+    const porId = new Map(this.empleados().map((e) => [e.id!, nombreCorto(e)]));
     const mapa = new Map<number, string>();
     this.asignacion().forEach((id, numero) => {
       const nombre = id == null ? undefined : porId.get(id);
@@ -239,7 +239,8 @@ export class ArmarDia implements OnInit {
   }
 
   nombreDe(id: number | null): string {
-    return this.empleados().find((e) => e.id === id)?.nombre ?? '';
+    const e = this.empleados().find((x) => x.id === id);
+    return e ? nombreCorto(e) : '';
   }
 
   /** Qué falta para armar su tarjeta (con quién va, o si esa persona no vino). */
@@ -283,7 +284,7 @@ export class ArmarDia implements OnInit {
       });
       const nombres = [...new Set(tramos.map((t) => this.nombreDe(t.acompananteId)))];
       resultado.push({
-        nombre: e.nombre,
+        nombre: nombreCorto(e),
         detalle: `acompaña a ${nombres.join(' y a ')}`,
         tarjeta: { empleado: 0, descanso, renglones },
         tarea: this.tareaDe(e.id!),

@@ -198,6 +198,27 @@ class GeneradorServiceTest {
     }
 
     @Test
+    void mientrasDuraElEventoLaRuedaSigueRotandoYDespuesNoVuelveAtras() {
+        // De 16 a 17 dos de la rueda van a la Casa del zorrito: los que quedan siguen rotando entre los lugares
+        // abiertos (nadie se queda clavado) y a las 17 cada uno sigue desde donde estaba.
+        PedidoGeneradorDto base = pedido(12);
+        PedidoGeneradorDto p = new PedidoGeneradorDto(base.nombre(), base.afluencia(), 12, base.desde(), base.hasta(), base.cada(),
+                "12:00", "13:30", base.fijos(), base.rueda(), base.coberturas(),
+                List.of(new PedidoGeneradorDto.AbreTarde("Casa del zorrito", 2, "16:00", "17:00")));
+        CronogramaDto c = generador.generar(p).cronograma();
+        List<String> rueda = List.of("Entrada", "Canilla", "Minigolf", "Travesía", "Tobogán", "Carrera");
+        // Desde las 14:00 (k = 6) hasta el cierre: nadie repite el mismo lugar dos medias horas seguidas.
+        for (String puesto : rueda) {
+            List<String> celdas = fila(c, puesto).celdas();
+            for (int k = 7; k < celdas.size(); k++) {
+                String antes = celdas.get(k - 1), ahora = celdas.get(k);
+                if (ahora.isEmpty() || ahora.equals("Cerrado")) continue;
+                assertThat(ahora).as(puesto + " a las " + c.horarios().get(k)).isNotEqualTo(antes);
+            }
+        }
+    }
+
+    @Test
     void unRefuerzoSeSumaALaGenteDeSiempreDelPuesto() {
         PedidoGeneradorDto base = pedido(13);
         List<PedidoGeneradorDto.Fijo> fijos = new java.util.ArrayList<>(base.fijos());

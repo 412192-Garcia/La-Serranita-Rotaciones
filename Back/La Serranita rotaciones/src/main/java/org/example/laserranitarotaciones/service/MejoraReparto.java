@@ -5,6 +5,8 @@ import org.example.laserranitarotaciones.model.dto.PuestoDto;
 import org.example.laserranitarotaciones.model.entity.Prioridad;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -372,6 +374,16 @@ final class MejoraReparto {
      */
     static List<PuestoDto> cubrirHuecos(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero,
                                         Map<String, Integer> pesos, Set<String> noAbrir) {
+        return cubrirHuecos(puestos, porNumero, pesos, noAbrir, Set.of());
+    }
+
+    /**
+     * conRoles: claves de los puestos con roles (Tirolesa, Show): de ahí no se saca a nadie para cubrir otra cosa.
+     * De un puesto con varios sólo se saca para cubrir uno al menos igual de importante (la segunda cajera a la
+     * Casa del zorrito sí; a Canilla no: el Cajero queda con los que pide la regla).
+     */
+    static List<PuestoDto> cubrirHuecos(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero,
+                                        Map<String, Integer> pesos, Set<String> noAbrir, Set<String> conRoles) {
         int total = puestos.isEmpty() ? 0 : puestos.get(0).celdas().size();
         List<List<Set<Integer>>> filas = new ArrayList<>();
         for (PuestoDto p : puestos) {
@@ -385,6 +397,9 @@ final class MejoraReparto {
         };
         boolean cambio = false;
         Map<Integer, Set<Integer>> libresExtra = new TreeMap<>();
+        Map<Integer, Set<Integer>> aCerrar = new HashMap<>();
+        Set<String> intocables = new HashSet<>(conRoles);
+        intocables.addAll(noAbrir);
         for (int k = 0; k < total; k++) {
             int kk = k;
             for (int hueco = 0; hueco < puestos.size(); hueco++) {
@@ -395,7 +410,7 @@ final class MejoraReparto {
                 boolean baja = Objects.requireNonNullElse(pesos.get(Nombres.clave(h.nombre())), Prioridad.MEDIA.peso()) <= Prioridad.BAJA.peso();
                 // Los que sobran: en Libre, o en una celda con otros (que no quede sola por sacarlo). Para abrir
                 // uno cerrado o de prioridad baja, sólo los de Libre (no se deja una sola cajera por Flotante).
-                List<int[]> sobran = sobran(filas, puestos, k).stream()
+                List<int[]> sobran = sobran(filas, puestos, k, peso(pesos, puestos.get(hueco)), pesos, conRoles).stream()
                         .filter(s -> !(cerrado || baja) || Nombres.esLibre(puestos.get(s[1]).nombre())).toList();
                 boolean cubierto = false;
                 for (int[] s : sobran) {
@@ -420,6 +435,10 @@ final class MejoraReparto {
                         cubierto = true;
                     }
                 }
+                // Si no sobra nadie: se cierra un puesto de prioridad baja y ese cubre (Pecera cierra, va a Entrada).
+                if (!cubierto && !cerrado && !baja) {
+                    cubierto = cubrirCerrandoBajo(filas, puestos, porNumero, pesos, hueco, k, aCerrar, intocables, 1);
+                }
                 cambio |= cubierto;
             }
             // Alguien en un puesto que no sabe, y sobra uno que sí lo sabe (la segunda cajera mientras almuerza
@@ -430,10 +449,24 @@ final class MejoraReparto {
                 for (int n : new ArrayList<>(filas.get(f).get(kk))) {
                     if (sabe.test(n, f) || !enUnaSolaFila(filas, n, kk)) continue;
                     int fila = f;
-                    int[] donante = sobran(filas, puestos, kk).stream()
+                    int[] donante = sobran(filas, puestos, kk, peso(pesos, p), pesos, conRoles).stream()
                             .filter(s -> s[1] != fila && sabe.test(s[0], fila) && !dejaSinEstrella(filas, puestos, porNumero, s, kk))
                             .findFirst().orElse(null);
-                    if (donante == null) continue;
+                    if (donante == null) {
+                        if (rondaDeTres(filas, puestos, porNumero, sabe, f, n, kk)) {
+                            cambio = true;
+                            continue;
+                        }
+                        // Si no, se cierra un puesto de prioridad baja y ese cubre; el que no sabía pasa a Libre.
+                        filas.get(f).get(kk).remove(n);
+                        if (cubrirCerrandoBajo(filas, puestos, porNumero, pesos, f, kk, aCerrar, intocables, 1)) {
+                            libresExtra.computeIfAbsent(kk, x -> new TreeSet<>()).add(n);
+                            cambio = true;
+                        } else {
+                            filas.get(f).get(kk).add(n);
+                        }
+                        continue;
+                    }
                     filas.get(donante[1]).get(kk).remove(donante[0]);
                     filas.get(f).get(kk).remove(n);
                     filas.get(f).get(kk).add(donante[0]);
@@ -462,7 +495,8 @@ final class MejoraReparto {
             for (int k = 0; k < total; k++) {
                 Set<Integer> s = filas.get(f).get(k);
                 String antes = p.celdas().get(k);
-                celdas.add(s.isEmpty() ? (PlanRotacion.empleados(antes).isEmpty() ? antes : "")
+                if (s.isEmpty() && aCerrar.getOrDefault(f, Set.of()).contains(k)) celdas.add(PlanRotacion.CERRADO);
+                else celdas.add(s.isEmpty() ? (PlanRotacion.empleados(antes).isEmpty() ? antes : "")
                         : s.stream().sorted().map(String::valueOf).collect(Collectors.joining("-")));
             }
             nuevos.add(new PuestoDto(p.nombre(), p.nota(), p.iniciaRotacion(), celdas));
@@ -479,16 +513,478 @@ final class MejoraReparto {
         return nuevos;
     }
 
+    /**
+     * n está en la fila f sin saberla y no sobra nadie que la sepa. Se prueba un cambio entre dos (n va a la fila
+     * de otro que sabe f) o una ronda de tres: n va a g, el de g va a h y el de h viene a f (Evelyn a Baños, la de
+     * Baños a Minigolf y el de Minigolf a Canilla). Sólo celdas de una persona, todos terminan en algo que saben y
+     * nadie deja su estrella. Devuelve si cambió.
+     */
+    private static boolean rondaDeTres(List<List<Set<Integer>>> filas, List<PuestoDto> puestos,
+                                       Map<Integer, AsignadorService.Presente> porNumero,
+                                       java.util.function.BiPredicate<Integer, Integer> sabe, int f, int n, int k) {
+        java.util.function.IntPredicate sola = g -> !Nombres.noEsPuesto(puestos.get(g).nombre())
+                && filas.get(g).get(k).size() == 1 && enUnaSolaFila(filas, filas.get(g).get(k).iterator().next(), k);
+        // Sacar al de g de su estrella, sólo si el que entra también la tiene ahí (Nancy por Evelyn en Baños).
+        java.util.function.BiPredicate<Integer, Integer> pierdeEstrella = (g, entra) -> {
+            String clave = Nombres.clave(puestos.get(g).nombre());
+            AsignadorService.Presente q = porNumero.get(filas.get(g).get(k).iterator().next());
+            AsignadorService.Presente e = porNumero.get(entra);
+            return q != null && q.principales().contains(clave) && (e == null || !e.principales().contains(clave));
+        };
+        for (int g = 0; g < puestos.size(); g++) {
+            if (g == f || !sola.test(g) || !sabe.test(n, g) || pierdeEstrella.test(g, n)) continue;
+            int a = filas.get(g).get(k).iterator().next();
+            if (sabe.test(a, f)) {
+                mover(filas, k, n, f, g);
+                mover(filas, k, a, g, f);
+                return true;
+            }
+            for (int h = 0; h < puestos.size(); h++) {
+                if (h == f || h == g || !sola.test(h) || !sabe.test(a, h) || pierdeEstrella.test(h, a)) continue;
+                int b = filas.get(h).get(k).iterator().next();
+                if (!sabe.test(b, f)) continue;
+                mover(filas, k, n, f, g);
+                mover(filas, k, a, g, h);
+                mover(filas, k, b, h, f);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void mover(List<List<Set<Integer>>> filas, int k, int n, int desde, int hasta) {
+        filas.get(desde).get(k).remove(n);
+        filas.get(hasta).get(k).add(n);
+    }
+
+    /**
+     * Los que quedan en Libre no se quedan sin hacer nada. En cada horario, cada uno: si está en un puesto alguien
+     * que no está en su estrella y la puede hacer ahora, el de Libre toma ese puesto y el otro vuelve a su estrella
+     * (la cajera que sale va a Fotos y Nancy vuelve a Baños); si no, va a ayudar a su estrella; si no, al puesto
+     * que sabe más importante y con menos gente. Nunca a algo cerrado, que no sabe o en el almuerzo.
+     */
+    static List<PuestoDto> libresAyudan(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero,
+                                        Map<String, Integer> pesos) {
+        return libresAyudan(puestos, porNumero, pesos, Set.of());
+    }
+
+    /** fijos: claves de puestos cuya gente no se cambia (Fotos con una persona hasta el cierre). */
+    static List<PuestoDto> libresAyudan(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero,
+                                        Map<String, Integer> pesos, Set<String> fijos) {
+        int libre = -1;
+        for (int f = 0; f < puestos.size(); f++) if (Nombres.esLibre(puestos.get(f).nombre())) libre = f;
+        if (libre < 0) return puestos;
+        List<List<Set<Integer>>> filas = new ArrayList<>();
+        for (PuestoDto p : puestos) {
+            List<Set<Integer>> celdas = new ArrayList<>();
+            for (String c : p.celdas()) celdas.add(new LinkedHashSet<>(PlanRotacion.esCerrado(c) ? List.of() : PlanRotacion.empleados(c)));
+            filas.add(celdas);
+        }
+        java.util.function.BiPredicate<Integer, Integer> abierto = (f, k) -> !Nombres.noEsPuesto(puestos.get(f).nombre())
+                && k < puestos.get(f).celdas().size() && !PlanRotacion.esCerrado(puestos.get(f).celdas().get(k));
+        java.util.function.BiPredicate<Integer, Integer> sabe = (n, f) -> {
+            AsignadorService.Presente q = porNumero.get(n);
+            return q != null && q.hoy().contains(Nombres.clave(puestos.get(f).nombre()));
+        };
+        java.util.function.BiPredicate<Integer, Integer> esEstrella = (n, f) -> {
+            AsignadorService.Presente q = porNumero.get(n);
+            return q != null && q.principales().contains(Nombres.clave(puestos.get(f).nombre()));
+        };
+        boolean cambio = false;
+        int total = puestos.get(libre).celdas().size();
+        for (int k = 0; k < total; k++) {
+            for (int n : new ArrayList<>(filas.get(libre).get(k))) {
+                if (porNumero.get(n) == null || !enUnaSolaFila(filas, n, k)) continue;
+                int destino = -1, devuelto = -1, estrella = -1;
+                // 1. Toma el puesto de uno que así vuelve a su estrella, si ese puesto es al menos tan importante
+                // como la estrella propia (una cajera libre vuelve al Cajero; no va a Pecera).
+                int pesoSuyo = -1;
+                for (int f = 0; f < puestos.size(); f++) {
+                    if (abierto.test(f, k) && esEstrella.test(n, f) && sabe.test(n, f)) pesoSuyo = Math.max(pesoSuyo, peso(pesos, puestos.get(f)));
+                }
+                for (int f = 0; f < puestos.size() && destino < 0; f++) {
+                    if (!abierto.test(f, k) || !sabe.test(n, f) || filas.get(f).get(k).size() != 1
+                            || fijos.contains(Nombres.clave(puestos.get(f).nombre())) || peso(pesos, puestos.get(f)) < pesoSuyo) continue;
+                    int o = filas.get(f).get(k).iterator().next();
+                    if (esEstrella.test(o, f) || !enUnaSolaFila(filas, o, k)) continue;
+                    for (int s = 0; s < puestos.size(); s++) {
+                        if (s != f && abierto.test(s, k) && esEstrella.test(o, s) && sabe.test(o, s)) {
+                            destino = f;
+                            devuelto = o;
+                            estrella = s;
+                            break;
+                        }
+                    }
+                }
+                // 2. Su estrella; 3. lo que sabe, lo más importante y con menos gente.
+                if (destino < 0) {
+                    int mejor = -1;
+                    for (int f = 0; f < puestos.size(); f++) {
+                        if (!abierto.test(f, k) || !sabe.test(n, f)) continue;
+                        if (esEstrella.test(n, f)) {
+                            mejor = f;
+                            break;
+                        }
+                        if (mejor < 0 || compararAyuda(f, mejor, filas, puestos, pesos, k) < 0) mejor = f;
+                    }
+                    destino = mejor;
+                }
+                if (destino < 0) continue;
+                filas.get(libre).get(k).remove(n);
+                filas.get(destino).get(k).add(n);
+                if (devuelto >= 0) {
+                    filas.get(destino).get(k).remove(devuelto);
+                    filas.get(estrella).get(k).add(devuelto);
+                }
+                cambio = true;
+            }
+        }
+        if (!cambio) return puestos;
+        List<PuestoDto> nuevos = new ArrayList<>();
+        for (int f = 0; f < puestos.size(); f++) {
+            PuestoDto p = puestos.get(f);
+            List<String> celdas = new ArrayList<>();
+            for (int k = 0; k < p.celdas().size(); k++) {
+                String antes = p.celdas().get(k);
+                Set<Integer> s = filas.get(f).get(k);
+                celdas.add(PlanRotacion.esCerrado(antes) || (s.isEmpty() && PlanRotacion.empleados(antes).isEmpty()) ? antes
+                        : s.stream().sorted().map(String::valueOf).collect(Collectors.joining("-")));
+            }
+            nuevos.add(new PuestoDto(p.nombre(), p.nota(), p.iniciaRotacion(), celdas, p.roles()));
+        }
+        return nuevos;
+    }
+
+    /**
+     * Un puesto que abre tarde con una persona y queda abierto hasta el cierre (Fotos desde las 17) lo hace la misma
+     * persona todo ese rato: no rota por una media hora. Se elige a alguien que lo sabe, el que menos falta hace
+     * donde está (ya en el puesto, en Libre, de a varios, en uno de prioridad baja). Si al sacarlo queda un puesto
+     * vacío, lo cubre el que estaba en el puesto, si lo sabe; si no, alguien de un puesto de prioridad baja que se
+     * cierra ese rato (Pecera cierra y ese va a Entrada); si no, uno de Libre. De la Tirolesa o el Show no se saca
+     * a nadie. Los que quedan sin lugar pasan a Libre.
+     */
+    static List<PuestoDto> unoHastaElCierre(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero,
+                                            Map<String, Integer> pesos, String puesto, Set<String> conRoles) {
+        int fila = -1, libre = -1;
+        for (int f = 0; f < puestos.size(); f++) {
+            if (Nombres.clave(puestos.get(f).nombre()).equals(Nombres.clave(puesto))) fila = f;
+            if (Nombres.esLibre(puestos.get(f).nombre())) libre = f;
+        }
+        if (fila < 0) return puestos;
+        int total = puestos.get(fila).celdas().size();
+        // El tramo final abierto: desde que abre hasta el cierre.
+        int desde = total;
+        while (desde > 0 && !PlanRotacion.esCerrado(puestos.get(fila).celdas().get(desde - 1))) desde--;
+        if (desde >= total || desde == 0) return puestos;
+        List<List<Set<Integer>>> filas = new ArrayList<>();
+        for (PuestoDto p : puestos) {
+            List<Set<Integer>> celdas = new ArrayList<>();
+            for (String c : p.celdas()) celdas.add(new LinkedHashSet<>(PlanRotacion.esCerrado(c) ? List.of() : PlanRotacion.empleados(c)));
+            filas.add(celdas);
+        }
+        java.util.function.BiPredicate<Integer, Integer> sabe = (n, f) -> {
+            AsignadorService.Presente q = porNumero.get(n);
+            return q != null && q.hoy().contains(Nombres.clave(puestos.get(f).nombre()));
+        };
+        final int fFila = fila;
+        java.util.function.BiFunction<Integer, Integer, Integer> dondeEsta = (n, k) -> {
+            for (int f = 0; f < puestos.size(); f++) if (filas.get(f).get(k).contains(n)) return f;
+            return -1;
+        };
+        // Quién: el que sabe y menos falta hace donde está en ese tramo.
+        Integer elegido = null;
+        int mejorCosto = Integer.MAX_VALUE;
+        for (int n : porNumero.keySet()) {
+            if (!sabe.test(n, fila)) continue;
+            int costo = 0;
+            for (int k = desde; k < total && costo < Integer.MAX_VALUE; k++) {
+                int f = dondeEsta.apply(n, k);
+                if (f == fFila) continue;
+                if (f < 0 || Nombres.esDescanso(puestos.get(f).nombre()) || conRoles.contains(Nombres.clave(puestos.get(f).nombre()))) {
+                    costo = Integer.MAX_VALUE;
+                    break;
+                }
+                if (Nombres.esLibre(puestos.get(f).nombre())) costo += 1;
+                else if (filas.get(f).get(k).size() > 1) costo += 2;
+                else costo += 3 + peso(pesos, puestos.get(f)) / 10;
+            }
+            if (costo < mejorCosto) {
+                mejorCosto = costo;
+                elegido = n;
+            }
+        }
+        if (elegido == null) return puestos;
+        int n = elegido;
+        boolean cambio = false;
+        Map<Integer, Set<Integer>> aCerrar = new HashMap<>();
+        for (int k = desde; k < total; k++) {
+            Set<Integer> enFotos = filas.get(fila).get(k);
+            if (enFotos.size() == 1 && enFotos.contains(n)) continue;
+            int r = dondeEsta.apply(n, k);
+            List<Integer> salen = new ArrayList<>(enFotos);
+            salen.remove(Integer.valueOf(n));
+            enFotos.clear();
+            enFotos.add(n);
+            if (r >= 0) filas.get(r).get(k).remove(n);
+            cambio = true;
+            List<Integer> sinLugar = new ArrayList<>(salen);
+            if (r >= 0 && r != libre && filas.get(r).get(k).isEmpty()) {
+                int rr = r;
+                // Lo cubre el que estaba en el puesto, si lo sabe.
+                Integer quien = salen.stream().filter(q -> sabe.test(q, rr)).findFirst().orElse(null);
+                if (quien != null) {
+                    filas.get(r).get(k).add(quien);
+                    sinLugar.remove(quien);
+                } else if (peso(pesos, puestos.get(r)) <= Prioridad.BAJA.peso()) {
+                    // Era de prioridad baja (Pecera): se cierra ese rato.
+                    aCerrar.computeIfAbsent(r, x -> new HashSet<>()).add(k);
+                } else {
+                    // Si no, uno de Libre que lo sepa; si no, se cierra uno de prioridad baja y ese cubre (en cadena:
+                    // la cajera vuelve de Entrada al Cajero y el de Pecera va a Entrada).
+                    Integer deLibre = libre < 0 ? null
+                            : filas.get(libre).get(k).stream().filter(q -> sabe.test(q, rr)).findFirst().orElse(null);
+                    if (deLibre != null) {
+                        filas.get(libre).get(k).remove(deLibre);
+                        filas.get(r).get(k).add(deLibre);
+                    } else {
+                        Set<String> intocables = new HashSet<>(conRoles);
+                        intocables.add(Nombres.clave(puesto));
+                        cubrirCerrandoBajo(filas, puestos, porNumero, pesos, r, k, aCerrar, intocables, 1);
+                    }
+                }
+            }
+            if (!sinLugar.isEmpty() && libre >= 0) filas.get(libre).get(k).addAll(sinLugar);
+        }
+        if (!cambio) return puestos;
+        List<PuestoDto> nuevos = new ArrayList<>();
+        for (int f = 0; f < puestos.size(); f++) {
+            PuestoDto p = puestos.get(f);
+            List<String> celdas = new ArrayList<>();
+            for (int k = 0; k < p.celdas().size(); k++) {
+                String antes = p.celdas().get(k);
+                Set<Integer> s = filas.get(f).get(k);
+                if (s.isEmpty() && aCerrar.getOrDefault(f, Set.of()).contains(k)) celdas.add(PlanRotacion.CERRADO);
+                else if (PlanRotacion.esCerrado(antes) || (s.isEmpty() && PlanRotacion.empleados(antes).isEmpty())) celdas.add(antes);
+                else celdas.add(s.stream().sorted().map(String::valueOf).collect(Collectors.joining("-")));
+            }
+            nuevos.add(new PuestoDto(p.nombre(), p.nota(), p.iniciaRotacion(), celdas, p.roles()));
+        }
+        return nuevos;
+    }
+
+    /**
+     * Nadie hace un puesto de prioridad baja mientras su estrella está abierta: vuelve a su estrella y el de
+     * prioridad baja queda cerrado ese rato (la cajera no va a Pecera: las dos en el Cajero y Pecera cerrada).
+     * intocables: de ahí no se saca a nadie (Tirolesa, Show, Fotos).
+     */
+    static List<PuestoDto> estrellaAntesQueBajo(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero,
+                                                Map<String, Integer> pesos, Set<String> intocables) {
+        List<List<String>> celdas = new ArrayList<>();
+        puestos.forEach(p -> celdas.add(new ArrayList<>(p.celdas())));
+        boolean cambio = false;
+        for (int g = 0; g < puestos.size(); g++) {
+            PuestoDto pg = puestos.get(g);
+            if (Nombres.noEsPuesto(pg.nombre()) || intocables.contains(Nombres.clave(pg.nombre()))) continue;
+            if (peso(pesos, pg) > Prioridad.BAJA.peso()) continue;
+            for (int k = 0; k < celdas.get(g).size(); k++) {
+                String c = celdas.get(g).get(k);
+                if (PlanRotacion.esCerrado(c)) continue;
+                List<Integer> nums = PlanRotacion.empleados(c);
+                if (nums.size() != 1) continue;
+                int n = nums.get(0);
+                AsignadorService.Presente q = porNumero.get(n);
+                if (q == null) continue;
+                int estrella = -1;
+                for (int s = 0; s < puestos.size(); s++) {
+                    PuestoDto ps = puestos.get(s);
+                    String clave = Nombres.clave(ps.nombre());
+                    if (s == g || Nombres.noEsPuesto(ps.nombre()) || !q.principales().contains(clave) || !q.hoy().contains(clave)) continue;
+                    if (k >= celdas.get(s).size() || PlanRotacion.esCerrado(celdas.get(s).get(k)) || peso(pesos, ps) <= peso(pesos, pg)) continue;
+                    estrella = s;
+                    break;
+                }
+                if (estrella < 0) continue;
+                List<Integer> alla = new ArrayList<>(PlanRotacion.empleados(celdas.get(estrella).get(k)));
+                if (alla.contains(n)) continue;
+                alla.add(n);
+                celdas.get(estrella).set(k, alla.stream().sorted().map(String::valueOf).collect(Collectors.joining("-")));
+                celdas.get(g).set(k, PlanRotacion.CERRADO);
+                cambio = true;
+            }
+        }
+        if (!cambio) return puestos;
+        List<PuestoDto> nuevos = new ArrayList<>();
+        for (int f = 0; f < puestos.size(); f++) {
+            PuestoDto p = puestos.get(f);
+            nuevos.add(new PuestoDto(p.nombre(), p.nota(), p.iniciaRotacion(), celdas.get(f), p.roles()));
+        }
+        return nuevos;
+    }
+
+    /**
+     * Los puestos que tienen que estar completos (Tirolesa, Cajero, Show: esperados dice cuántos van en cada horario)
+     * y quedaron con menos: se cierra un puesto de prioridad baja ese rato y ese completa (Pecera cierra y Agustín
+     * vuelve a la Tirolesa). intocables: de ahí no se saca a nadie (Tirolesa, Show, Fotos).
+     */
+    static List<PuestoDto> completarConBajos(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero,
+                                             Map<String, Integer> pesos, Map<String, List<Integer>> esperados,
+                                             Set<String> intocables) {
+        List<List<Set<Integer>>> filas = new ArrayList<>();
+        for (PuestoDto p : puestos) {
+            List<Set<Integer>> celdas = new ArrayList<>();
+            for (String c : p.celdas()) celdas.add(new LinkedHashSet<>(PlanRotacion.esCerrado(c) ? List.of() : PlanRotacion.empleados(c)));
+            filas.add(celdas);
+        }
+        Map<Integer, Set<Integer>> aCerrar = new HashMap<>();
+        boolean cambio = false;
+        for (int f = 0; f < puestos.size(); f++) {
+            List<Integer> esperado = esperados.get(puestos.get(f).nombre());
+            if (esperado == null) continue;
+            for (int k = 0; k < esperado.size() && k < filas.get(f).size(); k++) {
+                if (PlanRotacion.esCerrado(puestos.get(f).celdas().get(k))) continue;
+                while (filas.get(f).get(k).size() < esperado.get(k)
+                        && cubrirCerrandoBajo(filas, puestos, porNumero, pesos, f, k, aCerrar, intocables, 0)) {
+                    cambio = true;
+                }
+            }
+        }
+        if (!cambio) return puestos;
+        List<PuestoDto> nuevos = new ArrayList<>();
+        for (int f = 0; f < puestos.size(); f++) {
+            PuestoDto p = puestos.get(f);
+            List<String> celdas = new ArrayList<>();
+            for (int k = 0; k < p.celdas().size(); k++) {
+                String antes = p.celdas().get(k);
+                Set<Integer> s = filas.get(f).get(k);
+                if (s.isEmpty() && aCerrar.getOrDefault(f, Set.of()).contains(k)) celdas.add(PlanRotacion.CERRADO);
+                else if (PlanRotacion.esCerrado(antes) || (s.isEmpty() && PlanRotacion.empleados(antes).isEmpty())) celdas.add(antes);
+                else celdas.add(s.stream().sorted().map(String::valueOf).collect(Collectors.joining("-")));
+            }
+            nuevos.add(new PuestoDto(p.nombre(), p.nota(), p.iniciaRotacion(), celdas, p.roles()));
+        }
+        return nuevos;
+    }
+
+    /**
+     * Cubre la fila r en el horario k con alguien que la sabe y está solo en un puesto de prioridad baja, que se
+     * cierra ese rato (Pecera cierra y ese va a Entrada). Si no hay, y nivel > 0, con alguien de un puesto menos
+     * importante que r, que a su vez se cubre así (la cajera vuelve de Entrada al Cajero y el de Pecera va a
+     * Entrada). Nadie deja su estrella ni sale de un puesto intocable (Tirolesa, Show, Fotos). Devuelve si cubrió.
+     */
+    private static boolean cubrirCerrandoBajo(List<List<Set<Integer>>> filas, List<PuestoDto> puestos,
+                                              Map<Integer, AsignadorService.Presente> porNumero, Map<String, Integer> pesos,
+                                              int r, int k, Map<Integer, Set<Integer>> aCerrar, Set<String> intocables, int nivel) {
+        int pesoR = peso(pesos, puestos.get(r));
+        String claveR = Nombres.clave(puestos.get(r).nombre());
+        for (int pase = 0; pase < 2; pase++) {
+            if (pase == 1 && nivel <= 0) break;
+            for (int g = 0; g < puestos.size(); g++) {
+                PuestoDto pg = puestos.get(g);
+                String claveG = Nombres.clave(pg.nombre());
+                if (g == r || Nombres.noEsPuesto(pg.nombre()) || intocables.contains(claveG)) continue;
+                if (k >= filas.get(g).size() || filas.get(g).get(k).size() != 1) continue;
+                int pesoG = peso(pesos, pg);
+                if (pesoG >= pesoR || (pase == 0) != (pesoG <= Prioridad.BAJA.peso())) continue;
+                int o = filas.get(g).get(k).iterator().next();
+                AsignadorService.Presente q = porNumero.get(o);
+                if (q == null || !q.hoy().contains(claveR) || q.principales().contains(claveG) || !enUnaSolaFila(filas, o, k)) continue;
+                filas.get(g).get(k).remove(o);
+                filas.get(r).get(k).add(o);
+                if (pase == 0) {
+                    aCerrar.computeIfAbsent(g, x -> new HashSet<>()).add(k);
+                    return true;
+                }
+                if (cubrirCerrandoBajo(filas, puestos, porNumero, pesos, g, k, aCerrar, intocables, nivel - 1)) return true;
+                filas.get(r).get(k).remove(o);
+                filas.get(g).get(k).add(o);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * En la rueda nadie hace el mismo puesto dos medias horas seguidas (salvo que sea su estrella): si pasa, en el
+     * segundo horario se cambia con uno de otro puesto de la rueda que sepa el suyo, siempre que el cambio no deje
+     * a ninguno de los dos repitiendo. rueda: claves de los puestos que rotan.
+     */
+    static List<PuestoDto> sinRepetir(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero,
+                                      Set<String> rueda) {
+        List<List<String>> celdas = new ArrayList<>();
+        puestos.forEach(p -> celdas.add(new ArrayList<>(p.celdas())));
+        java.util.function.IntPredicate enRueda = f -> rueda.contains(Nombres.clave(puestos.get(f).nombre()));
+        java.util.function.BiPredicate<Integer, Integer> sabe = (n, f) -> {
+            AsignadorService.Presente q = porNumero.get(n);
+            return q != null && q.hoy().contains(Nombres.clave(puestos.get(f).nombre()));
+        };
+        java.util.function.BiPredicate<Integer, Integer> esEstrella = (n, f) -> {
+            AsignadorService.Presente q = porNumero.get(n);
+            return q != null && q.principales().contains(Nombres.clave(puestos.get(f).nombre()));
+        };
+        // Quién está solo en esa celda (null si está vacía, cerrada o hay más de uno).
+        java.util.function.BiFunction<Integer, Integer, Integer> solo = (f, k) -> {
+            if (k < 0 || k >= celdas.get(f).size()) return null;
+            String c = celdas.get(f).get(k);
+            if (PlanRotacion.esCerrado(c)) return null;
+            List<Integer> nums = PlanRotacion.empleados(c);
+            return nums.size() == 1 ? nums.get(0) : null;
+        };
+        boolean cambio = false;
+        int total = celdas.isEmpty() ? 0 : celdas.get(0).size();
+        for (int k = 1; k < total; k++) {
+            for (int f = 0; f < puestos.size(); f++) {
+                if (!enRueda.test(f)) continue;
+                Integer n = solo.apply(f, k);
+                if (n == null || !n.equals(solo.apply(f, k - 1)) || esEstrella.test(n, f)) continue;
+                for (int g = 0; g < puestos.size(); g++) {
+                    if (g == f || !enRueda.test(g)) continue;
+                    Integer m = solo.apply(g, k);
+                    if (m == null || !sabe.test(n, g) || !sabe.test(m, f) || esEstrella.test(m, g)) continue;
+                    // Que ninguno quede repitiendo con el cambio.
+                    if (n.equals(solo.apply(g, k - 1)) || n.equals(solo.apply(g, k + 1))
+                            || m.equals(solo.apply(f, k - 1)) || m.equals(solo.apply(f, k + 1))) continue;
+                    celdas.get(f).set(k, String.valueOf(m));
+                    celdas.get(g).set(k, String.valueOf(n));
+                    cambio = true;
+                    break;
+                }
+            }
+        }
+        if (!cambio) return puestos;
+        List<PuestoDto> nuevos = new ArrayList<>();
+        for (int f = 0; f < puestos.size(); f++) {
+            PuestoDto p = puestos.get(f);
+            nuevos.add(new PuestoDto(p.nombre(), p.nota(), p.iniciaRotacion(), celdas.get(f), p.roles()));
+        }
+        return nuevos;
+    }
+
+    /** Para ayudar: primero el puesto más importante; a igualdad, el que tiene menos gente. */
+    private static int compararAyuda(int a, int b, List<List<Set<Integer>>> filas, List<PuestoDto> puestos,
+                                     Map<String, Integer> pesos, int k) {
+        int pa = pesos.getOrDefault(Nombres.clave(puestos.get(a).nombre()), Prioridad.MEDIA.peso());
+        int pb = pesos.getOrDefault(Nombres.clave(puestos.get(b).nombre()), Prioridad.MEDIA.peso());
+        if (pa != pb) return Integer.compare(pb, pa);
+        return Integer.compare(filas.get(a).get(k).size(), filas.get(b).get(k).size());
+    }
+
     /** Los que sobran en ese horario: en Libre, o en una celda con otros. {número, fila}. */
-    private static List<int[]> sobran(List<List<Set<Integer>>> filas, List<PuestoDto> puestos, int k) {
+    private static List<int[]> sobran(List<List<Set<Integer>>> filas, List<PuestoDto> puestos, int k, int pesoDestino,
+                                      Map<String, Integer> pesos, Set<String> conRoles) {
         List<int[]> sobran = new ArrayList<>();
         for (int f = 0; f < puestos.size(); f++) {
             if (Nombres.esDescanso(puestos.get(f).nombre())) continue;
             Set<Integer> celda = filas.get(f).get(k);
-            if (!Nombres.esLibre(puestos.get(f).nombre()) && celda.size() < 2) continue;
+            boolean libre = Nombres.esLibre(puestos.get(f).nombre());
+            if (!libre && celda.size() < 2) continue;
+            // De un puesto con roles nunca; de otro, sólo para uno al menos igual de importante.
+            if (!libre && (conRoles.contains(Nombres.clave(puestos.get(f).nombre())) || peso(pesos, puestos.get(f)) > pesoDestino)) continue;
             for (int n : celda) if (enUnaSolaFila(filas, n, k)) sobran.add(new int[]{n, f});
         }
         return sobran;
+    }
+
+    private static int peso(Map<String, Integer> pesos, PuestoDto p) {
+        return Objects.requireNonNullElse(pesos.get(Nombres.clave(p.nombre())), Prioridad.MEDIA.peso());
     }
 
     /** Si sacar a ese de su celda la deja sin nadie que tenga estrella ahí (y él la tiene). */

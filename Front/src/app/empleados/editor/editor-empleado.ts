@@ -1,7 +1,18 @@
 import { Component, computed, inject, input, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import { LucideArrowLeft, LucideChevronDown, LucideLoaderCircle, LucideSave, LucideStar } from '@lucide/angular';
+import {
+  LucideArrowLeft,
+  LucideChevronDown,
+  LucideClipboardList,
+  LucideDrama,
+  LucideGraduationCap,
+  LucideIdCard,
+  LucideLoaderCircle,
+  LucideMapPin,
+  LucideSave,
+  LucideStar,
+} from '@lucide/angular';
 import { clavePuesto, RolSabido } from '../../models/empleado';
 import { PuestoParque } from '../../models/puesto';
 import { PuestoService } from '../../services/puesto.service';
@@ -15,7 +26,19 @@ import { ToastService } from '../../shared/toast/toast.service';
 
 @Component({
   selector: 'app-editor-empleado',
-  imports: [RouterLink, LucideArrowLeft, LucideChevronDown, LucideLoaderCircle, LucideSave, LucideStar],
+  imports: [
+    RouterLink,
+    LucideArrowLeft,
+    LucideChevronDown,
+    LucideClipboardList,
+    LucideDrama,
+    LucideGraduationCap,
+    LucideIdCard,
+    LucideLoaderCircle,
+    LucideMapPin,
+    LucideSave,
+    LucideStar,
+  ],
   templateUrl: './editor-empleado.html',
   styleUrl: './editor-empleado.css',
 })
@@ -37,6 +60,10 @@ export class EditorEmpleado implements OnInit {
   errorNombre = signal('');
 
   nombre = signal('');
+  /** Cómo se lo llama en lo impreso (opcional). */
+  apodo = signal('');
+  /** Lo que va en las tarjetas: el apodo o, si no tiene, el nombre. */
+  enLoImpreso = computed(() => this.apodo().trim() || this.nombre().trim() || '—');
   /** Todos los puestos de los cronogramas, más los que ya tenía cargados. */
   todos = signal<string[]>([]);
   /** Lo que sabe: puestos sueltos y grupos. */
@@ -68,7 +95,16 @@ export class EditorEmpleado implements OnInit {
   acompanantes = signal<{ id: number; nombre: string }[]>([]);
   /** Los puestos que tienen roles (Show del zorrito) y los roles para los que está preparado. */
   conRoles = signal<PuestoParque[]>([]);
+  /** Los puestos con roles que sabe: sólo de esos se eligen roles. */
+  rolesQueSabe = computed(() => this.conRoles().filter((p) => this.loSabe(p.nombre)));
   roles = signal<RolSabido[]>([]);
+  /** "6 puestos · 2 con estrella". */
+  resumenPuestos = computed(() => {
+    const cuantos = this.todos().filter((p) => this.loSabe(p)).length;
+    const estrellas = this.principales().length;
+    if (!cuantos) return 'Ninguno marcado';
+    return `${cuantos} puesto${cuantos === 1 ? '' : 's'}` + (estrellas ? ` · ${estrellas} con estrella` : '');
+  });
 
   tieneRol(puesto: string, rol: string): boolean {
     return this.roles().some((r) => clavePuesto(r.puesto) === clavePuesto(puesto) && clavePuesto(r.rol) === clavePuesto(rol));
@@ -121,6 +157,7 @@ export class EditorEmpleado implements OnInit {
           this.roles.set(empleado.roles ?? []);
           this.acompananteHabitualId.set(empleado.acompananteHabitualId);
           this.nombre.set(empleado.nombre);
+          this.apodo.set(empleado.apodo ?? '');
           // Se guardan con el nombre de la lista general, para que coincidan con los cronogramas.
           this.sabe.set([
             ...grupos.filter((g) => empleado.puestos.some((p) => clavePuesto(p) === clavePuesto(g.nombre))).map((g) => g.nombre),
@@ -140,6 +177,10 @@ export class EditorEmpleado implements OnInit {
   cambiarNombre(evento: Event): void {
     this.nombre.set((evento.target as HTMLInputElement).value);
     this.errorNombre.set('');
+  }
+
+  cambiarApodo(evento: Event): void {
+    this.apodo.set((evento.target as HTMLInputElement).value);
   }
 
   cambiarAcompanante(evento: Event): void {
@@ -213,6 +254,7 @@ export class EditorEmpleado implements OnInit {
       .guardar({
         id: id ? Number(id) : null,
         nombre: this.nombre(),
+        apodo: this.apodo().trim() || null,
         puestos: this.sabe(),
         principales: this.principales(),
         enEntrenamiento: this.enEntrenamiento(),

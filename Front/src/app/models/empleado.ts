@@ -1,6 +1,8 @@
 export interface Empleado {
   id: number | null;
   nombre: string;
+  /** Cómo se lo llama en lo impreso (tarjetas y planilla). Vacío: va el nombre. */
+  apodo?: string | null;
   /** Puestos que sabe hacer; puede tener grupos ("Parque"). */
   puestos: string[];
   /** Lo mismo con cada grupo cambiado por sus puestos. Lo calcula el back. */
@@ -20,6 +22,11 @@ export interface Empleado {
 export interface RolSabido {
   puesto: string;
   rol: string;
+}
+
+/** Lo que va en lo impreso: el apodo, o el nombre si no tiene. */
+export function nombreCorto(e: Pick<Empleado, 'nombre' | 'apodo'>): string {
+  return e.apodo?.trim() || e.nombre;
 }
 
 /** Para comparar nombres de puestos sin que importen mayúsculas, acentos ni espacios. */

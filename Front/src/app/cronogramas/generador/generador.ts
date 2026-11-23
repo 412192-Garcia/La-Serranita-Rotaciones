@@ -159,6 +159,7 @@ export class Generador implements OnInit {
         rol: f.rol,
         celdas: f.celdas,
         empleadoId,
+        refuerzos: b.refuerzos ?? [],
       })
       .subscribe({
         next: (nuevo) => {

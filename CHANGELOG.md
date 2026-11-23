@@ -5,6 +5,33 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 
 ## Sin publicar
 
+- **Apodos**: cada empleado puede tener un apodo (hasta 30 letras). En las tarjetas, la planilla y los avisos del
+  cronograma va el apodo en vez del nombre completo, así lo impreso queda más corto.
+- **Editar empleado, más prolijo**: en bloques (Datos, Puestos que sabe, Roles, Tareas de apertura) con un resumen
+  de cada uno ("15 puestos · 2 con estrella", "7 de 11"); nombre y apodo lado a lado, con cómo va a salir en
+  las tarjetas; "En entrenamiento" como interruptor; Guardar y Cancelar siempre a mano abajo.
+- Nadie hace un puesto de prioridad baja mientras su estrella está abierta: una cajera no va a Pecera; vuelve al
+  Cajero y Pecera queda cerrada ese rato. Y si a la Tirolesa (o al Show) le falta gente, cierra uno de baja y ese
+  completa.
+- **La Tirolesa y el Cajero quedan con la gente que pide la regla**: de un puesto con varios sólo se saca a alguien
+  para cubrir uno al menos igual de importante (la segunda cajera a la Casa del zorrito sí, a Canilla no), y de la
+  Tirolesa o el Show nunca.
+- **Menos movimiento**: Fotos (o cualquier puesto que abre tarde con una persona hasta el cierre) lo hace la misma
+  persona todo ese rato, alguien que lo sabe. Para cubrir lo que falta, antes que mover a alguien se cierra un puesto
+  de prioridad baja ese rato (Pecera cierra y ese va a Entrada); también cuando alguien quedaba en algo que no sabe.
+- **La rueda no se traba mientras dura el Show**: los que quedan siguen rotando entre los puestos abiertos (antes
+  uno podía quedar tres medias horas en Tobogán) y, cuando el Show cierra, cada uno sigue desde donde estaba en vez
+  de volver atrás. Además, en la rueda nadie repite el mismo puesto dos medias horas seguidas (salvo su estrella).
+- Los que quedaban en **Libre** ahora ayudan: van a su estrella (Nancy a Baños), o toman el puesto de uno que así
+  vuelve a la suya (la cajera que sale a las 16 hace Fotos y Nancy vuelve a Baños), o al puesto que saben más
+  importante.
+- **Refuerzo también cuando falta gente**, no sólo cuando un puesto queda vacío: si el Show iba con tres y uno no
+  lo sabe, se pide uno más. En la planilla la celda dice "+ Refuerzo" debajo de los que están.
+- Roles: si el preparado (Santiago, Presentador) está en otro puesto y nadie de Libre sabe cubrirlo, lo cubre
+  alguien de otro puesto que sí (Camila deja Entrada por la Casa del zorrito) y el que estaba en el Show sin rol
+  pasa a ese puesto (Tomás a Entrada). Antes quedaba el aviso de que nadie podía ser Presentador.
+- Si alguien queda en un puesto que no sabe y no sobra nadie, se prueba una ronda entre tres (Evelyn a Baños,
+  la de Baños a Minigolf y el de Minigolf a Canilla), siempre que todos terminen en algo que saben.
 - **Show del zorrito** (y cualquier puesto con roles): nunca lo hace alguien que no lo sabe; si no hay quien,
   se pide un refuerzo. Con dos en el Show son Zorrito y Presentador (Ayudante recién desde el tercero), aunque
   el segundo no esté preparado: igual queda el aviso para elegir a mano.

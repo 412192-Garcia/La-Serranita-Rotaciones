@@ -312,8 +312,13 @@ public class GeneradorService {
         List<List<Set<Integer>>> celdasCerradas = new ArrayList<>();
         for (int c = 0; c < cerrados.size(); c++) celdasCerradas.add(vacias(total));
         List<Integer> porPrioridad = ordenPorPrioridad(lugares, pesos);
+        // Mientras faltan los que fueron a un puesto que abre un rato (el Show): en qué lugar quedó cada uno.
+        Map<Integer, Integer> lugarEnVentana = new HashMap<>();
+        // Después de eso, cada uno sigue avanzando desde donde quedó: cuántos lugares se corrió de su rueda.
+        Map<Integer, Integer> desfase = new HashMap<>();
         for (int k = 0; k < total; k++) {
             int hora = k;
+            if (!desfase.isEmpty()) correr(rueda, k, desfase, cantidadLugares);
             List<Integer> libres = new ArrayList<>();
             for (Tarde t : tardes) {
                 if (k >= t.abre() && k < t.cierra()) continue;
@@ -370,28 +375,31 @@ public class GeneradorService {
             // se cierran los de menor prioridad (pasa a cubrir uno de más prioridad quien estaba en uno de menos).
             boolean faltanUnidos = unidos.stream().anyMatch(n -> hora >= tardeDe.get(n).abre() && hora < tardeDe.get(n).cierra());
             if (faltanUnidos && !franja.contains(k)) {
-                for (int x = 0; x < porPrioridad.size(); x++) {
-                    int i = porPrioridad.get(x);
-                    if (!rueda.get(i).get(k).isEmpty()) continue;
-                    Integer de = null;
-                    for (int y = porPrioridad.size() - 1; y > x; y--) {
-                        int c = porPrioridad.get(y);
-                        if (!rueda.get(c).get(k).isEmpty() && peso(lugares.get(c), pesos) <= peso(lugares.get(i), pesos)) {
-                            de = c;
-                            break;
+                // Quedan abiertos los de más prioridad, tantos como gente haya; la rueda sigue entre ellos: cada uno
+                // pasa al siguiente abierto desde donde estaba (nadie se queda clavado en Tobogán mientras dura el Show).
+                List<Integer> gente = new ArrayList<>();
+                Map<Integer, Integer> natural = new HashMap<>();
+                for (int i = 0; i < cantidadLugares; i++) {
+                    for (int n : rueda.get(i).get(k)) {
+                        gente.add(n);
+                        natural.put(n, i);
+                    }
+                }
+                if (gente.size() < cantidadLugares) {
+                    Set<Integer> abiertos = new java.util.TreeSet<>(porPrioridad.subList(0, gente.size()));
+                    Map<Integer, Integer> ahora = seguir(rueda, k, gente, natural, abiertos, lugarEnVentana, cantidadLugares);
+                    lugarEnVentana.clear();
+                    lugarEnVentana.putAll(ahora);
+                    for (int i = 0; i < cantidadLugares; i++) {
+                        if (rueda.get(i).get(k).isEmpty() && peso(lugares.get(i), pesos) < Prioridad.SIEMPRE.peso()) {
+                            lugarCerradoEn.computeIfAbsent(i, x -> new HashSet<>()).add(k);
                         }
                     }
-                    if (de == null) break;
-                    Set<Integer> celda = rueda.get(de).get(k);
-                    Integer quien = celda.iterator().next();
-                    celda.remove(quien);
-                    rueda.get(i).get(k).add(quien);
+                } else if (!lugarEnVentana.isEmpty()) {
+                    terminarVentana(rueda, k, lugarEnVentana, desfase, cantidadLugares);
                 }
-                for (int i = 0; i < cantidadLugares; i++) {
-                    if (rueda.get(i).get(k).isEmpty() && peso(lugares.get(i), pesos) < Prioridad.SIEMPRE.peso()) {
-                        lugarCerradoEn.computeIfAbsent(i, x -> new HashSet<>()).add(k);
-                    }
-                }
+            } else if (!lugarEnVentana.isEmpty()) {
+                terminarVentana(rueda, k, lugarEnVentana, desfase, cantidadLugares);
             }
         }
 
@@ -523,6 +531,71 @@ public class GeneradorService {
         PlanRotacion plan = PlanRotacion.de(armado.horarios(), armado.puestos());
         return new BorradorDto(new CronogramaDto(null, armado.nombre(), armado.afluencia(), armado.horarios(), armado.puestos(),
                 rotacion.cantidadEmpleados(plan), rotacion.fijos(plan), rotacion.armarTarjetas(plan)), avisos);
+    }
+
+    /**
+     * Reparte a la gente de la rueda en ese horario entre los lugares abiertos: cada uno al siguiente abierto
+     * desde donde estaba en el horario anterior (o desde el suyo de la rueda, si recién entra). Primero los que
+     * venían rotando; si el lugar está tomado, el próximo abierto libre. Devuelve dónde quedó cada uno.
+     */
+    private static Map<Integer, Integer> seguir(List<List<Set<Integer>>> rueda, int k, List<Integer> gente,
+                                                Map<Integer, Integer> natural, Set<Integer> abiertos,
+                                                Map<Integer, Integer> antes, int cantidad) {
+        Map<Integer, Integer> quiere = new HashMap<>();
+        for (int n : gente) {
+            Integer a = antes.get(n);
+            quiere.put(n, siguienteAbierto(abiertos, a != null ? a + 1 : natural.get(n), cantidad));
+        }
+        List<Integer> orden = new ArrayList<>(gente);
+        orden.sort(java.util.Comparator.comparing((Integer n) -> antes.containsKey(n) ? 0 : 1).thenComparing(quiere::get));
+        for (int i = 0; i < cantidad; i++) rueda.get(i).get(k).clear();
+        Map<Integer, Integer> ahora = new HashMap<>();
+        for (int n : orden) {
+            int i = quiere.get(n);
+            for (int d = 0; d < cantidad && !rueda.get(i).get(k).isEmpty(); d++) i = siguienteAbierto(abiertos, i + 1, cantidad);
+            rueda.get(i).get(k).add(n);
+            ahora.put(n, i);
+        }
+        return ahora;
+    }
+
+    /**
+     * Terminó el rato con menos gente (cerró el Show): todos los lugares abren y cada uno sigue desde donde quedó,
+     * en vez de volver a su lugar de la rueda (no repite ni va para atrás). Lo que se corrió queda en desfase para
+     * el resto del día.
+     */
+    private static void terminarVentana(List<List<Set<Integer>>> rueda, int k, Map<Integer, Integer> lugarEnVentana,
+                                        Map<Integer, Integer> desfase, int cantidad) {
+        List<Integer> gente = new ArrayList<>();
+        Map<Integer, Integer> natural = new HashMap<>();
+        for (int i = 0; i < cantidad; i++) {
+            for (int n : rueda.get(i).get(k)) {
+                gente.add(n);
+                natural.put(n, i);
+            }
+        }
+        Set<Integer> todos = new java.util.TreeSet<>();
+        for (int i = 0; i < cantidad; i++) todos.add(i);
+        Map<Integer, Integer> ahora = seguir(rueda, k, gente, natural, todos, lugarEnVentana, cantidad);
+        ahora.forEach((n, i) -> desfase.merge(n, Math.floorMod(i - natural.get(n), cantidad), (x, y) -> Math.floorMod(x + y, cantidad)));
+        lugarEnVentana.clear();
+    }
+
+    /** Corre a cada uno de la rueda en ese horario los lugares de su desfase (los demás quedan donde estaban). */
+    private static void correr(List<List<Set<Integer>>> rueda, int k, Map<Integer, Integer> desfase, int cantidad) {
+        Map<Integer, Integer> donde = new HashMap<>();
+        for (int i = 0; i < cantidad; i++) for (int n : rueda.get(i).get(k)) donde.put(n, i);
+        for (int i = 0; i < cantidad; i++) rueda.get(i).get(k).clear();
+        donde.forEach((n, i) -> rueda.get(Math.floorMod(i + desfase.getOrDefault(n, 0), cantidad)).get(k).add(n));
+    }
+
+    /** El primer lugar abierto desde "desde" (incluido), dando la vuelta a la rueda. */
+    private static int siguienteAbierto(Set<Integer> abiertos, int desde, int cantidad) {
+        for (int d = 0; d < cantidad; d++) {
+            int i = Math.floorMod(desde + d, cantidad);
+            if (abiertos.contains(i)) return i;
+        }
+        return Math.floorMod(desde, cantidad);
     }
 
     /** Un puesto (o varios que hace la misma persona) que queda abierto en una tanda, con cuántos lleva. */

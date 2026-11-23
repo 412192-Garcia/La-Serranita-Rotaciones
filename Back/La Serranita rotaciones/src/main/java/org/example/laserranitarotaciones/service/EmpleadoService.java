@@ -69,13 +69,15 @@ public class EmpleadoService {
     private EmpleadoDto aDto(Empleado e) {
         return new EmpleadoDto(e.getId(), e.getNombre(), List.copyOf(e.getPuestos()), List.copyOf(e.getPrincipales()),
                 e.isEnEntrenamiento(), e.getIdAcompananteHabitual(), List.copyOf(e.getTareas()),
-                grupos.expandir(e.getPuestos()), e.getRoles().stream().map(RolSabidoDto::de).toList());
+                grupos.expandir(e.getPuestos()), e.getRoles().stream().map(RolSabidoDto::de).toList(), e.getApodo());
     }
 
     private void aplicar(Empleado e, EmpleadoDto dto) {
         String nombre = dto.nombre() == null ? "" : dto.nombre().trim();
         if (nombre.isEmpty()) throw new ValidacionException("Falta el nombre.");
         if (nombre.length() > 60) throw new ValidacionException("El nombre es muy largo.");
+        String apodo = dto.apodo() == null || dto.apodo().isBlank() ? null : dto.apodo().trim().replaceAll("\\s+", " ");
+        if (apodo != null && apodo.length() > 30) throw new ValidacionException("El apodo es muy largo (hasta 30 letras).");
 
         // Sin repetidos, comparando sin mayúsculas ni acentos. Los grupos quedan con su nombre.
         Map<String, String> nombresGrupos = grupos.nombres();
@@ -116,6 +118,7 @@ public class EmpleadoService {
         }
 
         e.setNombre(nombre);
+        e.setApodo(apodo);
         e.setEnEntrenamiento(dto.enEntrenamiento());
         e.setIdAcompananteHabitual(acompanante);
         e.getPuestos().clear();

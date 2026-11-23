@@ -52,6 +52,29 @@ class RolesPuestoTest {
     }
 
     @Test
+    void elPresentadorDejaLaCasaYLaCubreUnaDeOtroPuesto() {
+        // Santiago (6) presenta y está en la Casa del zorrito; en Libre nadie sabe la Casa. Camila (3), en Entrada, sí:
+        // ella va a la Casa y Tomás (11, en el show sin rol) pasa a Entrada.
+        List<PuestoDto> puestos = List.of(
+                new PuestoDto("Show del zorrito", List.of("", "18-11")),
+                new PuestoDto("Casa del zorrito", List.of("", "6")),
+                new PuestoDto("Entrada", List.of("", "3")),
+                new PuestoDto("Libre", List.of("", "1")));
+        Map<Integer, AsignadorService.Presente> porNumero = Map.of(
+                18, presente(18, "Show del zorrito", "Entrada"),
+                11, presente(11, "Show del zorrito", "Entrada"),
+                6, presente(6, "Show del zorrito", "Casa del zorrito"),
+                3, presente(3, "Casa del zorrito", "Entrada"),
+                1, presente(1, "Baños"));
+        List<PuestoDto> r = RolesPuesto.asignar(puestos, porNumero, CONFIGS, sabe(18, "Zorrito", 6, "Presentador"), Map.of());
+        assertThat(r.get(0).roles().get(1)).containsExactly(Map.entry("Zorrito", 18), Map.entry("Presentador", 6));
+        assertThat(r.get(1).celdas().get(1)).isEqualTo("3");
+        assertThat(r.get(2).celdas().get(1)).isEqualTo("11");
+        assertThat(r.get(3).celdas().get(1)).isEqualTo("1");
+        assertThat(RolesPuesto.faltantes(r, CONFIGS, HORAS)).isEmpty();
+    }
+
+    @Test
     void siNadieDelPuestoSabeSeTraeAUnoDeLibre() {
         List<PuestoDto> puestos = List.of(
                 new PuestoDto("Show del zorrito", List.of("", "1-2")),
