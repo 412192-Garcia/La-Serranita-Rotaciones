@@ -31,7 +31,6 @@ export const routes: Routes = [
           { path: 'puestos', loadComponent: () => import('./puestos/puestos').then((m) => m.Puestos) },
           { path: 'tareas', loadComponent: () => import('./empleados/tareas/tareas').then((m) => m.Tareas) },
           { path: 'puestos-abiertos', loadComponent: () => import('./configuracion/reglas/reglas').then((m) => m.Reglas) },
-          { path: 'usuarios', loadComponent: () => import('./configuracion/usuarios/usuarios').then((m) => m.Usuarios) },
         ],
       },
       // Direcciones de antes.

@@ -10,7 +10,7 @@
 #   docker network create proxy     # una sola vez
 #   docker compose up -d --build    # y entrar por http://localhost:4300 con docker-compose.override.yml.example
 #
-# Primer arranque: no hay usuarios. Con PRIMER_USUARIO y PRIMER_USUARIO_CLAVE en el .env se crea el primero.
+# Para entrar: un solo usuario, APP_USUARIO y APP_CLAVE del .env.
 
 # Los logs de Docker sin límite llenan el disco: hasta 5 archivos de 10 MB por servicio.
 x-logging: &logging
@@ -93,8 +93,8 @@ services:
       DB_USERNAME: ${DB_USERNAME:-rotaciones}
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en el .env}
-      PRIMER_USUARIO: ${PRIMER_USUARIO:-}
-      PRIMER_USUARIO_CLAVE: ${PRIMER_USUARIO_CLAVE:-}
+      APP_USUARIO: ${APP_USUARIO:?Falta APP_USUARIO en el .env}
+      APP_CLAVE: ${APP_CLAVE:?Falta APP_CLAVE en el .env}
     # Nombre propio en la red: el front lo busca así (ver Front/nginx.conf), sin chocar con el "backend" de otro
     # proyecto. Sin ports: sólo se llega por el front.
     networks:

@@ -13,7 +13,7 @@
       <a routerLink="/configuracion" routerLinkActive="activo">
         <svg lucideSettings [strokeWidth]="2.25"></svg> Configuración
       </a>
-      <button type="button" class="salir" [title]="'Salir (' + sesion.usuario()?.nombre + ')'" [attr.aria-label]="'Salir (' + sesion.usuario()?.nombre + ')'" (click)="salir()">
+      <button type="button" class="salir" title="Salir" aria-label="Salir" (click)="salir()">
         <svg lucideLogOut [strokeWidth]="2.25"></svg>
       </button>
     </nav>

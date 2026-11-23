@@ -4,7 +4,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.example.laserranitarotaciones.model.entity.Usuario;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -32,11 +31,10 @@ public class JwtService {
         this.duracionMantenerMs = duracionMantenerMs;
     }
 
-    public String generar(Usuario usuario, boolean mantener) {
+    public String generar(String usuario, boolean mantener) {
         Date ahora = new Date();
         return Jwts.builder()
-                .subject(usuario.getUsuario())
-                .claim("id", usuario.getId())
+                .subject(usuario)
                 .issuedAt(ahora)
                 .expiration(new Date(ahora.getTime() + (mantener ? duracionMantenerMs : duracionMs)))
                 .signWith(clave)
