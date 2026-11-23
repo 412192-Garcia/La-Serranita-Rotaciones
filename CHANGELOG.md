@@ -5,6 +5,8 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 
 ## Sin publicar
 
+- Arreglo: a quien hace dos puestos unidos en el almuerzo (Travesía + Búsqueda) ya no se lo cambia de lugar a medias;
+  antes podía quedar en Entrada y en Búsqueda a la vez.
 - **Apodos**: cada empleado puede tener un apodo (hasta 30 letras). En las tarjetas, la planilla y los avisos del
   cronograma va el apodo en vez del nombre completo, así lo impreso queda más corto.
 - **Editar empleado, más prolijo**: en bloques (Datos, Puestos que sabe, Roles, Tareas de apertura) con un resumen

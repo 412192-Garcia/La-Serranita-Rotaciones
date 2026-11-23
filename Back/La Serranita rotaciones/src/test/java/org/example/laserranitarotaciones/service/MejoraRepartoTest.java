@@ -166,6 +166,26 @@ class MejoraRepartoTest {
     }
 
     @Test
+    void noSeparaAQuienHaceDosPuestosUnidos() {
+        // A las 12 el 16 hace Travesía y Búsqueda unidas (y estaba en Travesía a las 11:30): no se lo cambia con el de
+        // Entrada, porque quedaría en Entrada y en Búsqueda a la vez.
+        List<PuestoDto> puestos = List.of(
+                new PuestoDto("Entrada", null, false, List.of("8", "8")),
+                new PuestoDto("Travesía", null, false, List.of("16", "16")),
+                new PuestoDto("Búsqueda", null, false, List.of("17", "12-16")));
+        var p8 = persona(8, "P8", "Entrada", "Travesía", "Búsqueda");
+        var p16 = persona(16, "P16", "Entrada", "Travesía", "Búsqueda");
+        var p12 = persona(12, "P12", "Entrada", "Travesía", "Búsqueda");
+        var p17 = persona(17, "P17", "Entrada", "Travesía", "Búsqueda");
+        Set<String> rueda = Set.of(Nombres.clave("Entrada"), Nombres.clave("Travesía"), Nombres.clave("Búsqueda"));
+
+        List<PuestoDto> r = MejoraReparto.sinRepetir(puestos, Map.of(8, p8, 16, p16, 12, p12, 17, p17), rueda);
+
+        assertThat(r.get(1).celdas()).containsExactly("16", "16");
+        assertThat(r.get(2).celdas()).containsExactly("17", "12-16");
+    }
+
+    @Test
     void enLaRuedaNadieRepiteElMismoPuestoSeguido() {
         // El 7 queda dos medias horas en Pecera: en la segunda se cambia con el de Carrera, que sabe Pecera.
         List<PuestoDto> puestos = List.of(

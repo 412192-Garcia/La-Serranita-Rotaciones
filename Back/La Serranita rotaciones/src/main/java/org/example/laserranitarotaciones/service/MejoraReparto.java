@@ -700,7 +700,8 @@ final class MejoraReparto {
             for (int k = desde; k < total && costo < Integer.MAX_VALUE; k++) {
                 int f = dondeEsta.apply(n, k);
                 if (f == fFila) continue;
-                if (f < 0 || Nombres.esDescanso(puestos.get(f).nombre()) || conRoles.contains(Nombres.clave(puestos.get(f).nombre()))) {
+                if (f < 0 || Nombres.esDescanso(puestos.get(f).nombre()) || conRoles.contains(Nombres.clave(puestos.get(f).nombre()))
+                        || !enUnaSolaFila(filas, n, k)) {
                     costo = Integer.MAX_VALUE;
                     break;
                 }
@@ -793,7 +794,7 @@ final class MejoraReparto {
                 if (nums.size() != 1) continue;
                 int n = nums.get(0);
                 AsignadorService.Presente q = porNumero.get(n);
-                if (q == null) continue;
+                if (q == null || !enUnaSolaCelda(celdas, n, k)) continue;
                 int estrella = -1;
                 for (int s = 0; s < puestos.size(); s++) {
                     PuestoDto ps = puestos.get(s);
@@ -921,12 +922,16 @@ final class MejoraReparto {
             return q != null && q.principales().contains(Nombres.clave(puestos.get(f).nombre()));
         };
         // Quién está solo en esa celda (null si está vacía, cerrada o hay más de uno).
+        // Quién está solo en esa celda (null si está vacía, cerrada, hay más de uno o él hace además otro puesto a
+        // esa hora: Travesía y Búsqueda unidas no se separan).
         java.util.function.BiFunction<Integer, Integer, Integer> solo = (f, k) -> {
             if (k < 0 || k >= celdas.get(f).size()) return null;
             String c = celdas.get(f).get(k);
             if (PlanRotacion.esCerrado(c)) return null;
             List<Integer> nums = PlanRotacion.empleados(c);
-            return nums.size() == 1 ? nums.get(0) : null;
+            if (nums.size() != 1) return null;
+            int n = nums.get(0);
+            return enUnaSolaCelda(celdas, n, k) ? n : null;
         };
         boolean cambio = false;
         int total = celdas.isEmpty() ? 0 : celdas.get(0).size();
@@ -995,6 +1000,15 @@ final class MejoraReparto {
         if (el == null || !el.principales().contains(clave)) return false;
         return filas.get(s[1]).get(k).stream().filter(o -> o != s[0])
                 .noneMatch(o -> porNumero.get(o) != null && porNumero.get(o).principales().contains(clave));
+    }
+
+    /** Como enUnaSolaFila, con las celdas como texto. */
+    private static boolean enUnaSolaCelda(List<List<String>> celdas, int n, int k) {
+        int veces = 0;
+        for (List<String> fila : celdas) {
+            if (k < fila.size() && !PlanRotacion.esCerrado(fila.get(k)) && PlanRotacion.empleados(fila.get(k)).contains(n)) veces++;
+        }
+        return veces == 1;
     }
 
     /** Si el número está en una sola fila en ese horario (no hace dos puestos a la vez). */
