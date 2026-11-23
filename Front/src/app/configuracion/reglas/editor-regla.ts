@@ -1,8 +1,17 @@
 import { Component, computed, input, OnInit, output, signal } from '@angular/core';
-import { LucideChevronDown, LucideChevronUp, LucideMinus, LucidePlus, LucideX } from '@lucide/angular';
+import {
+  LucideChevronDown,
+  LucideChevronUp,
+  LucideClock,
+  LucideMinus,
+  LucidePin,
+  LucidePlus,
+  LucideRefreshCw,
+  LucideX,
+} from '@lucide/angular';
 import { AFLUENCIAS, Afluencia, textoAfluencia } from '../../models/cronograma';
 import { clavePuesto } from '../../models/empleado';
-import { PuestoParque, TIPOS_HORARIO, TipoHorario } from '../../models/puesto';
+import { PuestoParque, TipoHorario } from '../../models/puesto';
 import { HorarioRegla, ReglaApertura } from '../../models/regla';
 import { Modal } from '../../shared/modal/modal';
 
@@ -13,7 +22,7 @@ import { Modal } from '../../shared/modal/modal';
  */
 @Component({
   selector: 'app-editor-regla',
-  imports: [Modal, LucideChevronDown, LucideChevronUp, LucideMinus, LucidePlus, LucideX],
+  imports: [Modal, LucideChevronDown, LucideChevronUp, LucideClock, LucideMinus, LucidePin, LucidePlus, LucideRefreshCw, LucideX],
   templateUrl: './editor-regla.html',
   styleUrl: './editor-regla.css',
 })
@@ -37,7 +46,17 @@ export class EditorRegla implements OnInit {
   fijos = signal<{ puesto: string; personas: number; abre?: string | null }[]>([]);
   lugares = signal<string[][]>([]);
   horarios = signal<HorarioRegla[]>([]);
-  readonly tiposHorario = TIPOS_HORARIO;
+  /** Qué pasa en el horario, en botones cortos. */
+  readonly tiposHorario: { valor: TipoHorario; texto: string; ayuda: string }[] = [
+    { valor: 'ABRE_TARDE', texto: 'Abre', ayuda: 'El puesto abre en ese horario con esa gente' },
+    { valor: 'REFUERZO', texto: '+ Suma', ayuda: 'Van personas de más en ese horario' },
+    { valor: 'MENOS', texto: '− Saca', ayuda: 'Se van personas de un fijo en ese horario' },
+  ];
+
+  /** "abre con 3", "suma 1", "saca 1". */
+  textoPersonas(h: HorarioRegla): string {
+    return h.tipo === 'MENOS' ? 'saca' : h.tipo === 'REFUERZO' ? 'suma' : 'abre con';
+  }
 
   esNueva = computed(() => this.regla().id == null);
 

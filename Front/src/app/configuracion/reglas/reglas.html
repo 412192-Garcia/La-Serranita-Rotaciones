@@ -14,53 +14,9 @@
   </div>
 </div>
 <p class="ayuda">
-  Qué puestos funcionan según cuántos vinieron (todos, la Tirolesa también) y cuánta gente se espera. El generador arma los fijos,
-  la gente de la Tirolesa y la rueda con la regla que corresponde. Pensado para la mañana, más o menos hasta las 12. La rueda arranca en el marcado con *.
+  Qué puestos abren según cuántos vinieron y cuánta gente se espera. El generador arma el día con la regla que corresponde.
 </p>
 
-<section class="panel orden-rotacion">
-  <div class="orden-titulo">
-    <h3>Orden de rotación</h3>
-    <button type="button" class="btn-primario btn-chico" [disabled]="!ordenCambiado() || guardandoOrden()" (click)="guardarOrden()">
-      Guardar orden
-    </button>
-  </div>
-  <p class="ayuda">
-    Arrastrá para cambiar el orden. La rueda de cada regla arranca en su lugar marcado con * y sigue en este orden; lo que no está acá
-    va al final.
-  </p>
-  <ol class="orden" [class.moviendo]="arrastrando() !== null">
-    @for (p of orden(); track p; let i = $index) {
-      <li [attr.data-orden]="i" [class.arrastrado]="arrastrando() === i">
-        <span
-          class="agarre"
-          role="button"
-          tabindex="-1"
-          [attr.aria-label]="'Mover ' + p"
-          (pointerdown)="tomar($event, i)"
-          (pointermove)="mover($event)"
-          (pointerup)="soltar()"
-          (pointercancel)="soltar()"
-        >
-          <svg lucideGripVertical [strokeWidth]="2.25"></svg>
-        </span>
-        <span class="orden-numero">{{ i + 1 }}</span>
-        <span class="orden-nombre">{{ p }}</span>
-        <button type="button" class="btn-mini" [attr.aria-label]="'Quitar ' + p" title="Quitar" (click)="quitarDelOrden(i)">
-          <svg lucideX [strokeWidth]="2.25"></svg>
-        </button>
-      </li>
-    }
-  </ol>
-  @if (fueraDelOrden().length) {
-    <select class="agregar-orden" aria-label="Agregar un puesto al orden" (change)="agregarAlOrden($event)">
-      <option value="">+ Agregar puesto…</option>
-      @for (p of fueraDelOrden(); track p) {
-        <option [value]="p">{{ p }}</option>
-      }
-    </select>
-  }
-</section>
 
 @if (cargando()) {
   <section class="panel centrado"><svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg></section>
@@ -82,7 +38,7 @@
 @if (reglas().length) {
   <section class="panel tabla-reglas">
     <div class="tabla-cabecera">
-      <span class="etiqueta">Cuánta gente se espera</span>
+      <h3>Cuánta gente se espera</h3>
       <div class="opciones">
         @for (a of afluencias; track a.valor) {
           <button type="button" class="chip" [class.activa]="vista() === a.valor" (click)="vista.set(a.valor)">{{ a.texto }}</button>
@@ -124,7 +80,7 @@
                     <td class="celda-barras" [attr.colspan]="s.span" [title]="s.celda.detalle">
                       <div class="barras" [style.grid-template-columns]="'repeat(' + s.span + ', 1fr)'">
                         @for (b of s.barras; track $index) {
-                          <div class="barra" [style.grid-column]="b.desde + ' / ' + (b.hasta + 1)" [title]="b.detalle">
+                          <div class="barra-persona" [style.grid-column]="b.desde + ' / ' + (b.hasta + 1)" [title]="b.detalle">
                             @if (b.inicia) {
                               <span class="arranca" title="Ahí arranca la rueda">*</span>
                             }
@@ -144,7 +100,9 @@
                 }
                 <td class="col-horarios">
                   @for (h of f.horarios; track $index) {
-                    <span class="horario-dia">{{ h }}</span>
+                    <span class="horario-dia" [class]="'horario-dia tipo-' + h.tipo" [title]="h.detalle">
+                      <b>{{ h.hora }}</b> {{ h.texto }}
+                    </span>
                   } @empty {
                     <span class="sin-horarios">—</span>
                   }
@@ -169,16 +127,66 @@
           </tbody>
         </table>
       </div>
-      <p class="leyenda">
-        <span class="muestra celda-fijo">Fijo</span> la misma persona todo el día ·
-        <span class="muestra celda-tarde">×3 · 13:00</span> gente de la Tirolesa y desde qué hora ·
-        <span class="muestra celda-rota">Rota</span> entra en la rueda ·
-        <span class="muestra celda-junto">Rota ───</span> una barra que abarca varios puestos: los hace una misma persona
-        (dos barras que se pisan en un puesto, como en Búsqueda, se lo reparten) ·
-        <span class="muestra celda-cerrado">—</span> cerrado · * ahí arranca la rueda
-      </p>
+      <div class="leyenda">
+        <span><span class="muestra celda-fijo">Fijo</span> la misma persona todo el día</span>
+        <span><span class="muestra celda-tarde">×3 · 13:00</span> Tirolesa: cuántos y desde qué hora</span>
+        <span><span class="muestra celda-rota">Rota</span> entra en la rueda</span>
+        <span><span class="muestra celda-junto">Rota</span> ancho: varios puestos de una misma persona</span>
+        <span><span class="muestra celda-cerrado">—</span> cerrado</span>
+        <span><b>*</b> ahí arranca la rueda</span>
+        <span><span class="horario-dia tipo-abre_tarde muestra-dia"><b>16:00</b> Show · 3</span> lo que cambia en el día</span>
+      </div>
     } @else {
       <p class="vacio">No hay reglas para afluencia {{ textoAfluencia(vista()).toLowerCase() }}.</p>
     }
   </section>
 }
+
+<details class="panel orden-rotacion">
+  <summary class="orden-titulo">
+    <span class="orden-cabeza">
+      <strong>Orden de rotación</strong>
+      <span class="orden-resumen">{{ resumenOrden() }}</span>
+    </span>
+    @if (ordenCambiado()) {
+      <button type="button" class="btn-primario btn-chico" [disabled]="guardandoOrden()" (click)="$event.preventDefault(); guardarOrden()">
+        Guardar orden
+      </button>
+    }
+  </summary>
+  <p class="ayuda">
+    Arrastrá para cambiar el orden. La rueda de cada regla arranca en su lugar marcado con * y sigue en este orden; lo que no está acá
+    va al final.
+  </p>
+  <ol class="orden" [class.moviendo]="arrastrando() !== null">
+    @for (p of orden(); track p; let i = $index) {
+      <li [attr.data-orden]="i" [class.arrastrado]="arrastrando() === i">
+        <span
+          class="agarre"
+          role="button"
+          tabindex="-1"
+          [attr.aria-label]="'Mover ' + p"
+          (pointerdown)="tomar($event, i)"
+          (pointermove)="mover($event)"
+          (pointerup)="soltar()"
+          (pointercancel)="soltar()"
+        >
+          <svg lucideGripVertical [strokeWidth]="2.25"></svg>
+        </span>
+        <span class="orden-numero">{{ i + 1 }}</span>
+        <span class="orden-nombre">{{ p }}</span>
+        <button type="button" class="btn-mini" [attr.aria-label]="'Quitar ' + p" title="Quitar" (click)="quitarDelOrden(i)">
+          <svg lucideX [strokeWidth]="2.25"></svg>
+        </button>
+      </li>
+    }
+  </ol>
+  @if (fueraDelOrden().length) {
+    <select class="agregar-orden" aria-label="Agregar un puesto al orden" (change)="agregarAlOrden($event)">
+      <option value="">+ Agregar puesto…</option>
+      @for (p of fueraDelOrden(); track p) {
+        <option [value]="p">{{ p }}</option>
+      }
+    </select>
+  }
+</details>

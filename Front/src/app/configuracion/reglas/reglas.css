@@ -452,7 +452,7 @@ td.celda-barras {
   gap: 2px;
 }
 
-.barra {
+.barra-persona {
   background: #cfe3f7;
   color: #163d66;
   border-left: 3px solid #163d66;
@@ -463,14 +463,14 @@ td.celda-barras {
   text-align: center;
 }
 
-.barra {
+.barra-persona {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 3px;
 }
 
-.barra .arranca {
+.barra-persona .arranca {
   margin-right: 0;
 }
 
@@ -497,4 +497,136 @@ table.reglas thead th.col-horarios {
 
 .sin-horarios {
   color: var(--color-text-muted);
+}
+
+/* --- Retoques de diseño */
+
+.tabla-cabecera h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+table.reglas thead th {
+  position: sticky;
+  top: 0;
+  background: var(--color-card-bg);
+  z-index: 2;
+  padding-bottom: 10px;
+}
+
+table.reglas thead th.col-vinieron {
+  z-index: 3;
+}
+
+table.reglas tbody tr:hover > th,
+table.reglas tbody tr:hover > td.celda-cerrado,
+table.reglas tbody tr:hover > td.col-horarios,
+table.reglas tbody tr:hover > td.col-acciones {
+  background: var(--color-bg-soft);
+}
+
+table.reglas tbody th.col-vinieron {
+  font-size: 1.05rem;
+  border-radius: 8px;
+}
+
+/* Lo que cambia en el día: la hora adelante y un color por tipo. */
+table.reglas .col-horarios {
+  min-width: 230px;
+}
+
+.horario-dia {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 1px 3px 1px 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border-left: 3px solid #7aa7d6;
+  background: #eef4fb;
+  color: #1f3f63;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.horario-dia b {
+  font-variant-numeric: tabular-nums;
+}
+
+.horario-dia.tipo-menos {
+  border-left-color: #c9a227;
+  background: #fbf5e3;
+  color: #5c4a0f;
+}
+
+.horario-dia.tipo-refuerzo {
+  border-left-color: #6bbf7a;
+  background: #e9f6ec;
+  color: #1e5631;
+}
+
+/* Leyenda: una pastilla por cosa. */
+.leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 14px;
+  line-height: 1.6;
+}
+
+.leyenda > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.muestra-dia {
+  margin: 0;
+}
+
+/* Orden de rotación: plegado abajo, con el recorrido en una línea. */
+details.orden-rotacion {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+details.orden-rotacion > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+details.orden-rotacion > summary::-webkit-details-marker {
+  display: none;
+}
+
+.orden-cabeza {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.orden-resumen {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+details.orden-rotacion[open] .orden-resumen {
+  display: none;
+}
+
+details.orden-rotacion[open] > summary {
+  margin-bottom: 8px;
+}
+
+.horario-dia {
+  border-radius: 6px;
+}
+
+table.reglas .col-horarios {
+  min-width: 300px;
 }

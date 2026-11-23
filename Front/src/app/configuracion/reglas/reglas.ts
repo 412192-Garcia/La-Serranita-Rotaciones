@@ -37,8 +37,8 @@ interface FilaRegla {
    */
   segmentos: { span: number; celda: Celda; puestos: string; barras?: { desde: number; hasta: number; inicia: boolean; detalle: string }[] }[];
   mal: boolean;
-  /** Lo que cambia en el día, en texto ("Cajero −1 desde 16:00"). */
-  horarios: string[];
+  /** Lo que cambia en el día, por hora: "16:00" "Cajero −1". */
+  horarios: { hora: string; texto: string; tipo: string; detalle: string }[];
 }
 
 
@@ -99,6 +99,9 @@ export class Reglas implements OnInit {
   guardandoOrden = signal(false);
   /** El que se está arrastrando (su posición en la lista). */
   arrastrando = signal<number | null>(null);
+
+  /** "Entrada → Canilla → Minigolf…", para verlo con el orden plegado. */
+  resumenOrden = computed(() => this.orden().join(' → '));
 
   /** Los puestos que todavía no están en el orden, para agregarlos. */
   fueraDelOrden = computed(() => this.catalogo().filter((p) => !this.orden().includes(p)));
@@ -271,7 +274,15 @@ export class Reglas implements OnInit {
           }
           segmentos.push({ span: 1, celda: celdas.get(clave) ?? this.cerrado, puestos: columnas[i] });
         }
-        return { regla: r, segmentos, mal: personasDe(r) !== r.empleados, horarios: (r.horarios ?? []).map(textoHorario) };
+        const horarios = [...(r.horarios ?? [])]
+          .sort((a, b) => a.desde.localeCompare(b.desde))
+          .map((h) => ({
+            hora: h.hasta ? `${h.desde}–${h.hasta}` : h.desde,
+            texto: `${h.puesto} ${h.tipo === 'MENOS' ? '−' + h.personas : h.tipo === 'REFUERZO' ? '+' + h.personas : '· ' + h.personas}`,
+            tipo: h.tipo.toLowerCase(),
+            detalle: textoHorario(h),
+          }));
+        return { regla: r, segmentos, mal: personasDe(r) !== r.empleados, horarios };
       }),
   );
 

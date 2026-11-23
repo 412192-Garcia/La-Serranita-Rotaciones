@@ -5,6 +5,9 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 
 ## Sin publicar
 
+- Reglas, más prolijo: encabezado como en las demás pantallas, la tabla arriba y el orden de rotación plegado al
+  final (con el recorrido en una línea). Lo que cambia en el día va en pastillas con la hora adelante y un color por
+  tipo. En el editor, cada sección con su ícono y los horarios con la hora primero y botones Abre / + Suma / − Saca.
 - **Todos los horarios van en las reglas**, no en Puestos: cada regla dice a qué hora abre la Tirolesa y con
   cuántos ("Tirolesa ×3 · 13:00") y qué cambia en el día: un cajero que se va a las 16 ("Cajero −1 desde 16:00"),
   el Show del zorrito de 16 a 17 con 3, Fotos desde las 17, un refuerzo. Así, con poca gente, una regla puede abrir

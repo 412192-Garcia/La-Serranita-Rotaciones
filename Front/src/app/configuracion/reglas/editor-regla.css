@@ -599,3 +599,125 @@ button {
     white-space: nowrap;
   }
 }
+
+/* --- Retoques: íconos en los títulos y horarios en dos renglones */
+
+.bloque-titulo h4 {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.bloque-titulo h4 svg {
+  width: 17px;
+  height: 17px;
+  color: var(--color-primary);
+}
+
+.fila-horario {
+  display: grid !important;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    'horas nombre quitar'
+    'tipos personas personas';
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.fila-horario .horas {
+  grid-area: horas;
+}
+
+.fila-horario .nombre {
+  grid-area: nombre;
+  font-size: 1rem;
+}
+
+.fila-horario .btn-quitar {
+  grid-area: quitar;
+}
+
+.fila-horario .tipos {
+  grid-area: tipos;
+}
+
+.fila-horario .personas-horario {
+  grid-area: personas;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.flecha {
+  color: var(--color-text-muted);
+}
+
+.tipos {
+  display: inline-flex;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.tipo-opcion {
+  border: none;
+  background: var(--color-card-bg);
+  padding: 4px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.tipo-opcion + .tipo-opcion {
+  border-left: 1px solid var(--color-border);
+}
+
+.tipo-opcion:hover {
+  background: var(--color-bg-soft);
+}
+
+.fila-horario.tipo-abre_tarde .tipo-opcion.activa {
+  background: #7aa7d6;
+  color: #fff;
+}
+
+.fila-horario.tipo-refuerzo .tipo-opcion.activa {
+  background: #4f9d5e;
+  color: #fff;
+}
+
+.fila-horario.tipo-menos .tipo-opcion.activa {
+  background: #c9a227;
+  color: #fff;
+}
+
+@media (pointer: coarse) {
+  .tipo-opcion {
+    min-height: 40px;
+    padding: 4px 14px;
+  }
+}
+
+@media (max-width: 600px) {
+  .fila-horario {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'nombre quitar'
+      'horas horas'
+      'tipos tipos'
+      'personas personas';
+  }
+
+  .fila-horario .personas-horario {
+    justify-self: start;
+  }
+}
+
+.fila-horario .tipos {
+  justify-self: start;
+  width: max-content;
+}
