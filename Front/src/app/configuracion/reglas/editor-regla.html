@@ -1,0 +1,157 @@
+<app-modal [cerrarAlTocarFondo]="false" (cerrar)="cancelar.emit()">
+  <div class="editor-regla" role="dialog" aria-modal="true" aria-labelledby="titulo-editor-regla">
+    <header class="cabecera">
+      <div>
+        <h3 id="titulo-editor-regla">{{ esNueva() ? 'Nueva regla' : 'Cambiar regla' }}</h3>
+        @if (!esNueva()) {
+          <p class="subtitulo">Para cuando vienen <strong>{{ empleados() }}</strong> con afluencia <strong>{{ textoAfluencia(afluencia()).toLowerCase() }}</strong></p>
+        }
+      </div>
+      <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="cancelar.emit()"><svg lucideX [strokeWidth]="2.5"></svg></button>
+    </header>
+
+    <div class="cuerpo">
+      @if (esNueva()) {
+        <div class="datos">
+          <label class="dato">
+            <span class="etiqueta">Vinieron</span>
+            <input type="number" min="1" max="60" class="cantidad" [value]="empleados()" (input)="cambiarEmpleados($event)" />
+          </label>
+          <div class="dato">
+            <span class="etiqueta">Cuánta gente se espera</span>
+            <div class="opciones">
+              @for (a of afluencias; track a.valor) {
+                <button type="button" class="chip" [class.activa]="afluencia() === a.valor" (click)="afluencia.set(a.valor)">{{ a.texto }}</button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <section class="bloque">
+        <div class="bloque-titulo">
+          <h4>Fijos</h4>
+          <span class="cuenta-bloque">{{ enFijos() }} {{ enFijos() === 1 ? 'persona' : 'personas' }}</span>
+        </div>
+        <p class="ayuda-chica">La misma gente todo el día. La Tirolesa va acá con su gente.</p>
+        <div class="lista">
+          @for (f of fijos(); track f.puesto; let i = $index) {
+            <div class="fila-fijo" [class.tarde]="esDeTarde(f.puesto)">
+              <span class="nombre">
+                {{ f.puesto }}
+                @if (horario(f.puesto); as h) {
+                  <span class="horario">abre {{ h }}; antes cubren el parque</span>
+                }
+              </span>
+              <span class="contador" role="group" [attr.aria-label]="'Personas en ' + f.puesto">
+                <button type="button" class="btn-cont" aria-label="Una menos" [disabled]="f.personas <= 1" (click)="personas(i, -1)">
+                  <svg lucideMinus [strokeWidth]="2.5"></svg>
+                </button>
+                <strong>{{ f.personas }}</strong>
+                <button type="button" class="btn-cont" aria-label="Una más" [disabled]="f.personas >= 5" (click)="personas(i, 1)">
+                  <svg lucidePlus [strokeWidth]="2.5"></svg>
+                </button>
+              </span>
+              <button type="button" class="btn-quitar" [attr.aria-label]="'Quitar ' + f.puesto" title="Quitar" (click)="quitarFijo(i)">
+                <svg lucideX [strokeWidth]="2.5"></svg>
+              </button>
+            </div>
+          }
+        </div>
+        @if (disponibles().length) {
+          <label class="agregar">
+            <svg lucidePlus [strokeWidth]="2.5"></svg>
+            <span>Agregar fijo</span>
+            <select aria-label="Agregar un puesto fijo" (change)="agregarFijo($event)">
+              <option value=""></option>
+              @for (p of disponibles(); track p) {
+                <option [value]="p">{{ p }}</option>
+              }
+            </select>
+          </label>
+        }
+      </section>
+
+      <section class="bloque">
+        <div class="bloque-titulo">
+          <h4>Rueda</h4>
+          <span class="cuenta-bloque">{{ lugares().length }} {{ lugares().length === 1 ? 'persona' : 'personas' }}</span>
+        </div>
+        <p class="ayuda-chica">Cada renglón es una persona que va bajando de lugar. Con el + le sumás otro puesto que hace a la vez.</p>
+        <ol class="rueda">
+          @for (l of lugares(); track $index; let i = $index, primero = $first, ultimo = $last) {
+            <li class="lugar" [class.arranca]="primero">
+              <span class="numero" [title]="primero ? 'Ahí arranca la rueda' : ''">{{ i + 1 }}</span>
+              <span class="puestos">
+                @for (p of l; track p) {
+                  <span class="puesto">
+                    {{ p }}
+                    <button type="button" class="btn-x" [attr.aria-label]="'Sacar ' + p" (click)="quitarDelLugar(i, p)">
+                      <svg lucideX [strokeWidth]="2.5"></svg>
+                    </button>
+                  </span>
+                }
+                @if (sumandoEn() === i) {
+                  <select class="sumar" [attr.aria-label]="'Sumar otro puesto a la persona ' + (i + 1)" (change)="sumarAlLugar(i, $event)" (blur)="sumandoEn.set(null)">
+                    <option value="">Elegí un puesto…</option>
+                    @for (p of paraSumar(i); track p) {
+                      <option [value]="p">{{ p }}</option>
+                    }
+                  </select>
+                } @else {
+                  <button type="button" class="btn-sumar" [attr.aria-label]="'Sumar otro puesto a la persona ' + (i + 1)" title="Sumar otro puesto que hace a la vez" (click)="sumandoEn.set(i)">
+                    <svg lucidePlus [strokeWidth]="2.5"></svg>
+                  </button>
+                }
+              </span>
+              <span class="acciones">
+                @if (primero) {
+                  <span class="marca-arranca">Arranca acá</span>
+                } @else {
+                  <button type="button" class="btn-arrancar" (click)="arrancarAca(i)">Arrancar acá</button>
+                }
+                <button type="button" class="btn-mini" aria-label="Subir" [disabled]="primero" (click)="mover(i, -1)">
+                  <svg lucideChevronUp [strokeWidth]="2.5"></svg>
+                </button>
+                <button type="button" class="btn-mini" aria-label="Bajar" [disabled]="ultimo" (click)="mover(i, 1)">
+                  <svg lucideChevronDown [strokeWidth]="2.5"></svg>
+                </button>
+              </span>
+            </li>
+          }
+        </ol>
+        @if (disponibles().length) {
+          <label class="agregar">
+            <svg lucidePlus [strokeWidth]="2.5"></svg>
+            <span>Agregar a la rueda</span>
+            <select aria-label="Agregar un puesto a la rueda" (change)="agregarLugar($event)">
+              <option value=""></option>
+              @for (p of disponibles(); track p) {
+                <option [value]="p">{{ p }}</option>
+              }
+            </select>
+          </label>
+        }
+      </section>
+    </div>
+
+    <footer class="pie">
+      <div class="cuenta" [class.bien]="!problemas().length" [class.pasado]="ocupa() > empleados()">
+        <div class="cuenta-linea">
+          <strong>{{ ocupa() }} de {{ empleados() || 0 }} personas</strong>
+          @if (!problemas().length) {
+            <span class="ok">Da justo</span>
+          }
+        </div>
+        <div class="barra-cuenta" aria-hidden="true"><div class="relleno" [style.width.%]="lleno()"></div></div>
+        @for (p of problemas(); track p) {
+          <span class="problema">{{ p }}</span>
+        }
+      </div>
+      <div class="botones">
+        <button type="button" class="btn-secundario" (click)="cancelar.emit()">Cancelar</button>
+        <button type="button" class="btn-primario" [disabled]="problemas().length > 0 || guardando()" (click)="confirmar()">Guardar</button>
+      </div>
+    </footer>
+  </div>
+</app-modal>

@@ -184,3 +184,18 @@ tbody th {
     break-inside: avoid;
   }
 }
+
+.rol-celda {
+  display: block;
+  font-size: 0.8em;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+td.refuerzo {
+  background: repeating-linear-gradient(45deg, #fff4e5, #fff4e5 6px, #ffe2bf 6px, #ffe2bf 12px);
+  color: #9a4b00;
+  font-size: 0.8em;
+  font-weight: 700;
+}

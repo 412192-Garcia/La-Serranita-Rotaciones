@@ -1,266 +1,370 @@
 <div class="barra">
   <a class="btn-secundario" [routerLink]="dia() ? '/' : '/cronogramas'"><svg lucideArrowLeft [strokeWidth]="2.5"></svg> Volver</a>
-  <h2>{{ dia() ? 'Generar con los que vinieron' : 'Generar borrador' }}</h2>
+  <h2>{{ dia() ? 'Cronograma de hoy' : 'Generar borrador' }}</h2>
 </div>
-@if (dia()) {
-  <p class="ayuda">
-    Ya está propuesto con los que vinieron: fijos los que tienen ese puesto de principal, en la rueda los puestos de sus grupos, y lo
-    que abre tarde según la afluencia. Cambiá lo que haga falta y generalo: los números se reparten solos entre ellos.
-  </p>
-} @else {
-  <p class="ayuda">Arma un cronograma con las reglas de siempre. Después lo corregís en el editor y lo guardás.</p>
-}
 
-<datalist id="puestos-generador">
-  @for (n of puestosConocidos(); track n) {
-    <option [value]="n"></option>
-  }
-</datalist>
-
-<section class="panel datos">
-  @if (!dia()) {
-  <div class="campo-grupo partir">
-    <label class="etiqueta" for="partir">Partir de un cronograma</label>
-    <select id="partir" (change)="partirDe($event)">
-      <option value="">Ninguno</option>
-      @for (c of cronogramas(); track c.id) {
-        <option [value]="c.id">{{ c.nombre }} ({{ c.empleados }})</option>
-      }
-    </select>
-  </div>
-  }
-  <div class="campo-grupo">
-    <label class="etiqueta" for="nombre">Nombre</label>
-    <input id="nombre" type="text" maxlength="100" [value]="pedido().nombre" (input)="cambiar({ nombre: valor($event) })" />
-  </div>
-  <div class="campo-grupo">
-    <label class="etiqueta" for="empleados">Empleados</label>
-    @if (dia()) {
-      <strong class="vinieron">Vinieron {{ pedido().empleados }}</strong>
-    } @else {
-      <input id="empleados" type="number" min="1" max="60" class="corto" [value]="pedido().empleados" (input)="cambiar({ empleados: +valor($event) })" />
+<ng-template #formulario>
+  <datalist id="puestos-generador">
+    @for (n of puestosConocidos(); track n) {
+      <option [value]="n"></option>
     }
-    <span class="detalle">{{ enFijos() }} fijos,@if (enTarde()) { {{ enTarde() }} abren tarde,} {{ pedido().empleados - enFijos() - enTarde() }} rotan</span>
-  </div>
-  <div class="campo-grupo">
-    <span class="etiqueta">Afluencia</span>
-    <div class="opciones">
-      @for (a of afluencias; track a.valor) {
-        <button type="button" class="chip" [class.activa]="pedido().afluencia === a.valor" (click)="cambiarAfluencia(a.valor)">{{ a.texto }}</button>
-      }
-    </div>
-  </div>
-  <div class="campo-grupo">
-    <span class="etiqueta">Horario</span>
-    <div class="en-linea">
-      <input type="time" aria-label="Desde" [value]="pedido().desde" (change)="cambiar({ desde: valor($event) })" />
-      <span>a</span>
-      <input type="time" aria-label="Hasta" [value]="pedido().hasta" (change)="cambiar({ hasta: valor($event) })" />
-      <span>cada</span>
-      <select aria-label="Cada cuánto" (change)="cambiar({ cada: +valor($event) })">
-        @for (m of [15, 30, 60]; track m) {
-          <option [value]="m" [selected]="pedido().cada === m">{{ m === 60 ? '1 hora' : m + ' min' }}</option>
+  </datalist>
+
+  <section class="panel datos">
+    @if (!dia()) {
+    <div class="campo-grupo partir">
+      <label class="etiqueta" for="partir">Partir de un cronograma</label>
+      <select id="partir" (change)="partirDe($event)">
+        <option value="">Ninguno</option>
+        @for (c of cronogramas(); track c.id) {
+          <option [value]="c.id">{{ c.nombre }} ({{ c.empleados }})</option>
         }
       </select>
     </div>
-  </div>
-  <div class="campo-grupo">
-    <span class="etiqueta">Descansos</span>
-    <div class="en-linea">
-      <span>de</span>
-      <input type="time" aria-label="Descansos desde" [value]="pedido().descansoDesde" (change)="cambiar({ descansoDesde: valor($event) })" />
-      <span>a</span>
-      <input type="time" aria-label="Descansos hasta" [value]="pedido().descansoHasta" (change)="cambiar({ descansoHasta: valor($event) })" />
+    }
+    <div class="campo-grupo">
+      <label class="etiqueta" for="nombre">Nombre</label>
+      <input id="nombre" type="text" maxlength="100" [value]="pedido().nombre" (input)="cambiar({ nombre: valor($event) })" />
     </div>
-  </div>
-</section>
-
-@if (reglas().length) {
-  <section class="panel regla">
-    <div class="regla-texto">
-      @if (reglaUsada(); as u) {
-        <strong>Puestos abiertos según la regla de {{ u.regla.empleados }} empleados, afluencia {{ textoAfluencia(u.regla.afluencia).toLowerCase() }}.</strong>
-        @if (aMano()) {
-          <span class="falta">Con cambios a mano en los fijos o la rueda. "Aplicar puestos abiertos" vuelve a la regla.</span>
-        }
-        @if (u.regla.empleados !== u.generales) {
-          <span class="falta">No hay regla para {{ u.generales }}: se usó la más cercana.</span>
-        }
-        <span class="ayuda-chica">Cuenta {{ u.generales }} para los puestos generales (sin los que abren tarde ni los de más de un refuerzo).</span>
+    <div class="campo-grupo">
+      <label class="etiqueta" for="empleados">Empleados</label>
+      @if (dia()) {
+        <strong class="vinieron">Vinieron {{ pedido().empleados }}</strong>
       } @else {
-        <span class="ayuda-chica">Los fijos y la rueda están cargados a mano.</span>
+        <input id="empleados" type="number" min="1" max="60" class="corto" [value]="pedido().empleados" (input)="cambiar({ empleados: +valor($event) })" />
       }
+      <span class="detalle">{{ enFijos() }} fijos,@if (enTarde()) { {{ enTarde() }} abren tarde,} {{ pedido().empleados - enFijos() - enTarde() }} rotan</span>
     </div>
-    <button type="button" class="btn-secundario btn-chico" (click)="aplicarRegla()">Aplicar puestos abiertos</button>
-  </section>
-}
-
-
-<div class="columnas">
-  <section class="panel bloque">
-    <span class="etiqueta">Puestos fijos</span>
-    @for (f of pedido().fijos; track $index; let i = $index) {
-      <div class="fila">
-        <input type="text" list="puestos-generador" placeholder="Puesto" aria-label="Puesto fijo" [value]="f.puesto" (input)="cambiarFijo(i, { puesto: valor($event) })" />
-        <select aria-label="Personas" (change)="cambiarFijo(i, { personas: +valor($event) })">
-          @for (n of [1, 2, 3]; track n) {
-            <option [value]="n" [selected]="f.personas === n">{{ n === 1 ? '1 persona' : n + ' personas' }}</option>
-          }
-        </select>
-        <button type="button" class="btn-mini" aria-label="Quitar" (click)="quitarFijo(i)"><svg lucideX [strokeWidth]="2.5"></svg></button>
-      </div>
-      @if (dia() && f.puesto.trim()) {
-        <span class="ayuda-chica" [class.falta]="sabenHoy(f.puesto) < f.personas">Hoy lo saben {{ sabenHoy(f.puesto) }}</span>
-      }
-    }
-    <button type="button" class="btn-secundario btn-chico" (click)="agregarFijo()"><svg lucidePlus [strokeWidth]="2.5"></svg> Fijo</button>
-
-  </section>
-
-  <section class="panel bloque">
-    <span class="etiqueta">Rueda (en orden)</span>
-    <p class="ayuda-chica">Cada media hora bajan un lugar. Varios puestos que hace la misma persona van en el mismo lugar, separados con coma. El * marca dónde arranca. Un grupo agrega un lugar por cada puesto suyo que falte.</p>
-    @for (l of pedido().rueda; track $index; let i = $index, primero = $first, ultimo = $last) {
-      <div class="fila">
-        <button
-          type="button"
-          class="btn-inicio"
-          [class.marcado]="l.inicia"
-          [attr.aria-pressed]="l.inicia"
-          title="Arranca la rotación"
-          aria-label="Arranca la rotación"
-          (click)="marcarInicio(i)"
-        >*</button>
-        <input
-          type="text"
-          class="lugar-puestos"
-          list="puestos-generador"
-          placeholder="Puesto"
-          aria-label="Puestos de este lugar"
-          [value]="textoLugar(l.puestos)"
-          (change)="cambiarLugar(i, valor($event))"
-        />
-        <button type="button" class="btn-mini" aria-label="Subir" [disabled]="primero" (click)="moverLugar(i, -1)"><svg lucideChevronUp [strokeWidth]="2.5"></svg></button>
-        <button type="button" class="btn-mini" aria-label="Bajar" [disabled]="ultimo" (click)="moverLugar(i, 1)"><svg lucideChevronDown [strokeWidth]="2.5"></svg></button>
-        <button type="button" class="btn-mini" aria-label="Quitar" (click)="quitarLugar(i)"><svg lucideX [strokeWidth]="2.5"></svg></button>
-      </div>
-    }
-    <div class="en-linea">
-      <button type="button" class="btn-secundario btn-chico" (click)="agregarLugar()"><svg lucidePlus [strokeWidth]="2.5"></svg> Lugar</button>
-      @if (grupos().length) {
-        <select class="agregar-grupo" aria-label="Agregar un grupo a la rueda" (change)="agregarGrupo($event)">
-          <option value="">+ Grupo…</option>
-          @for (g of grupos(); track g.id) {
-            <option [value]="g.id">{{ g.nombre }} ({{ g.puestos.length }})</option>
-          }
-        </select>
-      }
-    </div>
-  </section>
-
-  <section class="panel bloque">
-    <span class="etiqueta">En los descansos, cubren</span>
-    <p class="ayuda-chica">Mientras descansan los que rotan, la persona de un puesto fijo pasa a otro.</p>
-    @for (c of pedido().coberturas; track $index; let i = $index) {
-      <div class="fila">
-        <select aria-label="Puesto fijo" (change)="cambiarCobertura(i, { fijo: valor($event) })">
-          @for (f of pedido().fijos; track $index) {
-            <option [value]="f.puesto" [selected]="f.puesto === c.fijo">{{ f.puesto }}</option>
-          }
-        </select>
-        <span>cubre</span>
-        <select aria-label="Puesto que cubre" (change)="cambiarCobertura(i, { cubre: valor($event) })">
-          @for (p of puestosDeLaRueda(); track p) {
-            <option [value]="p" [selected]="p === c.cubre">{{ p }}</option>
-          }
-        </select>
-        <button type="button" class="btn-mini" aria-label="Quitar" (click)="quitarCobertura(i)"><svg lucideX [strokeWidth]="2.5"></svg></button>
-      </div>
-    }
-    <button type="button" class="btn-secundario btn-chico" [disabled]="!pedido().fijos.length || !puestosDeLaRueda().length" (click)="agregarCobertura()">
-      <svg lucidePlus [strokeWidth]="2.5"></svg> Cobertura
-    </button>
-  </section>
-</div>
-
-<section class="panel bloque horarios">
-  <span class="etiqueta">Horarios especiales</span>
-  <p class="ayuda-chica">
-    <strong>Abre tarde</strong>: cerrado fuera de ese horario; mientras tanto su gente cubre el parque (Tirolesa).
-    <strong>Refuerzo</strong>: abierto todo el día con su fijo o la rueda; en ese horario van personas de más (Casa del zorrito).
-    <strong>Menos gente</strong>: un fijo con varios pierde personas en ese horario, que pasan a cubrir el parque. Sin "hasta", hasta
-    el cierre. Lo de siempre se carga en Configuración → Puestos.
-  </p>
-  @for (a of pedido().abrenTarde; track $index; let i = $index) {
-    <div class="horario">
-      <label class="dato puesto">
-        <span>Puesto</span>
-        <input type="text" list="puestos-generador" [value]="a.puesto" (input)="cambiarTarde(i, { puesto: valor($event) })" />
-      </label>
-      <label class="dato">
-        <span>Tipo</span>
-        <select (change)="cambiarTarde(i, { tipo: $any(valor($event)) })">
-          @for (x of tiposHorario; track x.valor) {
-            <option [value]="x.valor" [selected]="a.tipo === x.valor">{{ x.texto }}</option>
-          }
-        </select>
-      </label>
-      <label class="dato">
-        <span>{{ tipoHorario(a.tipo).personas }}</span>
-        <select class="personas" (change)="cambiarTarde(i, { personas: +valor($event) })">
-          @for (n of [1, 2, 3, 4, 5, 6]; track n) {
-            <option [value]="n" [selected]="a.personas === n">{{ n }}</option>
-          }
-        </select>
-      </label>
-      <label class="dato"><span>Desde</span><input type="time" [value]="a.abre" (change)="cambiarTarde(i, { abre: valor($event) })" /></label>
-      <label class="dato"><span>Hasta</span><input type="time" [value]="a.hasta ?? ''" (change)="cambiarTarde(i, { hasta: valor($event) || null })" /></label>
-      <button type="button" class="btn-mini quitar" aria-label="Quitar" (click)="quitarTarde(i)"><svg lucideX [strokeWidth]="2.5"></svg></button>
-      @if (dia() && a.puesto.trim() && a.tipo !== 'MENOS') {
-        <span class="ayuda-chica sabe" [class.falta]="sabenHoy(a.puesto) < a.personas">Hoy lo saben {{ sabenHoy(a.puesto) }}</span>
-      }
-    </div>
-  }
-  <button type="button" class="btn-secundario btn-chico" (click)="agregarTarde()"><svg lucidePlus [strokeWidth]="2.5"></svg> Horario especial</button>
-</section>
-
-<div class="pie">
-  @if (error()) {
-    <span class="error-campo">{{ error() }}</span>
-  }
-  <button type="button" class="btn-secundario" [disabled]="guardandoPredeterminado()" (click)="guardarPredeterminado()"
-    title="Lo cargado ahora se propone la próxima vez con esta cantidad de gente y esta afluencia">
-    <svg lucideSave [strokeWidth]="2.5"></svg> Guardar como predeterminado
-  </button>
-  <button type="button" class="btn-primario" [disabled]="generando()" (click)="generar()">
-    @if (generando()) {
-      <svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg> Generando…
-    } @else {
-      <svg lucideWandSparkles [strokeWidth]="2.5"></svg> Generar
-    }
-  </button>
-</div>
-
-@if (borrador(); as b) {
-  <section id="borrador" class="resultado">
-    <div class="resultado-barra">
-      <h3>{{ b.cronograma.nombre }}</h3>
-      <div class="resultado-botones">
-        @if (dia()) {
-          <button type="button" class="btn-secundario" (click)="abrirEnEditor()"><svg lucidePencil [strokeWidth]="2.5"></svg> Abrir en el editor</button>
-          <button type="button" class="btn-primario" (click)="usarHoy()"><svg lucideCheck [strokeWidth]="2.5"></svg> Usar para hoy</button>
-        } @else {
-          <button type="button" class="btn-primario" (click)="abrirEnEditor()"><svg lucidePencil [strokeWidth]="2.5"></svg> Abrir en el editor</button>
+    <div class="campo-grupo">
+      <span class="etiqueta">Afluencia</span>
+      <div class="opciones">
+        @for (a of afluencias; track a.valor) {
+          <button type="button" class="chip" [class.activa]="pedido().afluencia === a.valor" (click)="cambiarAfluencia(a.valor)">{{ a.texto }}</button>
         }
       </div>
     </div>
-    @if (b.avisos.length) {
-      <ul class="avisos panel">
-        @for (a of b.avisos; track $index) {
-          <li><svg lucideTriangleExclamationPoint [strokeWidth]="2.5"></svg> {{ a }}</li>
+    <div class="campo-grupo">
+      <span class="etiqueta">Horario</span>
+      <div class="en-linea">
+        <input type="time" aria-label="Desde" [value]="pedido().desde" (change)="cambiar({ desde: valor($event) })" />
+        <span>a</span>
+        <input type="time" aria-label="Hasta" [value]="pedido().hasta" (change)="cambiar({ hasta: valor($event) })" />
+        <span>cada</span>
+        <select aria-label="Cada cuánto" (change)="cambiar({ cada: +valor($event) })">
+          @for (m of [15, 30, 60]; track m) {
+            <option [value]="m" [selected]="pedido().cada === m">{{ m === 60 ? '1 hora' : m + ' min' }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="campo-grupo">
+      <span class="etiqueta">Descansos</span>
+      <div class="en-linea">
+        <span>de</span>
+        <input type="time" aria-label="Descansos desde" [value]="pedido().descansoDesde" (change)="cambiar({ descansoDesde: valor($event) })" />
+        <span>a</span>
+        <input type="time" aria-label="Descansos hasta" [value]="pedido().descansoHasta" (change)="cambiar({ descansoHasta: valor($event) })" />
+      </div>
+    </div>
+  </section>
+
+  @if (reglas().length) {
+    <section class="panel regla">
+      <div class="regla-texto">
+        @if (reglaUsada(); as u) {
+          <strong>Puestos abiertos según la regla de {{ u.regla.empleados }} empleados, afluencia {{ textoAfluencia(u.regla.afluencia).toLowerCase() }}.</strong>
+          @if (aMano()) {
+            <span class="falta">Con cambios a mano en los fijos o la rueda. "Aplicar puestos abiertos" vuelve a la regla.</span>
+          }
+          @if (u.regla.empleados !== u.generales) {
+            <span class="falta">No hay regla para {{ u.generales }}: se usó la más cercana.</span>
+          }
+          <span class="ayuda-chica">Cuenta a los {{ u.generales }} que vinieron, con la Tirolesa adentro.</span>
+        } @else {
+          <span class="ayuda-chica">Los fijos y la rueda están cargados a mano.</span>
+        }
+      </div>
+      <button type="button" class="btn-secundario btn-chico" (click)="aplicarRegla()">Aplicar puestos abiertos</button>
+    </section>
+  }
+
+
+  <div class="columnas">
+    <section class="panel bloque">
+      <span class="etiqueta">Puestos fijos</span>
+      @for (f of pedido().fijos; track $index; let i = $index) {
+        <div class="fila">
+          <input type="text" list="puestos-generador" placeholder="Puesto" aria-label="Puesto fijo" [value]="f.puesto" (input)="cambiarFijo(i, { puesto: valor($event) })" />
+          <select aria-label="Personas" (change)="cambiarFijo(i, { personas: +valor($event) })">
+            @for (n of [1, 2, 3]; track n) {
+              <option [value]="n" [selected]="f.personas === n">{{ n === 1 ? '1 persona' : n + ' personas' }}</option>
+            }
+          </select>
+          <button type="button" class="btn-mini" aria-label="Quitar" (click)="quitarFijo(i)"><svg lucideX [strokeWidth]="2.5"></svg></button>
+        </div>
+        @if (dia() && f.puesto.trim()) {
+          <span class="ayuda-chica" [class.falta]="sabenHoy(f.puesto) < f.personas">Hoy lo saben {{ sabenHoy(f.puesto) }}</span>
+        }
+      }
+      <button type="button" class="btn-secundario btn-chico" (click)="agregarFijo()"><svg lucidePlus [strokeWidth]="2.5"></svg> Fijo</button>
+
+    </section>
+
+    <section class="panel bloque">
+      <span class="etiqueta">Rueda (en orden)</span>
+      <p class="ayuda-chica">Cada media hora bajan un lugar. Varios puestos que hace la misma persona van en el mismo lugar, separados con coma. El * marca dónde arranca. Un grupo agrega un lugar por cada puesto suyo que falte.</p>
+      @for (l of pedido().rueda; track $index; let i = $index, primero = $first, ultimo = $last) {
+        <div class="fila">
+          <button
+            type="button"
+            class="btn-inicio"
+            [class.marcado]="l.inicia"
+            [attr.aria-pressed]="l.inicia"
+            title="Arranca la rotación"
+            aria-label="Arranca la rotación"
+            (click)="marcarInicio(i)"
+          >*</button>
+          <input
+            type="text"
+            class="lugar-puestos"
+            list="puestos-generador"
+            placeholder="Puesto"
+            aria-label="Puestos de este lugar"
+            [value]="textoLugar(l.puestos)"
+            (change)="cambiarLugar(i, valor($event))"
+          />
+          <button type="button" class="btn-mini" aria-label="Subir" [disabled]="primero" (click)="moverLugar(i, -1)"><svg lucideChevronUp [strokeWidth]="2.5"></svg></button>
+          <button type="button" class="btn-mini" aria-label="Bajar" [disabled]="ultimo" (click)="moverLugar(i, 1)"><svg lucideChevronDown [strokeWidth]="2.5"></svg></button>
+          <button type="button" class="btn-mini" aria-label="Quitar" (click)="quitarLugar(i)"><svg lucideX [strokeWidth]="2.5"></svg></button>
+        </div>
+      }
+      <div class="en-linea">
+        <button type="button" class="btn-secundario btn-chico" (click)="agregarLugar()"><svg lucidePlus [strokeWidth]="2.5"></svg> Lugar</button>
+        @if (grupos().length) {
+          <select class="agregar-grupo" aria-label="Agregar un grupo a la rueda" (change)="agregarGrupo($event)">
+            <option value="">+ Grupo…</option>
+            @for (g of grupos(); track g.id) {
+              <option [value]="g.id">{{ g.nombre }} ({{ g.puestos.length }})</option>
+            }
+          </select>
+        }
+      </div>
+    </section>
+
+    <section class="panel bloque">
+      <span class="etiqueta">En los descansos, cubren</span>
+      <p class="ayuda-chica">Mientras descansan los que rotan, la persona de un puesto fijo pasa a otro.</p>
+      @for (c of pedido().coberturas; track $index; let i = $index) {
+        <div class="fila">
+          <select aria-label="Puesto fijo" (change)="cambiarCobertura(i, { fijo: valor($event) })">
+            @for (f of pedido().fijos; track $index) {
+              <option [value]="f.puesto" [selected]="f.puesto === c.fijo">{{ f.puesto }}</option>
+            }
+          </select>
+          <span>cubre</span>
+          <select aria-label="Puesto que cubre" (change)="cambiarCobertura(i, { cubre: valor($event) })">
+            @for (p of puestosDeLaRueda(); track p) {
+              <option [value]="p" [selected]="p === c.cubre">{{ p }}</option>
+            }
+          </select>
+          <button type="button" class="btn-mini" aria-label="Quitar" (click)="quitarCobertura(i)"><svg lucideX [strokeWidth]="2.5"></svg></button>
+        </div>
+      }
+      <button type="button" class="btn-secundario btn-chico" [disabled]="!pedido().fijos.length || !puestosDeLaRueda().length" (click)="agregarCobertura()">
+        <svg lucidePlus [strokeWidth]="2.5"></svg> Cobertura
+      </button>
+    </section>
+  </div>
+
+  <section class="panel bloque horarios">
+    <span class="etiqueta">Horarios especiales</span>
+    <p class="ayuda-chica">
+      <strong>Abre tarde</strong>: cerrado fuera de ese horario; mientras tanto su gente cubre el parque (Tirolesa).
+      <strong>Refuerzo</strong>: abierto todo el día con su fijo o la rueda; en ese horario van personas de más (Casa del zorrito).
+      <strong>Menos gente</strong>: un fijo con varios pierde personas en ese horario, que pasan a cubrir el parque. Sin "hasta", hasta
+      el cierre. Lo de siempre se carga en Configuración → Puestos.
+    </p>
+    @for (a of pedido().abrenTarde; track $index; let i = $index) {
+      <div class="horario">
+        <label class="dato puesto">
+          <span>Puesto</span>
+          <input type="text" list="puestos-generador" [value]="a.puesto" (input)="cambiarTarde(i, { puesto: valor($event) })" />
+        </label>
+        <label class="dato">
+          <span>Tipo</span>
+          <select (change)="cambiarTarde(i, { tipo: $any(valor($event)) })">
+            @for (x of tiposHorario; track x.valor) {
+              <option [value]="x.valor" [selected]="a.tipo === x.valor">{{ x.texto }}</option>
+            }
+          </select>
+        </label>
+        <label class="dato">
+          <span>{{ tipoHorario(a.tipo).personas }}</span>
+          <select class="personas" (change)="cambiarTarde(i, { personas: +valor($event) })">
+            @for (n of [1, 2, 3, 4, 5, 6]; track n) {
+              <option [value]="n" [selected]="a.personas === n">{{ n }}</option>
+            }
+          </select>
+        </label>
+        <label class="dato"><span>Desde</span><input type="time" [value]="a.abre" (change)="cambiarTarde(i, { abre: valor($event) })" /></label>
+        <label class="dato"><span>Hasta</span><input type="time" [value]="a.hasta ?? ''" (change)="cambiarTarde(i, { hasta: valor($event) || null })" /></label>
+        <button type="button" class="btn-mini quitar" aria-label="Quitar" (click)="quitarTarde(i)"><svg lucideX [strokeWidth]="2.5"></svg></button>
+        @if (dia() && a.puesto.trim() && a.tipo !== 'MENOS') {
+          <span class="ayuda-chica sabe" [class.falta]="sabenHoy(a.puesto) < a.personas">Hoy lo saben {{ sabenHoy(a.puesto) }}</span>
+        }
+      </div>
+    }
+    <button type="button" class="btn-secundario btn-chico" (click)="agregarTarde()"><svg lucidePlus [strokeWidth]="2.5"></svg> Horario especial</button>
+  </section>
+
+  <div class="pie">
+    @if (error()) {
+      <span class="error-campo">{{ error() }}</span>
+    }
+    <button type="button" class="btn-secundario" [disabled]="guardandoPredeterminado()" (click)="guardarPredeterminado()"
+      title="Lo cargado ahora se propone la próxima vez con esta cantidad de gente y esta afluencia">
+      <svg lucideSave [strokeWidth]="2.5"></svg> Guardar como predeterminado
+    </button>
+    <button type="button" class="btn-primario" [disabled]="generando()" (click)="generar()">
+      @if (generando()) {
+        <svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg> Generando…
+      } @else {
+        <svg lucideWandSparkles [strokeWidth]="2.5"></svg> Generar
+      }
+    </button>
+  </div>
+</ng-template>
+
+<ng-template #resultado>
+  @if (borrador(); as b) {
+    <section id="borrador" class="resultado">
+      <div class="resultado-barra">
+        <h3>{{ b.cronograma.nombre }}</h3>
+        <div class="resultado-botones">
+          @if (dia()) {
+            <button type="button" class="btn-secundario" (click)="abrirEnEditor()"><svg lucidePencil [strokeWidth]="2.5"></svg> Corregir a mano</button>
+            <button type="button" class="btn-primario" (click)="usarHoy()"><svg lucideCheck [strokeWidth]="2.5"></svg> Usar para hoy</button>
+          } @else {
+            <button type="button" class="btn-primario" (click)="abrirEnEditor()"><svg lucidePencil [strokeWidth]="2.5"></svg> Abrir en el editor</button>
+          }
+        </div>
+      </div>
+      @if (faltante(); as f) {
+        <section class="panel pregunta-rol" role="alert">
+          <p>¿Quién hace de <strong>{{ f.rol }}</strong> en {{ f.puesto }} ({{ f.horas.join(', ') }})? Nadie de los que vinieron está preparado.</p>
+          <div class="pregunta-rol-acciones">
+            <select aria-label="Quién lo hace" (change)="elegirParaRol($event)">
+              <option value="" [selected]="elegidoParaRol() == null">Elegí a alguien…</option>
+              @for (e of elegibles(); track e.id) {
+                <option [value]="e.id" [selected]="elegidoParaRol() === e.id">{{ e.texto }}</option>
+              }
+            </select>
+            <button type="button" class="btn-primario btn-chico" [disabled]="elegidoParaRol() == null || cubriendoRol()" (click)="cubrirRol()">
+              Listo
+            </button>
+            <button type="button" class="btn-secundario btn-chico" (click)="dejarRol()">Dejar así</button>
+          </div>
+        </section>
+      }
+      @if (dia()) {
+        @if (textosRefuerzo().length) {
+          <section class="panel pedir-refuerzo" role="alert">
+            <strong>Pedí ayuda al encargado:</strong> hace falta alguien más en {{ textosRefuerzo().join('; ') }}. En la planilla está marcado como
+            "Refuerzo".
+          </section>
+        }
+        @if (avisosDelDia().length) {
+          <ul class="avisos panel">
+            @for (a of avisosDelDia(); track $index) {
+              <li><svg lucideTriangleExclamationPoint [strokeWidth]="2.5"></svg> {{ a }}</li>
+            }
+          </ul>
+        }
+        @if (b.deConfiguracion?.length) {
+          <details class="de-configuracion">
+            <summary>Cosas para revisar en Configuración ({{ b.deConfiguracion!.length }})</summary>
+            <ul>
+              @for (a of b.deConfiguracion; track $index) {
+                <li>{{ a }}</li>
+              }
+            </ul>
+          </details>
+        }
+      } @else if (b.avisos.length) {
+        <ul class="avisos panel">
+          @for (a of b.avisos; track $index) {
+            <li><svg lucideTriangleExclamationPoint [strokeWidth]="2.5"></svg> {{ a }}</li>
+          }
+        </ul>
+      }
+      <app-vista-cronograma [cronograma]="b.cronograma" [nombres]="nombres()" [tareas]="tareas()" [refuerzos]="refuerzos()" />
+    </section>
+  }
+</ng-template>
+
+@if (dia()) {
+  <section class="panel simple">
+    <div class="simple-datos">
+      <div class="simple-dato">
+        <span class="etiqueta">Vinieron</span>
+        <strong class="vinieron">{{ pedido().empleados }}</strong>
+      </div>
+      <div class="simple-dato">
+        <span class="etiqueta">Cuánta gente se espera</span>
+        <div class="opciones">
+          @for (a of afluencias; track a.valor) {
+            <button type="button" class="chip" [class.activa]="pedido().afluencia === a.valor" (click)="cambiarAfluenciaYGenerar(a.valor)">{{ a.texto }}</button>
+          }
+        </div>
+      </div>
+      <div class="simple-dato">
+        <span class="etiqueta">Horario</span>
+        <div class="en-linea">
+          <input type="time" aria-label="Desde" [value]="pedido().desde" (change)="cambiarYGenerar({ desde: valor($event) })" />
+          <span>a</span>
+          <input type="time" aria-label="Hasta" [value]="pedido().hasta" (change)="cambiarYGenerar({ hasta: valor($event) })" />
+        </div>
+      </div>
+      <div class="simple-dato">
+        <span class="etiqueta">Almuerzo</span>
+        <div class="en-linea">
+          <input type="time" aria-label="Almuerzo desde" [value]="pedido().descansoDesde" (change)="cambiarYGenerar({ descansoDesde: valor($event) })" />
+          <span>a</span>
+          <input type="time" aria-label="Almuerzo hasta" [value]="pedido().descansoHasta" (change)="cambiarYGenerar({ descansoHasta: valor($event) })" />
+        </div>
+      </div>
+    </div>
+    @if (resumen(); as r) {
+      <ul class="resumen">
+        <li><strong>Abiertos:</strong> {{ r.abiertos.join(', ') || 'ninguno' }}.</li>
+        @if (r.tarde.length) {
+          <li><strong>Abren más tarde:</strong> {{ r.tarde.join(', ') }}.</li>
+        }
+        @if (r.cerrados.length) {
+          <li><strong>Cerrados hoy:</strong> {{ r.cerrados.join(', ') }}.</li>
         }
       </ul>
     }
-    <app-vista-cronograma [cronograma]="b.cronograma" [nombres]="nombres()" [tareas]="tareas()" />
+    @if (generando()) {
+      <p class="armando"><svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg> Armando el cronograma…</p>
+    }
+    @if (error()) {
+      <p class="error-campo">{{ error() }}</p>
+    }
   </section>
+
+  <ng-container [ngTemplateOutlet]="resultado" />
+
+  <details class="avanzados">
+    <summary>Ajustes avanzados</summary>
+    <p class="ayuda">
+      Para cambiar qué puestos son fijos, el orden de la rueda o los horarios especiales sólo por hoy. Después tocá "Generar". Lo de siempre se
+      carga en Configuración.
+    </p>
+    <ng-container [ngTemplateOutlet]="formulario" />
+  </details>
+} @else {
+  <p class="ayuda">Arma un cronograma con las reglas de siempre. Después lo corregís en el editor y lo guardás.</p>
+  <ng-container [ngTemplateOutlet]="formulario" />
+  <ng-container [ngTemplateOutlet]="resultado" />
 }

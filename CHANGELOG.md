@@ -5,6 +5,56 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 
 ## Sin publicar
 
+- **Cronograma de hoy** (Armar el día → Generar con los que vinieron), mucho más simple: se genera solo al
+  entrar. Arriba, cuántos vinieron, cuánta gente se espera, el horario y el almuerzo (si cambiás algo se
+  vuelve a generar), y en palabras qué abre, qué abre más tarde y qué queda cerrado hoy. Lo que necesita una
+  decisión se pregunta corto ("¿Quién hace de Presentador…?", "Pedí ayuda al encargado…"); los avisos de
+  cómo está cargado van plegados en "Cosas para revisar en Configuración". Fijos, rueda, coberturas y
+  horarios especiales quedan en "Ajustes avanzados". El editor se abre con "Corregir a mano".
+- Show del zorrito: si la Presentadora está en la Casa del zorrito y nadie del show la sabe, la cubre una
+  cajera que esté libre.
+- **Puestos abiertos cuenta a todos**: cada regla es para los que vinieron, sin descontar a nadie, y dice
+  cuántos van a la Tirolesa (como un puesto más, "Tirolesa ×3"; su horario sigue en Puestos). Las reglas que
+  había se pasaron solas sumándoles la gente de la Tirolesa, así abren los mismos puestos. Los del Show del
+  zorrito y Fotos rotan con los demás y se van a su puesto cuando abre. Si una regla abre todo el día un puesto
+  que tiene horario (Fotos con mucha gente), ese día manda la regla.
+- **Editor de reglas nuevo** (Puestos abiertos → lápiz o "+ Regla"): en una ventana, sin escribir a mano. Los
+  puestos se eligen de la lista; la gente de cada fijo se cambia con − y + (con los mismos colores que la
+  tabla: verde los fijos, amarillo la Tirolesa); la rueda es una lista de personas (renglones) a las que con
+  el + se les suma otro puesto que hacen a la vez, se ordenan con flechas y se elige dónde arranca. Abajo, una
+  barra muestra cuántas personas ocupa ("Da justo" cuando coincide) y no deja guardar si no da la cantidad, si
+  ya hay otra regla igual o si no tiene puestos. Una regla nueva arranca como copia de la más parecida.
+- **Puestos abiertos se lee como una tabla**: se elige la afluencia y se ve una fila por cantidad de
+  empleados y una columna por puesto, con colores: Fijo, ×3 (Tirolesa), Rota, — cerrado y * donde arranca la
+  rueda. Los puestos que hace una misma persona (Travesía, Búsqueda y Laberinto) van con una barra "Rota" que
+  los abarca; si Búsqueda se reparte, son dos barras que se pisan en Búsqueda. Las reglas que no cierran sus
+  cuentas se marcan.
+- Los refuerzos son sólo para puestos de prioridad media o más. Uno de prioridad baja (Baños) que queda sin
+  nadie un rato queda Cerrado ese rato.
+- Armar el día: con un cronograma que tiene la fila Libre, ya no avisa "No sabe Libre" (Libre, como Descanso,
+  no es un puesto).
+- **Refuerzos**: si después de probar todo un puesto queda sin nadie en algún horario, el generador lo
+  marca "Refuerzo" en la planilla y avisa "pedí un refuerzo". El encargado elige a quién poner; no hace
+  falta cargar a nadie.
+- El Cajero (y todo puesto con prioridad "Siempre") nunca lo hace alguien que no lo sabe: se cambia con uno
+  que sí sepa: de Libre o de otro puesto que no quede sin nadie (se cambian si el otro sabe ese puesto, o
+  ahí queda alguien más). Si no se puede, se pide un refuerzo.
+- En el almuerzo, si un puesto lo iba a cubrir alguien que no lo sabe mientras come el que sí (la Casa del
+  zorrito), el que sabe come más tarde dentro de los descansos y a esa hora lo cubre alguien libre que lo
+  sepa (la otra cajera).
+- El que tiene estrella en un puesto cerrado por el almuerzo (Baños) ya no vuelve a él si eso deja sin nadie
+  un puesto más importante (la Casa del zorrito quedaba vacía a las 12:00).
+- En el almuerzo por tandas, un puesto que está en dos lugares de la rueda (Búsqueda, mitad con Travesía y
+  mitad con Laberinto) ahora lo hacen los dos; antes quedaba sólo con el de Travesía.
+- **Roles dentro de un puesto** (Configuración → Puestos → Roles): por ejemplo el Show del zorrito tiene
+  Zorrito y Presentador, uno cada uno, y el resto son Ayudantes (cuántos depende de la afluencia). En cada
+  empleado se marca para qué roles está preparado. El puesto sigue siendo una sola fila: en la planilla
+  la celda lleva un renglón por persona con su rol ("14 Zorrito", "2 Presentador", "6 Ayudante") y en la
+  tarjeta va al lado del puesto ("Show del zorrito (Zorrito)", "Show del zorrito (Ayudante)"). Al generar con los que vinieron, cada rol lo hace alguien preparado: si no hay en el
+  puesto, se trae a uno de Libre o se lo cambia por otro que sepa lo que él hacía. Si nadie de los que
+  vinieron puede, el generador pregunta quién lo cubre (cualquier empleado); también se puede dejar así.
+  Si el preparado está en su puesto con estrella (CZ1 en la Casa del zorrito), igual va al show cuando
+  alguien del show sabe su puesto y lo cubre (la cajera).
 - **Generar borrador** (desde Cronogramas): arma un cronograma con las reglas de siempre a partir de la
   cantidad de empleados, los puestos fijos, el orden de la rueda y quién cubre qué en los descansos.
   Se puede partir de un cronograma que ya existe y cambiarle, por ejemplo, la cantidad de gente. Si no

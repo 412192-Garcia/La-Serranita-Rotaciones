@@ -56,6 +56,13 @@ public class UnificadorPuestosService {
         for (Empleado e : empleados.findAll()) {
             boolean sabia = reemplazar(e.getPuestos(), claveDe, a);
             boolean principal = reemplazar(e.getPrincipales(), claveDe, a);
+            List<String> roles = new java.util.ArrayList<>(e.getRoles());
+            e.getRoles().clear();
+            for (String r : roles) {
+                var rol = org.example.laserranitarotaciones.model.dto.RolSabidoDto.de(r);
+                e.getRoles().add(Nombres.clave(rol.puesto()).equals(claveDe)
+                        ? new org.example.laserranitarotaciones.model.dto.RolSabidoDto(a, rol.rol()).guardado() : r);
+            }
             if (sabia || principal) conEmpleados++;
         }
 
@@ -69,6 +76,10 @@ public class UnificadorPuestosService {
                 PuestoParque d = destino.get();
                 PuestoParque v = viejo.get();
                 if (v.getPrioridad().peso() > d.getPrioridad().peso()) d.setPrioridad(v.getPrioridad());
+                if (d.getRoles().isEmpty() && !v.getRoles().isEmpty()) {
+                    d.getRoles().addAll(v.getRoles());
+                    d.setRolResto(v.getRolResto());
+                }
                 if (d.getAbre() == null && v.getAbre() != null) {
                     d.setAbre(v.getAbre());
                     d.setHasta(v.getHasta());

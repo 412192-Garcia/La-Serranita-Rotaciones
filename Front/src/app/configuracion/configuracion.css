@@ -44,6 +44,11 @@
   }
 }
 
+/* El nombre corto sólo en el celular. */
+.corto {
+  display: none;
+}
+
 @media (max-width: 600px) {
   .pestanias {
     flex-wrap: nowrap;
@@ -57,5 +62,9 @@
   /* "Tareas de apertura" no entra en una línea con las otras dos. */
   .largo {
     display: none;
+  }
+
+  .corto {
+    display: inline;
   }
 }

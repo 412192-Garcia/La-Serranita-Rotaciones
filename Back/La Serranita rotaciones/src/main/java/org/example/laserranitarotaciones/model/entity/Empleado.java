@@ -52,4 +52,10 @@ public class Empleado {
     @CollectionTable(name = "empleado_principales", joinColumns = @JoinColumn(name = "id_empleado"))
     @Column(name = "puesto", nullable = false, length = 60)
     private Set<String> principales = new LinkedHashSet<>();
+
+    /** Los roles para los que está preparado, como "Show del zorrito|Zorrito" (ver RolSabidoDto). */
+    @ElementCollection
+    @CollectionTable(name = "empleado_roles", joinColumns = @JoinColumn(name = "id_empleado"))
+    @Column(name = "rol", nullable = false, length = 110)
+    private Set<String> roles = new LinkedHashSet<>();
 }

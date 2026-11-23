@@ -1,4 +1,5 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
@@ -59,6 +60,7 @@ const VACIO: PedidoGenerador = {
   selector: 'app-generador',
   imports: [
     RouterLink,
+    NgTemplateOutlet,
     VistaCronograma,
     LucideArrowLeft,
     LucideChevronDown,
@@ -113,6 +115,118 @@ export class Generador implements OnInit {
   error = signal('');
   borrador = signal<Borrador | null>(null);
 
+  // --- Roles que nadie de los que vinieron puede hacer (Zorrito): se pregunta quién lo cubre.
+
+  /** Los que se dejaron así ("puesto|rol"). */
+  private rolesDejados = signal<Set<string>>(new Set());
+  /** El primer rol sin nadie que falta resolver. */
+  faltante = computed(() => (this.borrador()?.faltantes ?? []).find((f) => !this.rolesDejados().has(`${f.puesto}|${f.rol}`)) ?? null);
+  /** A quién se puede elegir: cualquiera con número hoy. */
+  elegibles = computed(() =>
+    (this.borrador()?.asignacion ?? [])
+      .filter((a) => a.empleadoId != null)
+      .map((a) => ({ id: a.empleadoId!, texto: `${a.nombre} (${a.numero})` }))
+      .sort((x, y) => x.texto.localeCompare(y.texto)),
+  );
+  elegidoParaRol = signal<number | null>(null);
+  /** Puesto → horarios sin nadie (se pide un refuerzo). */
+  refuerzos = computed(() => {
+    const m = new Map<string, Set<number>>();
+    for (const r of this.borrador()?.refuerzos ?? []) m.set(r.puesto, new Set(r.celdas));
+    return m;
+  });
+  cubriendoRol = signal(false);
+
+  elegirParaRol(evento: Event): void {
+    const v = (evento.target as HTMLSelectElement).value;
+    this.elegidoParaRol.set(v ? Number(v) : null);
+  }
+
+  cubrirRol(): void {
+    const b = this.borrador();
+    const f = this.faltante();
+    const dia = this.dia();
+    const empleadoId = this.elegidoParaRol();
+    if (!b || !f || !dia || empleadoId == null) return;
+    this.cubriendoRol.set(true);
+    this.api
+      .cubrirRol({
+        cronograma: b.cronograma,
+        avisos: b.avisos,
+        asignacion: b.asignacion,
+        presentes: dia.presentes,
+        puesto: f.puesto,
+        rol: f.rol,
+        celdas: f.celdas,
+        empleadoId,
+      })
+      .subscribe({
+        next: (nuevo) => {
+          this.borrador.set({ ...nuevo, deConfiguracion: b.deConfiguracion ?? [] });
+          this.elegidoParaRol.set(null);
+          this.cubriendoRol.set(false);
+        },
+        error: (e) => {
+          this.cubriendoRol.set(false);
+          this.toast.error(mensajeDeError(e, 'No se pudo cambiar.'));
+        },
+      });
+  }
+
+  dejarRol(): void {
+    const f = this.faltante();
+    if (!f) return;
+    this.rolesDejados.update((s) => new Set([...s, `${f.puesto}|${f.rol}`]));
+    this.elegidoParaRol.set(null);
+  }
+
+  // --- Modo simple (con los que vinieron): se genera solo y se cuenta en palabras.
+
+  /** Lo que se ve arriba: qué abre, qué abre más tarde y qué queda cerrado hoy. */
+  resumen = computed(() => {
+    const p = this.pedido();
+    const vistos = new Set<string>();
+    const abiertos: string[] = [];
+    for (const nombre of [...p.fijos.map((f) => f.puesto), ...p.rueda.flatMap((l) => l.puestos)]) {
+      const clave = clavePuesto(nombre);
+      if (!nombre.trim() || vistos.has(clave)) continue;
+      vistos.add(clave);
+      abiertos.push(nombre.trim());
+    }
+    const tarde = p.abrenTarde
+      .filter((a) => a.puesto.trim() && a.tipo === 'ABRE_TARDE' && !vistos.has(clavePuesto(a.puesto)))
+      .map((a) => {
+        vistos.add(clavePuesto(a.puesto));
+        return `${a.puesto.trim()} (${a.hasta ? `de ${a.abre} a ${a.hasta}` : `desde las ${a.abre}`})`;
+      });
+    const cerrados = this.catalogo()
+      .map((x) => x.nombre)
+      .filter((n) => !vistos.has(clavePuesto(n)))
+      .sort((a, b) => a.localeCompare(b));
+    return { abiertos, tarde, cerrados };
+  });
+
+  /** Los avisos del día que no son preguntas ni refuerzos (esos se muestran aparte). */
+  avisosDelDia = computed(() =>
+    (this.borrador()?.avisos ?? []).filter((a) => !a.startsWith('Nadie de los que vinieron puede ser') && !a.endsWith('pedí un refuerzo.')),
+  );
+
+  /** "Cajero a las 12:30" por cada puesto que pide refuerzo. */
+  textosRefuerzo = computed(() => (this.borrador()?.refuerzos ?? []).map((r) => `${r.puesto} a las ${unir(r.horas)}`));
+
+  /** Un cambio de arriba (horario, almuerzo) vuelve a generar. */
+  cambiarYGenerar(cambios: Partial<PedidoGenerador>): void {
+    this.cambiar(cambios);
+    this.generar(false);
+  }
+
+  /** La afluencia cambia lo que abre (la regla) y cuántos van a lo que abre tarde; se vuelve a generar. */
+  cambiarAfluenciaYGenerar(afluencia: PedidoGenerador['afluencia']): void {
+    this.cambiarAfluencia(afluencia);
+    if (!this.aMano() && this.reglas().length) this.pedido.set(this.conRegla(this.pedido()));
+    this.generar(false);
+  }
+
   /** Personas en puestos fijos: el resto rota. */
   enFijos = computed(() => this.pedido().fijos.reduce((s, f) => s + (f.puesto.trim() ? f.personas : 0), 0));
   /** Personas en los puestos que abren tarde. */
@@ -132,6 +246,8 @@ export class Generador implements OnInit {
         this.catalogo.set(catalogo);
         this.reglas.set(reglas);
         this.pedido.set(this.propuesta(dia ? this.pedidoDelDia(dia) : { ...structuredClone(VACIO), abrenTarde: this.abrenTardeDePuestos(VACIO.afluencia) }));
+        // Con los que vinieron se genera solo: lo técnico queda en "Ajustes avanzados".
+        if (dia) this.generar(false);
       },
       error: (e) => this.toast.error(mensajeDeError(e)),
     });
@@ -155,30 +271,47 @@ export class Generador implements OnInit {
     return this.reglas().length ? this.conRegla(p) : this.conFijosDeRefuerzo(p);
   }
 
-  /** Empleados para los puestos generales: sin los que abren tarde (Tirolesa) ni los de más de un refuerzo. */
-  private generales(p: PedidoGenerador): number {
-    return p.empleados - p.abrenTarde.reduce((s, a) => s + (a.puesto.trim() && a.tipo !== 'MENOS' ? a.personas : 0), 0);
+  /** Si el puesto abre tarde (Tirolesa): en la regla va con su gente, pero en el pedido va con su horario. */
+  private abreTarde(puesto: string): AbreTardePuesto | null {
+    const p = this.catalogo().find((x) => clavePuesto(x.nombre) === clavePuesto(puesto));
+    return p?.abreTarde?.tipo === 'ABRE_TARDE' ? p.abreTarde : null;
   }
 
   /**
-   * Fijos y rueda según la regla de puestos abiertos para esa cantidad y afluencia. Un refuerzo cuyo puesto
-   * esa regla no abre queda sólo para su horario (abre tarde).
+   * Fijos y rueda según la regla de puestos abiertos para todos los que vinieron y esa afluencia. Lo que la regla
+   * pone en un puesto que abre tarde (Tirolesa: 3) va a su horario, no a los fijos. Un refuerzo cuyo puesto esa
+   * regla no abre queda sólo para su horario (abre tarde).
    */
   private conRegla(p: PedidoGenerador): PedidoGenerador {
-    const generales = this.generales(p);
-    const regla = reglaPara(this.reglas(), generales, p.afluencia);
+    const regla = reglaPara(this.reglas(), p.empleados, p.afluencia);
     if (!regla) {
       this.reglaUsada.set(null);
       return this.conFijosDeRefuerzo(p);
     }
-    this.reglaUsada.set({ regla, generales });
+    this.reglaUsada.set({ regla, generales: p.empleados });
     this.aMano.set(false);
     const abiertos = new Set([...regla.fijos.map((f) => clavePuesto(f.puesto)), ...regla.lugares.flat().map(clavePuesto)]);
+    const deTarde = regla.fijos.filter((f) => this.abreTarde(f.puesto));
+    // Si la regla abre todo el día un puesto que tiene horario (Fotos con mucha gente), manda la regla: ese día no
+    // se usa su horario.
+    const todoElDia = new Set(regla.lugares.flat().map(clavePuesto));
+    let abrenTarde = p.abrenTarde
+      .filter((a) => !(a.tipo === 'ABRE_TARDE' && todoElDia.has(clavePuesto(a.puesto))))
+      .map((a) => (a.tipo === 'REFUERZO' && !abiertos.has(clavePuesto(a.puesto)) ? { ...a, tipo: 'ABRE_TARDE' as const } : a));
+    for (const f of deTarde) {
+      const ya = abrenTarde.find((a) => clavePuesto(a.puesto) === clavePuesto(f.puesto));
+      if (ya) {
+        abrenTarde = abrenTarde.map((a) => (a === ya ? { ...a, personas: f.personas } : a));
+      } else {
+        const h = this.abreTarde(f.puesto)!;
+        abrenTarde = [...abrenTarde, { puesto: f.puesto, personas: f.personas, abre: h.abre, hasta: h.hasta, tipo: 'ABRE_TARDE' }];
+      }
+    }
     return {
       ...p,
-      fijos: regla.fijos.map((f) => ({ ...f })),
+      fijos: regla.fijos.filter((f) => !this.abreTarde(f.puesto)).map((f) => ({ ...f })),
       rueda: regla.lugares.map((l, i) => ({ puestos: [...l], inicia: i === 0 })),
-      abrenTarde: p.abrenTarde.map((a) => (a.tipo === 'REFUERZO' && !abiertos.has(clavePuesto(a.puesto)) ? { ...a, tipo: 'ABRE_TARDE' } : a)),
+      abrenTarde,
     };
   }
 
@@ -191,8 +324,10 @@ export class Generador implements OnInit {
    */
   async guardarPredeterminado(): Promise<void> {
     const p = this.pedido();
-    const generales = this.generales(p);
+    const generales = p.empleados;
     const af = textoAfluencia(p.afluencia).toLowerCase();
+    // En la regla, la Tirolesa (abre tarde y sigue hasta el cierre) va con su gente, como un puesto más.
+    const tardeEnRegla = p.abrenTarde.filter((a) => a.puesto.trim() && a.tipo === 'ABRE_TARDE' && !a.hasta && a.abre <= '14:00');
     const horarios = p.abrenTarde.filter((a) => a.puesto.trim());
     const enForm = new Set(horarios.map((a) => clavePuesto(a.puesto)));
     const sacados = this.catalogo().filter((x) => x.abreTarde && !enForm.has(clavePuesto(x.nombre)));
@@ -212,7 +347,10 @@ export class Generador implements OnInit {
         id: null,
         empleados: generales,
         afluencia: p.afluencia,
-        fijos: p.fijos.filter((f) => f.puesto.trim()).map((f) => ({ puesto: f.puesto.trim(), personas: f.personas })),
+        fijos: [
+          ...p.fijos.filter((f) => f.puesto.trim()).map((f) => ({ puesto: f.puesto.trim(), personas: f.personas })),
+          ...tardeEnRegla.map((a) => ({ puesto: a.puesto.trim(), personas: a.personas })),
+        ],
         lugares: p.rueda.map((l) => l.puestos).filter((l) => l.length),
       }),
       ...horarios.map((a) => {
@@ -492,7 +630,8 @@ export class Generador implements OnInit {
 
   // --- Generar
 
-  generar(): void {
+  /** desplazar: bajar hasta el resultado (cuando se tocó "Generar"; no cuando se genera solo). */
+  generar(desplazar = true): void {
     this.error.set('');
     if (!this.pedido().rueda.some((l) => l.puestos.length)) {
       this.error.set('Agregá al menos un puesto a la rueda.');
@@ -503,13 +642,17 @@ export class Generador implements OnInit {
     const pedido$ = dia ? this.api.generarDia({ pedido: this.pedido(), presentes: dia.presentes }) : this.api.generar(this.pedido());
     pedido$.subscribe({
       next: (b) => {
+        this.rolesDejados.set(new Set());
+        this.elegidoParaRol.set(null);
         this.borrador.set(b);
         this.generando.set(false);
         this.repartirTareas(b.asignacion);
-        setTimeout(() => document.getElementById('borrador')?.scrollIntoView({ behavior: 'smooth' }));
+        if (desplazar) setTimeout(() => document.getElementById('borrador')?.scrollIntoView({ behavior: 'smooth' }));
       },
       error: (e) => {
         this.generando.set(false);
+        // No queda a la vista el de antes, como si fuera el de ahora.
+        if (!desplazar) this.borrador.set(null);
         this.error.set(mensajeDeError(e, 'No se pudo generar.'));
       },
     });
@@ -546,4 +689,9 @@ export class Generador implements OnInit {
     this.borradores.pendiente.set(b.cronograma);
     this.router.navigate(['/cronogramas/nuevo']);
   }
+}
+
+/** "12:00", "12:00 y 12:30", "12:00, 12:30 y 13:00". */
+function unir(partes: string[]): string {
+  return partes.length <= 1 ? partes.join('') : `${partes.slice(0, -1).join(', ')} y ${partes[partes.length - 1]}`;
 }

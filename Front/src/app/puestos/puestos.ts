@@ -1,6 +1,16 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { LucideClock, LucideEye, LucideEyeOff, LucideLoaderCircle, LucidePencil, LucidePlus, LucideTrash } from '@lucide/angular';
+import {
+  LucideClock,
+  LucideEye,
+  LucideEyeOff,
+  LucideLoaderCircle,
+  LucidePencil,
+  LucidePlus,
+  LucideTrash,
+  LucideUsers,
+  LucideX,
+} from '@lucide/angular';
 import { clavePuesto } from '../models/empleado';
 import { GrupoPuestos } from '../models/grupo';
 import { GrupoService } from '../services/grupo.service';
@@ -12,7 +22,18 @@ import { ToastService } from '../shared/toast/toast.service';
 
 @Component({
   selector: 'app-puestos',
-  imports: [RouterLink, LucideClock, LucideEye, LucideEyeOff, LucideLoaderCircle, LucidePencil, LucidePlus, LucideTrash],
+  imports: [
+    RouterLink,
+    LucideClock,
+    LucideEye,
+    LucideEyeOff,
+    LucideLoaderCircle,
+    LucidePencil,
+    LucidePlus,
+    LucideTrash,
+    LucideUsers,
+    LucideX,
+  ],
   templateUrl: './puestos.html',
   styleUrl: './puestos.css',
 })
@@ -113,6 +134,54 @@ export class Puestos implements OnInit {
       error: (e) => this.toast.error(mensajeDeError(e, 'No se pudo guardar.')),
     });
   }
+  // --- Roles (Show del zorrito: Zorrito, Presentador; el resto, Ayudantes)
+
+  /** El puesto al que se le están cargando los roles. */
+  editandoRoles = signal<{ nombre: string; roles: string[]; rolResto: string } | null>(null);
+
+  empezarRoles(p: PuestoParque): void {
+    if (this.editandoRoles()?.nombre === p.nombre) {
+      this.editandoRoles.set(null);
+      return;
+    }
+    const roles = p.roles?.length ? [...p.roles] : [''];
+    this.editandoRoles.set({ nombre: p.nombre, roles, rolResto: p.rolResto ?? '' });
+  }
+
+  cambiarRol(i: number, valor: string): void {
+    this.editandoRoles.update((r) => (r ? { ...r, roles: r.roles.map((x, j) => (j === i ? valor : x)) } : r));
+  }
+
+  cambiarResto(rolResto: string): void {
+    this.editandoRoles.update((r) => (r ? { ...r, rolResto } : r));
+  }
+
+  agregarRol(): void {
+    this.editandoRoles.update((r) => (r ? { ...r, roles: [...r.roles, ''] } : r));
+  }
+
+  quitarRol(i: number): void {
+    this.editandoRoles.update((r) => (r ? { ...r, roles: r.roles.filter((_, j) => j !== i) } : r));
+  }
+
+  guardarRoles(sin = false): void {
+    const r = this.editandoRoles();
+    if (!r) return;
+    const roles = sin ? [] : r.roles.map((x) => x.trim()).filter((x) => x);
+    this.api.cambiarRoles(r.nombre, roles, sin ? null : r.rolResto.trim() || null).subscribe({
+      next: (p) => {
+        this.puestos.update((l) => l.map((x) => (x.nombre === r.nombre ? { ...x, roles: p.roles, rolResto: p.rolResto } : x)));
+        this.editandoRoles.set(null);
+      },
+      error: (e) => this.toast.error(mensajeDeError(e, 'No se pudo guardar.')),
+    });
+  }
+
+  /** "Zorrito, Presentador + Ayudante". */
+  textoRoles(p: PuestoParque): string {
+    return (p.roles ?? []).join(', ') + (p.rolResto ? ' + ' + p.rolResto : '');
+  }
+
   /** El grupo que se está creando o cambiando. */
   editandoGrupo = signal<GrupoPuestos | null>(null);
   guardandoGrupo = signal(false);

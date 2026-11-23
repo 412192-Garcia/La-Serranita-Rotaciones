@@ -50,6 +50,38 @@ export interface Borrador {
   avisos: string[];
   /** Si se generó con los que vinieron: quién hace cada número. */
   asignacion: Asignacion[];
+  /** Roles que nadie de los que vinieron puede hacer: hay que elegir quién los cubre. */
+  faltantes?: FaltanteRol[];
+  /** Puestos que quedaron sin nadie aunque se probó todo: hay que pedir un refuerzo. */
+  refuerzos?: Refuerzo[];
+  /** Con los que vinieron: avisos de cómo está cargado (reglas, horarios especiales), aparte de los del día. */
+  deConfiguracion?: string[];
+}
+
+export interface Refuerzo {
+  puesto: string;
+  /** Posiciones de los horarios. */
+  celdas: number[];
+  horas: string[];
+}
+
+export interface PedidoCubrirRol {
+  cronograma: Cronograma;
+  avisos: string[];
+  asignacion: Asignacion[];
+  presentes: Presente[];
+  puesto: string;
+  rol: string;
+  celdas: number[];
+  empleadoId: number;
+}
+
+export interface FaltanteRol {
+  puesto: string;
+  rol: string;
+  /** Posiciones de los horarios. */
+  celdas: number[];
+  horas: string[];
 }
 
 function numeros(celda: string): number[] {
@@ -62,7 +94,7 @@ function numeros(celda: string): number[] {
 
 /** Saca de un cronograma armado los datos para generar otro parecido. */
 export function pedidoDesde(c: Cronograma): PedidoGenerador {
-  const esAparte = (n: string) => ['descanso', 'basura'].includes(n.trim().toLowerCase());
+  const esAparte = (n: string) => ['descanso', 'libre', 'basura'].includes(n.trim().toLowerCase());
   const fijosNombres = new Set(c.fijos ?? []);
   const total = c.horarios.length;
 

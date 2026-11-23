@@ -124,6 +124,15 @@ public class CronogramaService {
                 c.fijos());
     }
 
+    /** Clave del puesto → cómo se llama el resto de su gente (Ayudante), de los que tienen roles. */
+    private java.util.Map<String, String> restos() {
+        java.util.Map<String, String> restos = new java.util.HashMap<>();
+        puestosParque.findAll().forEach(p -> {
+            if (!p.getRoles().isEmpty() && p.getRolResto() != null) restos.put(p.getClave(), p.getRolResto());
+        });
+        return restos;
+    }
+
     private Cronograma buscar(Long id) {
         return repositorio.findById(id).orElseThrow(() -> new NoEncontradoException("Ese cronograma no existe."));
     }
@@ -131,12 +140,13 @@ public class CronogramaService {
     private CronogramaDto aDto(Cronograma c, boolean conTarjetas) {
         List<String> horarios = c.getHorarios().stream().map(RotacionService::formatear).toList();
         List<PuestoDto> puestos = c.getPuestos().stream()
-                .map(p -> new PuestoDto(p.getNombre(), p.getNota(), p.isIniciaRotacion(), List.copyOf(p.getCeldas())))
+                .map(p -> new PuestoDto(p.getNombre(), p.getNota(), p.isIniciaRotacion(), List.copyOf(p.getCeldas()),
+                        RolesPuesto.limpiar(p.getRoles().isEmpty() ? null : p.getRoles().stream().map(RolesPuesto::leer).toList(), p.getCeldas())))
                 .toList();
         PlanRotacion plan = PlanRotacion.de(horarios, puestos);
         return new CronogramaDto(c.getId(), c.getNombre(), c.getAfluencia(), horarios, puestos,
                 rotacion.cantidadEmpleados(plan), rotacion.fijos(plan),
-                conTarjetas ? rotacion.armarTarjetas(plan) : null);
+                conTarjetas ? RolesPuesto.conRoles(rotacion.armarTarjetas(plan), puestos, horarios, restos()) : null);
     }
 
     private static void aplicar(Cronograma c, CronogramaDto dto) {
@@ -151,6 +161,7 @@ public class CronogramaService {
             puesto.setNota(p.nota());
             puesto.setIniciaRotacion(p.iniciaRotacion());
             puesto.getCeldas().addAll(p.celdas());
+            if (p.roles() != null) p.roles().forEach(m -> puesto.getRoles().add(RolesPuesto.guardar(m)));
             c.getPuestos().add(puesto);
         }
     }
@@ -206,7 +217,7 @@ public class CronogramaService {
                 }
                 celdas.add(PlanRotacion.empleados(valor).stream().map(String::valueOf).collect(Collectors.joining("-")));
             }
-            puestos.add(new PuestoDto(nombrePuesto, nota, iniciaRotacion, celdas));
+            puestos.add(new PuestoDto(nombrePuesto, nota, iniciaRotacion, celdas, RolesPuesto.limpiar(p.roles(), celdas)));
         }
         return new CronogramaDto(dto.id(), nombre, dto.afluencia(), horarios, puestos, null, null, null);
     }

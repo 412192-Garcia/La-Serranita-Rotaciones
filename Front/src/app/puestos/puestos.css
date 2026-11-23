@@ -384,3 +384,50 @@ h3 {
     min-height: 44px;
   }
 }
+
+.rol-linea {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.rol-linea input {
+  flex: 1;
+  min-width: 0;
+}
+
+.agregar-rol {
+  align-self: flex-start;
+}
+
+.btn-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.btn-mini:hover {
+  background: var(--color-card-bg);
+  color: var(--color-text);
+}
+
+.btn-mini svg {
+  width: 15px;
+  height: 15px;
+}
+
+@media (pointer: coarse) {
+  .btn-mini {
+    width: 44px;
+    height: 44px;
+  }
+}

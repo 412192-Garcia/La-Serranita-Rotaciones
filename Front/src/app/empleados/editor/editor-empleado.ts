@@ -2,7 +2,9 @@ import { Component, computed, inject, input, OnInit, signal } from '@angular/cor
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { LucideArrowLeft, LucideChevronDown, LucideLoaderCircle, LucideSave, LucideStar } from '@lucide/angular';
-import { clavePuesto } from '../../models/empleado';
+import { clavePuesto, RolSabido } from '../../models/empleado';
+import { PuestoParque } from '../../models/puesto';
+import { PuestoService } from '../../services/puesto.service';
 import { CronogramaService, mensajeDeError } from '../../services/cronograma.service';
 import { EmpleadoService } from '../../services/empleado.service';
 import { TareaService } from '../../services/tarea.service';
@@ -21,6 +23,7 @@ export class EditorEmpleado implements OnInit {
   private api = inject(EmpleadoService);
   private tareasApi = inject(TareaService);
   private gruposApi = inject(GrupoService);
+  private puestosApi = inject(PuestoService);
   private cronogramas = inject(CronogramaService);
   private toast = inject(ToastService);
   private router = inject(Router);
@@ -63,6 +66,26 @@ export class EditorEmpleado implements OnInit {
   acompananteHabitualId = signal<number | null>(null);
   /** Los que pueden acompañar: el resto de los empleados que no están en entrenamiento. */
   acompanantes = signal<{ id: number; nombre: string }[]>([]);
+  /** Los puestos que tienen roles (Show del zorrito) y los roles para los que está preparado. */
+  conRoles = signal<PuestoParque[]>([]);
+  roles = signal<RolSabido[]>([]);
+
+  tieneRol(puesto: string, rol: string): boolean {
+    return this.roles().some((r) => clavePuesto(r.puesto) === clavePuesto(puesto) && clavePuesto(r.rol) === clavePuesto(rol));
+  }
+
+  alternarRol(puesto: string, rol: string): void {
+    if (this.tieneRol(puesto, rol)) {
+      this.roles.update((l) => l.filter((r) => !(clavePuesto(r.puesto) === clavePuesto(puesto) && clavePuesto(r.rol) === clavePuesto(rol))));
+      return;
+    }
+    // Para tener el rol tiene que saber el puesto.
+    if (!this.loSabe(puesto)) {
+      const nombre = this.todos().find((t) => clavePuesto(t) === clavePuesto(puesto)) ?? puesto;
+      this.sabe.update((l) => [...l, nombre]);
+    }
+    this.roles.update((l) => [...l, { puesto, rol }]);
+  }
 
   ngOnInit(): void {
     forkJoin({
@@ -70,9 +93,11 @@ export class EditorEmpleado implements OnInit {
       empleados: this.api.listar(),
       tareas: this.tareasApi.listar(),
       grupos: this.gruposApi.listar(),
+      puestosParque: this.puestosApi.listar(),
     }).subscribe({
-      next: ({ puestos, empleados, tareas, grupos }) => {
+      next: ({ puestos, empleados, tareas, grupos, puestosParque }) => {
         this.grupos.set(grupos);
+        this.conRoles.set(puestosParque.filter((p) => p.roles?.length));
         const esGrupo = (p: string) => grupos.some((g) => clavePuesto(g.nombre) === clavePuesto(p));
         this.tareasConSaber.set(tareas.filter((t) => t.requiereSaber));
         const id = this.id();
@@ -93,6 +118,7 @@ export class EditorEmpleado implements OnInit {
         if (empleado) {
           this.enEntrenamiento.set(empleado.enEntrenamiento);
           this.tareas.set(empleado.tareas ?? []);
+          this.roles.set(empleado.roles ?? []);
           this.acompananteHabitualId.set(empleado.acompananteHabitualId);
           this.nombre.set(empleado.nombre);
           // Se guardan con el nombre de la lista general, para que coincidan con los cronogramas.
@@ -192,6 +218,7 @@ export class EditorEmpleado implements OnInit {
         enEntrenamiento: this.enEntrenamiento(),
         acompananteHabitualId: this.enEntrenamiento() ? this.acompananteHabitualId() : null,
         tareas: this.tareas(),
+        roles: this.roles().filter((r) => this.loSabe(r.puesto) || this.todos().every((t) => clavePuesto(t) !== clavePuesto(r.puesto))),
       })
       .subscribe({
         next: () => {

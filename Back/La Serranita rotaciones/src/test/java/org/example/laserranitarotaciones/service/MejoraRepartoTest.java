@@ -35,6 +35,70 @@ class MejoraRepartoTest {
     }
 
     @Test
+    void elDeLaEstrellaNoVuelveASuPuestoSiDejaVacioUnoMasImportante() {
+        // Almuerza la del zorrito: la cubre el de Baños (estrella en Baños, que en el almuerzo está cerrado).
+        List<PuestoDto> puestos = List.of(
+                new PuestoDto("Casa del zorrito", null, false, List.of("2")),
+                new PuestoDto("Baños", null, false, List.of("Cerrado")),
+                new PuestoDto("Descanso", null, false, List.of("5")));
+        var p11 = new AsignadorService.Presente(2L, "P11", Set.of("banos"), Set.of("banos"), Set.of("banos"));
+        Map<String, Integer> pesos = Map.of("banos", org.example.laserranitarotaciones.model.entity.Prioridad.BAJA.peso());
+
+        List<PuestoDto> r = MejoraReparto.respetarEstrellas(puestos, Map.of(2, p11), pesos);
+
+        assertThat(r.get(0).celdas()).containsExactly("2");
+        assertThat(r.get(1).celdas()).containsExactly("Cerrado");
+    }
+
+    @Test
+    void laDelZorritoComeMasTardeSiAsiLaCubreUnaCajeraLibre() {
+        // 12:00 (k=0): la del zorrito (5) come y la cubre el 2, que no sabe. 13:00 (k=1): la cajera 4 está libre.
+        List<PuestoDto> puestos = List.of(
+                new PuestoDto("Casa del zorrito", null, false, List.of("2", "5")),
+                new PuestoDto("Baños", null, false, List.of("Cerrado", "2")),
+                new PuestoDto("Libre", null, false, List.of("", "4")),
+                new PuestoDto("Descanso", null, false, List.of("5", "")));
+        var p11 = persona(2, "P11", "Baños");
+        var cj2 = persona(4, "CJ2", "Cajero", "Casa del zorrito");
+        var cz1 = persona(5, "CZ1", "Casa del zorrito");
+
+        List<PuestoDto> r = MejoraReparto.correrAlmuerzos(puestos, Map.of(2, p11, 4, cj2, 5, cz1), List.of(0, 1));
+
+        assertThat(r.get(0).celdas()).containsExactly("5", "4");
+        assertThat(r.get(2).celdas()).containsExactly("2", "");
+        assertThat(r.get(3).celdas()).containsExactly("", "5");
+    }
+
+    @Test
+    void elCajeroNuncaLoHaceAlguienQueNoSabe() {
+        Map<String, Integer> pesos = Map.of("cajero", org.example.laserranitarotaciones.model.entity.Prioridad.SIEMPRE.peso());
+        var p11 = persona(2, "P11", "Baños", "Minigolf");
+        var cz1 = persona(5, "CZ1", "Casa del zorrito");
+        var cj = persona(4, "CJ2", "Cajero", "Minigolf");
+
+        var p03 = persona(3, "P03", "Entrada");
+        // k=0: la cajera está en Libre: entra ella y el 2 pasa a Libre.
+        // k=1: la cajera está en Minigolf, que el 2 sabe: se cambian.
+        // k=2: la cajera está en Casa del zorrito, que el 3 no sabe y quedaría vacía: refuerzo, el 3 a Libre.
+        // k=3: la cajera está en Búsqueda con otro: va a Cajero y el 3 a Libre.
+        List<PuestoDto> puestos = List.of(
+                new PuestoDto("Cajero", null, false, List.of("2", "2", "3", "3")),
+                new PuestoDto("Minigolf", null, false, List.of("5", "4", "", "")),
+                new PuestoDto("Casa del zorrito", null, false, List.of("", "", "4", "")),
+                new PuestoDto("Búsqueda", null, false, List.of("", "", "", "4-5")),
+                new PuestoDto("Libre", null, false, List.of("4", "", "", "")),
+                new PuestoDto("Descanso", null, false, List.of("", "", "", "")));
+
+        List<PuestoDto> r = MejoraReparto.siempreConQuienSabe(puestos, Map.of(2, p11, 3, p03, 4, cj, 5, cz1), pesos);
+
+        assertThat(r.get(0).celdas()).containsExactly("4", "4", "", "4");
+        assertThat(r.get(1).celdas()).containsExactly("5", "2", "", "");
+        assertThat(r.get(2).celdas()).containsExactly("", "", "4", "");
+        assertThat(r.get(3).celdas()).containsExactly("", "", "", "5");
+        assertThat(r.get(4).celdas()).containsExactly("2", "", "3", "3");
+    }
+
+    @Test
     void laSegundaCajeraCubreElZorritoEnVezDeUnoQueNoLoSabe() {
         // Almuerza la del zorrito (3): la cubre el 4, que no sabe, mientras están las dos cajeras.
         List<PuestoDto> puestos = List.of(

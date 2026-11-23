@@ -44,4 +44,11 @@ public class PuestoCronograma {
     @OrderColumn(name = "orden")
     @Column(name = "valor", nullable = false, length = 40)
     private List<String> celdas = new ArrayList<>();
+
+    /** Si el puesto tiene roles, uno por horario: "Zorrito=3;Presentador=5" (vacío = nadie con rol). */
+    @ElementCollection
+    @CollectionTable(name = "puesto_cronograma_roles", joinColumns = @JoinColumn(name = "id_puesto"))
+    @OrderColumn(name = "orden")
+    @Column(name = "valor", nullable = false, length = 200)
+    private List<String> roles = new ArrayList<>();
 }

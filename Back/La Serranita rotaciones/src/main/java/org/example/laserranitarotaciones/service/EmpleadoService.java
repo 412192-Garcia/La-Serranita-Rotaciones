@@ -2,8 +2,11 @@ package org.example.laserranitarotaciones.service;
 
 import lombok.RequiredArgsConstructor;
 import org.example.laserranitarotaciones.model.dto.EmpleadoDto;
+import org.example.laserranitarotaciones.model.dto.RolSabidoDto;
 import org.example.laserranitarotaciones.model.entity.Empleado;
+import org.example.laserranitarotaciones.model.entity.PuestoParque;
 import org.example.laserranitarotaciones.repository.EmpleadoRepository;
+import org.example.laserranitarotaciones.repository.PuestoParqueRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +22,7 @@ public class EmpleadoService {
 
     private final EmpleadoRepository repositorio;
     private final GrupoPuestosService grupos;
+    private final PuestoParqueRepository puestosParque;
 
     @Transactional(readOnly = true)
     public List<EmpleadoDto> listar() {
@@ -65,7 +69,7 @@ public class EmpleadoService {
     private EmpleadoDto aDto(Empleado e) {
         return new EmpleadoDto(e.getId(), e.getNombre(), List.copyOf(e.getPuestos()), List.copyOf(e.getPrincipales()),
                 e.isEnEntrenamiento(), e.getIdAcompananteHabitual(), List.copyOf(e.getTareas()),
-                grupos.expandir(e.getPuestos()));
+                grupos.expandir(e.getPuestos()), e.getRoles().stream().map(RolSabidoDto::de).toList());
     }
 
     private void aplicar(Empleado e, EmpleadoDto dto) {
@@ -90,6 +94,19 @@ public class EmpleadoService {
             if (!principales.contains(puesto)) principales.add(puesto);
         }
 
+        // Un rol sólo si sabe el puesto y el puesto tiene ese rol. Se guarda con los nombres del puesto.
+        List<String> roles = new ArrayList<>();
+        for (RolSabidoDto r : dto.roles() == null ? List.<RolSabidoDto>of() : dto.roles()) {
+            if (r == null || r.puesto() == null || r.rol() == null) continue;
+            String puesto = puede.get(Nombres.clave(r.puesto()));
+            if (puesto == null) throw new ValidacionException("Para ser " + r.rol() + " tiene que saber " + r.puesto() + ".");
+            PuestoParque p = puestosParque.findByClave(Nombres.clave(puesto)).orElse(null);
+            String rol = p == null ? null : p.getRoles().stream().filter(x -> Nombres.clave(x).equals(Nombres.clave(r.rol()))).findFirst().orElse(null);
+            if (rol == null) throw new ValidacionException(puesto + " no tiene el rol " + r.rol() + ".");
+            String guardado = new RolSabidoDto(p.getNombre(), rol).guardado();
+            if (!roles.contains(guardado)) roles.add(guardado);
+        }
+
         Long acompanante = dto.enEntrenamiento() ? dto.acompananteHabitualId() : null;
         if (acompanante != null) {
             if (acompanante.equals(e.getId())) throw new ValidacionException("No puede acompañarse a sí mismo.");
@@ -107,5 +124,7 @@ public class EmpleadoService {
         e.getPrincipales().addAll(principales);
         e.getTareas().clear();
         if (dto.tareas() != null) e.getTareas().addAll(dto.tareas());
+        e.getRoles().clear();
+        e.getRoles().addAll(roles);
     }
 }

@@ -73,6 +73,17 @@
         </button>
         <button
           type="button"
+          class="en-fijos abre-tarde"
+          [class.activo]="p.roles?.length"
+          [attr.aria-expanded]="editandoRoles()?.nombre === p.nombre"
+          title="Roles que necesitan a alguien preparado (Zorrito, Presentador)"
+          (click)="empezarRoles(p)"
+        >
+          <svg lucideUsers [strokeWidth]="2.25"></svg>
+          {{ p.roles?.length ? textoRoles(p) : 'Roles' }}
+        </button>
+        <button
+          type="button"
           class="en-fijos"
           [class.activo]="p.mostrarEnFijos"
           [attr.aria-pressed]="p.mostrarEnFijos"
@@ -134,6 +145,50 @@
                 }
                 <button type="button" class="btn-secundario btn-chico" (click)="editandoTarde.set(null)">Cancelar</button>
                 <button type="button" class="btn-primario btn-chico" (click)="guardarTarde()">Guardar</button>
+              </span>
+            </div>
+          }
+        }
+        @if (editandoRoles(); as r) {
+          @if (r.nombre === p.nombre) {
+            <div class="tarde-editor roles-editor">
+              <span class="dato">
+                <span>Roles, uno por persona y en orden</span>
+                @for (rol of r.roles; track $index; let i = $index) {
+                  <span class="rol-linea">
+                    <input
+                      type="text"
+                      maxlength="40"
+                      [placeholder]="i === 0 ? 'Por ejemplo Zorrito' : 'Por ejemplo Presentador'"
+                      [attr.aria-label]="'Rol ' + (i + 1)"
+                      [value]="rol"
+                      (input)="cambiarRol(i, valor($event))"
+                    />
+                    <button type="button" class="btn-mini" title="Quitar" [attr.aria-label]="'Quitar rol ' + (i + 1)" (click)="quitarRol(i)">
+                      <svg lucideX [strokeWidth]="2.25"></svg>
+                    </button>
+                  </span>
+                }
+                @if (r.roles.length < 5) {
+                  <button type="button" class="btn-secundario btn-chico agregar-rol" (click)="agregarRol()">
+                    <svg lucidePlus [strokeWidth]="2.5"></svg> Rol
+                  </button>
+                }
+              </span>
+              <label class="dato">
+                <span>El resto de la gente</span>
+                <input type="text" maxlength="40" placeholder="Por ejemplo Ayudante" [value]="r.rolResto" (input)="cambiarResto(valor($event))" />
+              </label>
+              <p class="ayuda-chica explicacion">
+                Cada rol lo hace alguien preparado (se marca en cada empleado). El resto lo hace cualquiera que sepa el puesto; cuántos van
+                depende de las personas del horario del puesto. Si un día no vino nadie preparado, al generar se pregunta quién lo cubre.
+              </p>
+              <span class="tarde-botones">
+                @if (p.roles?.length) {
+                  <button type="button" class="btn-secundario btn-chico" (click)="guardarRoles(true)">Sin roles</button>
+                }
+                <button type="button" class="btn-secundario btn-chico" (click)="editandoRoles.set(null)">Cancelar</button>
+                <button type="button" class="btn-primario btn-chico" (click)="guardarRoles()">Guardar</button>
               </span>
             </div>
           }

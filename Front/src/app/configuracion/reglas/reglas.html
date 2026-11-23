@@ -14,8 +14,8 @@
   </div>
 </div>
 <p class="ayuda">
-  Qué puestos funcionan según cuántos empleados hay (sin contar la Tirolesa) y cuánta gente se espera. El generador arma los fijos
-  y la rueda con la regla que corresponde. Pensado para la mañana, más o menos hasta las 12. La rueda arranca en el marcado con *.
+  Qué puestos funcionan según cuántos vinieron (todos, la Tirolesa también) y cuánta gente se espera. El generador arma los fijos,
+  la gente de la Tirolesa y la rueda con la regla que corresponde. Pensado para la mañana, más o menos hasta las 12. La rueda arranca en el marcado con *.
 </p>
 
 <section class="panel orden-rotacion">
@@ -69,76 +69,108 @@
 }
 
 @if (editando(); as e) {
-    <section class="panel editor" id="editor-regla">
-      <div class="editor-datos">
-        <label class="dato">
-          <span>Empleados</span>
-          <input type="number" min="1" max="60" [value]="e.empleados" [disabled]="e.id !== null" (input)="cambiar({ empleados: +valor($event) })" />
-        </label>
-        <label class="dato">
-          <span>Afluencia</span>
-          <select [disabled]="e.id !== null" (change)="cambiar({ afluencia: $any(valor($event)) })">
-            @for (a of afluencias; track a.valor) {
-              <option [value]="a.valor" [selected]="e.afluencia === a.valor">{{ a.texto }}</option>
-            }
-          </select>
-        </label>
-        <label class="dato ancho">
-          <span>Fijos (con "x2" si son dos)</span>
-          <input type="text" [value]="e.fijos" (input)="cambiar({ fijos: valor($event) })" />
-        </label>
-      </div>
-      <label class="dato">
-        <span>Rueda en orden, arrancando por el primero: un lugar por línea; con "+" los puestos que hace la misma persona</span>
-        <textarea rows="8" [value]="e.lugares" (input)="cambiar({ lugares: valor($event) })"></textarea>
-      </label>
-      <div class="editor-pie">
-        <span class="ocupa" [class.mal]="ocupa() !== e.empleados">
-          @if (ocupa() !== e.empleados) {
-            <svg lucideTriangleExclamationPoint [strokeWidth]="2.5"></svg>
-          }
-          Ocupa {{ ocupa() }} de {{ e.empleados }} personas
-        </span>
-        <span class="botones">
-          <button type="button" class="btn-secundario btn-chico" (click)="editando.set(null)">Cancelar</button>
-          <button type="button" class="btn-primario btn-chico" (click)="guardar()">Guardar</button>
-        </span>
-      </div>
-    </section>
+  <app-editor-regla
+    [regla]="e"
+    [catalogo]="catalogoCompleto()"
+    [reglas]="reglas()"
+    [guardando]="guardando()"
+    (guardar)="guardar($event)"
+    (cancelar)="editando.set(null)"
+  />
 }
 
-@for (n of cantidades(); track n) {
-  <section class="panel cantidad">
-    <h3>{{ n }} empleados</h3>
-    <div class="afluencias">
-      @for (a of afluencias; track a.valor) {
-        <div class="afluencia">
-          <div class="afluencia-titulo">
-            <span>{{ a.texto }}</span>
-            <button type="button" class="btn-mini" [attr.aria-label]="'Editar ' + n + ' ' + a.texto" title="Editar" (click)="empezar(n, a.valor)">
-              <svg lucidePencil [strokeWidth]="2.25"></svg>
-            </button>
-            @if (regla(n, a.valor); as r) {
-              <button type="button" class="btn-mini" [attr.aria-label]="'Borrar ' + n + ' ' + a.texto" title="Borrar" (click)="borrar(r)">
-                <svg lucideTrash [strokeWidth]="2.25"></svg>
-              </button>
-            }
-          </div>
-          @if (regla(n, a.valor); as r) {
-            <div class="fijos">Fijos: {{ textoFijos(r) || 'ninguno' }}</div>
-            <div class="lugares">
-              @for (l of r.lugares; track $index) {
-                <span class="lugar" [class.compartido]="l.length > 1">{{ $first ? '*' : '' }}{{ l.join(' + ') }}</span>
-              }
-            </div>
-            @if (personasDe(r) !== r.empleados) {
-              <div class="mal"><svg lucideTriangleExclamationPoint [strokeWidth]="2.5"></svg> Ocupa {{ personasDe(r) }} personas</div>
-            }
-          } @else {
-            <div class="sin-regla">Sin regla</div>
-          }
-        </div>
-      }
+@if (reglas().length) {
+  <section class="panel tabla-reglas">
+    <div class="tabla-cabecera">
+      <span class="etiqueta">Cuánta gente se espera</span>
+      <div class="opciones">
+        @for (a of afluencias; track a.valor) {
+          <button type="button" class="chip" [class.activa]="vista() === a.valor" (click)="vista.set(a.valor)">{{ a.texto }}</button>
+        }
+      </div>
     </div>
+    @if (filas().length) {
+      <div class="tabla-scroll">
+        <table class="reglas">
+          <thead>
+            <tr>
+              <th class="col-vinieron">Vinieron</th>
+              @for (c of columnas(); track c) {
+                <th class="col-puesto">{{ c }}</th>
+              }
+              <th class="col-acciones" aria-label="Acciones"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of filas(); track f.regla.id) {
+              <tr>
+                <th class="col-vinieron">
+                  {{ f.regla.empleados }}
+                  @if (f.mal) {
+                    <svg lucideTriangleExclamationPoint class="mal-icono" [strokeWidth]="2.5" [attr.aria-label]="'Ocupa ' + personasDe(f.regla) + ' personas'"></svg>
+                  }
+                </th>
+                @for (s of f.segmentos; track $index) {
+                  @if (s.barras && s.barras.length === 1) {
+                    <!-- Una sola persona: una celda ancha, del alto de las demás. -->
+                    <td class="celda-junto" [attr.colspan]="s.span" [title]="s.barras[0].detalle">
+                      @if (s.barras[0].inicia) {
+                        <span class="arranca" title="Ahí arranca la rueda">*</span>
+                      }
+                      Rota
+                    </td>
+                  } @else if (s.barras) {
+                    <td class="celda-barras" [attr.colspan]="s.span" [title]="s.celda.detalle">
+                      <div class="barras" [style.grid-template-columns]="'repeat(' + s.span + ', 1fr)'">
+                        @for (b of s.barras; track $index) {
+                          <div class="barra" [style.grid-column]="b.desde + ' / ' + (b.hasta + 1)" [title]="b.detalle">
+                            @if (b.inicia) {
+                              <span class="arranca" title="Ahí arranca la rueda">*</span>
+                            }
+                            Rota
+                          </div>
+                        }
+                      </div>
+                    </td>
+                  } @else {
+                    <td [class]="'celda-' + s.celda.clase" [title]="s.puestos + ': ' + s.celda.detalle">
+                      @if (s.celda.inicia) {
+                        <span class="arranca" title="Ahí arranca la rueda">*</span>
+                      }
+                      {{ s.celda.texto }}
+                    </td>
+                  }
+                }
+                <td class="col-acciones">
+                  <button type="button" class="btn-mini" [attr.aria-label]="'Editar la de ' + f.regla.empleados" title="Editar" (click)="empezar(f.regla.empleados, vista())">
+                    <svg lucidePencil [strokeWidth]="2.25"></svg>
+                  </button>
+                  <button type="button" class="btn-mini" [attr.aria-label]="'Borrar la de ' + f.regla.empleados" title="Borrar" (click)="borrar(f.regla)">
+                    <svg lucideTrash [strokeWidth]="2.25"></svg>
+                  </button>
+                </td>
+              </tr>
+              @if (f.mal) {
+                <tr class="fila-nota">
+                  <td [attr.colspan]="columnas().length + 2">
+                    <span class="mal">Ocupa {{ personasDe(f.regla) }} personas, no {{ f.regla.empleados }}.</span>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="leyenda">
+        <span class="muestra celda-fijo">Fijo</span> la misma persona todo el día ·
+        <span class="muestra celda-tarde">×3</span> gente de la Tirolesa ·
+        <span class="muestra celda-rota">Rota</span> entra en la rueda ·
+        <span class="muestra celda-junto">Rota ───</span> una barra que abarca varios puestos: los hace una misma persona
+        (dos barras que se pisan en un puesto, como en Búsqueda, se lo reparten) ·
+        <span class="muestra celda-cerrado">—</span> cerrado · * ahí arranca la rueda
+      </p>
+    } @else {
+      <p class="vacio">No hay reglas para afluencia {{ textoAfluencia(vista()).toLowerCase() }}.</p>
+    }
   </section>
 }

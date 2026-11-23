@@ -304,3 +304,172 @@ h3 {
     height: 44px;
   }
 }
+
+/* --- Tabla de reglas */
+
+.tabla-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 12px;
+}
+
+.tabla-scroll {
+  overflow-x: auto;
+}
+
+table.reglas {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 0.85rem;
+}
+
+table.reglas th,
+table.reglas td {
+  padding: 6px 6px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+table.reglas thead th.col-puesto {
+  min-width: 64px;
+  max-width: 90px;
+  white-space: normal;
+  line-height: 1.15;
+  font-weight: 700;
+  vertical-align: bottom;
+  color: var(--color-text-secondary);
+}
+
+table.reglas .col-vinieron {
+  position: sticky;
+  left: 0;
+  background: var(--color-card-bg);
+  font-weight: 800;
+  text-align: left;
+  z-index: 1;
+}
+
+table.reglas td {
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.celda-fijo {
+  background: #1e5631;
+  color: #fff;
+}
+
+.celda-tarde {
+  background: #f2b632;
+  color: #3d2a00;
+}
+
+.celda-rota {
+  background: #d6f0dc;
+  color: #1e5631;
+}
+
+.celda-junto {
+  background: #cfe3f7;
+  color: #163d66;
+}
+
+.celda-cerrado {
+  color: var(--color-text-muted);
+  font-weight: 400 !important;
+}
+
+.col-acciones {
+  display: flex;
+  gap: 2px;
+}
+
+.fila-nota td {
+  text-align: left !important;
+  font-weight: 400 !important;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  padding-top: 0 !important;
+}
+
+.fila-nota .mal,
+.mal-icono {
+  color: var(--color-danger, #c0392b);
+}
+
+.mal-icono {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+}
+
+.leyenda {
+  margin: 12px 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  line-height: 2;
+}
+
+.muestra {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+
+.tabla-reglas {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.leyenda {
+  white-space: normal;
+}
+
+/* Los que hace una misma persona: una celda ancha, con bordes que muestran lo que abarca. */
+td.celda-junto[colspan] {
+  border-left: 3px solid #163d66;
+  border-right: 3px solid #163d66;
+}
+
+.arranca {
+  margin-right: 3px;
+  font-weight: 800;
+}
+
+/* Barras: una por persona, sobre los puestos que hace. */
+td.celda-barras {
+  padding: 0 !important;
+  background: none;
+}
+
+.barras {
+  display: grid;
+  gap: 2px;
+}
+
+.barra {
+  background: #cfe3f7;
+  color: #163d66;
+  border-left: 3px solid #163d66;
+  border-right: 3px solid #163d66;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.barra .arranca {
+  margin-right: 0;
+}

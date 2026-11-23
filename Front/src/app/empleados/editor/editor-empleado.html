@@ -116,6 +116,25 @@
       }
     </div>
 
+    @if (conRoles().length) {
+      <div class="campo-grupo">
+        <span class="etiqueta">Roles para los que está preparado</span>
+        <p class="ayuda">El resto de la gente del puesto lo hace cualquiera que lo sepa.</p>
+        @for (p of conRoles(); track p.nombre) {
+          <div class="puestos roles-de">
+            <span class="del-grupo-titulo">{{ p.nombre }}:</span>
+            @for (r of p.roles; track r) {
+              <div class="puesto" [class.activo]="tieneRol(p.nombre, r)">
+                <button type="button" class="puesto-nombre" [attr.aria-pressed]="tieneRol(p.nombre, r)" (click)="alternarRol(p.nombre, r)">
+                  {{ r }}
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
     @if (tareasConSaber().length) {
       <div class="campo-grupo">
         <span class="etiqueta">Tareas de apertura que sabe hacer</span>

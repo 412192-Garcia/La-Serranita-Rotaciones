@@ -2,8 +2,9 @@ import { Afluencia } from './cronograma';
 import { FijoGenerador } from './generador';
 
 /**
- * Qué puestos se abren con tantos empleados (sin la Tirolesa) y tal afluencia: los fijos y la rueda.
- * lugares: en orden; cada lugar son los puestos que hace la misma persona (Travesía, Búsqueda y Laberinto).
+ * Qué puestos se abren con tantos empleados (todos los que vinieron) y tal afluencia: los fijos (la Tirolesa
+ * también, con su gente; su horario está en Puestos) y la rueda. lugares: en orden; cada lugar son los puestos que
+ * hace la misma persona (Travesía, Búsqueda y Laberinto).
  */
 export interface ReglaApertura {
   id: number | null;

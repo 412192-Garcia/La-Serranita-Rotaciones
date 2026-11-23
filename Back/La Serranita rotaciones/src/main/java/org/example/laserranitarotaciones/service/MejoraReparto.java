@@ -93,6 +93,12 @@ final class MejoraReparto {
      * un puesto que podría hacer el de la estrella (salvo mientras él descansa).
      */
     static List<PuestoDto> respetarEstrellas(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero) {
+        return respetarEstrellas(puestos, porNumero, Map.of());
+    }
+
+    /** pesos: clave del puesto → peso de su prioridad (lo que no está es Media). */
+    static List<PuestoDto> respetarEstrellas(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero,
+                                             Map<String, Integer> pesos) {
         int total = puestos.isEmpty() ? 0 : puestos.get(0).celdas().size();
         List<List<Set<Integer>>> filas = new ArrayList<>();
         for (PuestoDto p : puestos) {
@@ -145,7 +151,8 @@ final class MejoraReparto {
                 if (!esta) break;
             }
             // El de la estrella que quedó en algo que no sabe, con su puesto vacío o cerrado (el almuerzo cerró
-            // Baños): vuelve a su puesto.
+            // Baños): vuelve a su puesto. Pero no si deja sin nadie un puesto más importante que el suyo (la Casa
+            // del zorrito no queda vacía para abrir Baños).
             for (int n = 1; n <= porNumero.keySet().stream().mapToInt(Integer::intValue).max().orElse(0); n++) {
                 AsignadorService.Presente quien = porNumero.get(n);
                 if (quien == null || quien.principales().isEmpty()) continue;
@@ -162,6 +169,11 @@ final class MejoraReparto {
                     if (quien.principales().contains(c) && quien.hoy().contains(c) && filas.get(f).get(kk).isEmpty()) suya = f;
                 }
                 if (suya == null) continue;
+                int pesoSuya = pesos.getOrDefault(Nombres.clave(puestos.get(suya).nombre()), Prioridad.MEDIA.peso());
+                boolean dejaVacioOtroMasImportante = esta.stream().anyMatch(f -> !Nombres.noEsPuesto(puestos.get(f).nombre())
+                        && filas.get(f).get(kk).size() == 1
+                        && pesos.getOrDefault(Nombres.clave(puestos.get(f).nombre()), Prioridad.MEDIA.peso()) > pesoSuya);
+                if (dejaVacioOtroMasImportante) continue;
                 for (int f : esta) filas.get(f).get(k).remove(n);
                 filas.get(suya).get(k).add(n);
                 cambio = true;
@@ -173,6 +185,157 @@ final class MejoraReparto {
             PuestoDto p = puestos.get(f);
             List<String> celdas = new ArrayList<>();
             for (int k = 0; k < total; k++) {
+                Set<Integer> s = filas.get(f).get(k);
+                String antes = p.celdas().get(k);
+                celdas.add(s.isEmpty() ? (PlanRotacion.empleados(antes).isEmpty() ? antes : "")
+                        : s.stream().sorted().map(String::valueOf).collect(Collectors.joining("-")));
+            }
+            nuevos.add(new PuestoDto(p.nombre(), p.nota(), p.iniciaRotacion(), celdas));
+        }
+        return nuevos;
+    }
+
+    /**
+     * Un puesto que tiene que estar siempre (Cajero) nunca lo hace alguien que no lo sabe. En ese horario entra uno
+     * que lo sepa: de Libre; si no, de otro puesto que no quede sin nadie (se cambian si el que no sabe Cajero sabe
+     * ese puesto, o ahí queda otro y el que no sabe pasa a Libre). Si no se puede, el que no sabe pasa a Libre y el
+     * Cajero queda sin nadie: se pide un refuerzo.
+     */
+    static List<PuestoDto> siempreConQuienSabe(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero,
+                                               Map<String, Integer> pesos) {
+        int libre = -1;
+        for (int f = 0; f < puestos.size(); f++) if (Nombres.esLibre(puestos.get(f).nombre())) libre = f;
+        List<List<Set<Integer>>> filas = new ArrayList<>();
+        for (PuestoDto p : puestos) {
+            List<Set<Integer>> celdas = new ArrayList<>();
+            for (String c : p.celdas()) celdas.add(new LinkedHashSet<>(PlanRotacion.empleados(c)));
+            filas.add(celdas);
+        }
+        java.util.function.BiPredicate<Integer, Integer> sabe = (n, f) -> {
+            AsignadorService.Presente q = porNumero.get(n);
+            return q != null && q.hoy().contains(Nombres.clave(puestos.get(f).nombre()));
+        };
+        java.util.function.IntPredicate esSiempre = f -> !Nombres.noEsPuesto(puestos.get(f).nombre())
+                && pesos.getOrDefault(Nombres.clave(puestos.get(f).nombre()), Prioridad.MEDIA.peso()) >= Prioridad.SIEMPRE.peso();
+        boolean cambio = false;
+        for (int f = 0; f < puestos.size(); f++) {
+            if (!esSiempre.test(f)) continue;
+            for (int k = 0; k < filas.get(f).size(); k++) {
+                for (int x : new ArrayList<>(filas.get(f).get(k))) {
+                    if (porNumero.get(x) == null || sabe.test(x, f)) continue;
+                    // Uno de Libre que lo sepa.
+                    int desde = -1, y = -1;
+                    if (libre >= 0) {
+                        for (int n : filas.get(libre).get(k)) if (sabe.test(n, f)) { desde = libre; y = n; break; }
+                    }
+                    // Si no, uno de otro puesto, siempre que ese puesto no quede sin nadie: o el que no sabe Cajero
+                    // sabe ese puesto y se cambian, o ahí queda otro.
+                    boolean xVaAlOtro = false;
+                    for (int pase = 0; pase < 2 && y < 0; pase++) {
+                        for (int g = 0; g < puestos.size() && y < 0; g++) {
+                            if (g == f || g == libre || Nombres.noEsPuesto(puestos.get(g).nombre()) || esSiempre.test(g)) continue;
+                            Set<Integer> ahi = filas.get(g).get(k);
+                            if (pase == 0 ? !sabe.test(x, g) : ahi.size() < 2) continue;
+                            for (int n : ahi) {
+                                if (sabe.test(n, f) && !filas.get(f).get(k).contains(n)) {
+                                    desde = g;
+                                    y = n;
+                                    xVaAlOtro = pase == 0;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    filas.get(f).get(k).remove(x);
+                    if (y >= 0) {
+                        filas.get(desde).get(k).remove(y);
+                        filas.get(f).get(k).add(y);
+                    }
+                    if (xVaAlOtro) filas.get(desde).get(k).add(x);
+                    else if (libre >= 0) filas.get(libre).get(k).add(x);
+                    cambio = true;
+                }
+            }
+        }
+        if (!cambio) return puestos;
+        List<PuestoDto> nuevos = new ArrayList<>();
+        for (int f = 0; f < puestos.size(); f++) {
+            PuestoDto p = puestos.get(f);
+            List<String> celdas = new ArrayList<>();
+            for (int k = 0; k < p.celdas().size(); k++) {
+                Set<Integer> s = filas.get(f).get(k);
+                String antes = p.celdas().get(k);
+                celdas.add(s.isEmpty() ? (PlanRotacion.empleados(antes).isEmpty() ? antes : "")
+                        : s.stream().sorted().map(String::valueOf).collect(Collectors.joining("-")));
+            }
+            nuevos.add(new PuestoDto(p.nombre(), p.nota(), p.iniciaRotacion(), celdas));
+        }
+        return nuevos;
+    }
+
+    /**
+     * En el almuerzo, si un puesto lo cubre alguien que no lo sabe mientras come el que sí (la Casa del zorrito con
+     * el de Baños), el que sabe almuerza en otro horario de descansos en el que haya alguien en Libre que sepa el
+     * puesto y lo cubra (la segunda cajera). El que no sabía pasa a Libre. almuerzo: posiciones de los horarios de
+     * descansos.
+     */
+    static List<PuestoDto> correrAlmuerzos(List<PuestoDto> puestos, Map<Integer, AsignadorService.Presente> porNumero,
+                                           List<Integer> almuerzo) {
+        int descanso = -1, libre = -1;
+        for (int f = 0; f < puestos.size(); f++) {
+            if (Nombres.esDescanso(puestos.get(f).nombre())) descanso = f;
+            if (Nombres.esLibre(puestos.get(f).nombre())) libre = f;
+        }
+        if (descanso < 0 || libre < 0) return puestos;
+        List<List<Set<Integer>>> filas = new ArrayList<>();
+        for (PuestoDto p : puestos) {
+            List<Set<Integer>> celdas = new ArrayList<>();
+            for (String c : p.celdas()) celdas.add(new LinkedHashSet<>(PlanRotacion.empleados(c)));
+            filas.add(celdas);
+        }
+        java.util.function.BiPredicate<Integer, Integer> sabe = (n, f) -> {
+            AsignadorService.Presente q = porNumero.get(n);
+            return q != null && q.hoy().contains(Nombres.clave(puestos.get(f).nombre()));
+        };
+        boolean cambio = false;
+        for (int k : almuerzo) {
+            for (int f = 0; f < puestos.size(); f++) {
+                if (Nombres.noEsPuesto(puestos.get(f).nombre()) || k >= filas.get(f).size()) continue;
+                for (int x : new ArrayList<>(filas.get(f).get(k))) {
+                    if (sabe.test(x, f)) continue;
+                    boolean listo = false;
+                    // Uno que sabe el puesto y está comiendo ahora.
+                    int ff = f;
+                    for (int y : new ArrayList<>(filas.get(descanso).get(k))) {
+                        if (listo) break;
+                        if (!sabe.test(y, f)) continue;
+                        // Otro horario de descansos en que él esté en ese mismo puesto y haya en Libre alguien que lo sepa.
+                        for (int k2 : almuerzo) {
+                            if (k2 == k || !filas.get(f).get(k2).contains(y)) continue;
+                            Integer z = filas.get(libre).get(k2).stream().filter(n -> sabe.test(n, ff)).findFirst().orElse(null);
+                            if (z == null) continue;
+                            filas.get(f).get(k).remove(x);
+                            filas.get(libre).get(k).add(x);
+                            filas.get(descanso).get(k).remove(y);
+                            filas.get(f).get(k).add(y);
+                            filas.get(f).get(k2).remove(y);
+                            filas.get(descanso).get(k2).add(y);
+                            filas.get(libre).get(k2).remove(z);
+                            filas.get(f).get(k2).add(z);
+                            listo = true;
+                            cambio = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (!cambio) return puestos;
+        List<PuestoDto> nuevos = new ArrayList<>();
+        for (int f = 0; f < puestos.size(); f++) {
+            PuestoDto p = puestos.get(f);
+            List<String> celdas = new ArrayList<>();
+            for (int k = 0; k < p.celdas().size(); k++) {
                 Set<Integer> s = filas.get(f).get(k);
                 String antes = p.celdas().get(k);
                 celdas.add(s.isEmpty() ? (PlanRotacion.empleados(antes).isEmpty() ? antes : "")

@@ -18,6 +18,24 @@ export interface Puesto {
   iniciaRotacion?: boolean;
   /** Una por horario: vacía, "3", "1-2" o "Cerrado". */
   celdas: string[];
+  /** Si el puesto tiene roles, uno por horario: qué número hace cada rol ({ Zorrito: 3 }). */
+  roles?: Record<string, number>[] | null;
+}
+
+/**
+ * Cada uno de la celda con su rol: primero los roles (Zorrito, Presentador) y después el resto con el nombre del
+ * resto (Ayudante). Vacío si el puesto no tiene roles en esa celda.
+ */
+export function rolesDeCelda(p: Puesto, i: number, resto: string | null = null): { rol: string; numero: number }[] {
+  const m = p.roles?.[i];
+  if (!m || !Object.keys(m).length) return [];
+  const conRol = Object.entries(m).map(([rol, numero]) => ({ rol, numero }));
+  const usados = new Set(conRol.map((r) => r.numero));
+  const demas = (p.celdas[i] ?? '')
+    .split('-')
+    .filter((n) => /^\d+$/.test(n.trim()) && !usados.has(Number(n)))
+    .map((n) => ({ rol: resto ?? '', numero: Number(n) }));
+  return [...conRol, ...demas];
 }
 
 export interface Renglon {
@@ -76,11 +94,16 @@ export interface Sugerencia {
   asignacion: Asignacion[];
 }
 
-/** Puestos de cada número del cronograma, sin Descanso. */
+/** Descanso y Libre son filas del cronograma pero no puestos: nadie tiene que "saberlos". */
+export function noEsPuesto(nombre: string): boolean {
+  return ['descanso', 'libre'].includes(nombre.trim().toLowerCase());
+}
+
+/** Puestos de cada número del cronograma, sin Descanso ni Libre. */
 export function puestosPorNumero(c: Cronograma): Map<number, string[]> {
   const mapa = new Map<number, string[]>();
   for (const p of c.puestos) {
-    if (p.nombre.trim().toLowerCase() === 'descanso') continue;
+    if (noEsPuesto(p.nombre)) continue;
     for (const celda of p.celdas) {
       for (const parte of celda.split('-')) {
         if (!/^\d+$/.test(parte.trim())) continue;

@@ -69,9 +69,22 @@
                   <span class="nota">{{ p.nota }}</span>
                 }
               </th>
-              @for (c of p.celdas; track $index) {
+              @for (c of p.celdas; track $index; let i = $index) {
                 @let e = estiloCelda(c);
-                <td [style.background-color]="e.fondo" [style.color]="e.texto" [title]="nombresCelda(c)">{{ c }}</td>
+                @if (refuerzos().get(p.nombre)?.has(i)) {
+                  <td class="refuerzo" title="Quedó sin nadie: pedí un refuerzo">Refuerzo</td>
+                } @else {
+                @let conRol = rolesDeCelda(p, i);
+                <td [style.background-color]="e.fondo" [style.color]="e.texto" [title]="nombresCelda(c)">
+                  @if (conRol.length) {
+                    @for (r of conRol; track r.numero) {
+                      <span class="rol-celda">{{ r.numero }} {{ r.rol }}</span>
+                    }
+                  } @else {
+                    {{ c }}
+                  }
+                </td>
+                }
               }
             </tr>
           }

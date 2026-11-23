@@ -1,15 +1,22 @@
 package org.example.laserranitarotaciones.model.entity;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /** La prioridad de un puesto. Los puestos sin fila acá son de prioridad media. */
 @Entity
@@ -61,6 +68,20 @@ public class PuestoParque {
     /** Lugar en el orden de rotación predeterminado (0 = primero); null = no está en el orden. */
     @Column(name = "orden_rotacion")
     private Integer ordenRotacion;
+
+    /**
+     * Los roles que necesitan a alguien preparado, uno por persona y en orden de importancia (Show del zorrito:
+     * Zorrito, Presentador). Vacío = el puesto no tiene roles.
+     */
+    @ElementCollection
+    @CollectionTable(name = "puesto_roles", joinColumns = @JoinColumn(name = "id_puesto"))
+    @OrderColumn(name = "orden")
+    @Column(name = "rol", nullable = false, length = 40)
+    private List<String> roles = new ArrayList<>();
+
+    /** Cómo se llama el resto de la gente del puesto (Ayudante); lo hace cualquiera que sepa el puesto. */
+    @Column(length = 40)
+    private String rolResto;
 
     public TipoHorario getTipo() {
         return menos ? TipoHorario.MENOS : refuerzo ? TipoHorario.REFUERZO : TipoHorario.ABRE_TARDE;

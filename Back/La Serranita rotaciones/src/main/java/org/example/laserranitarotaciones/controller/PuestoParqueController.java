@@ -61,6 +61,13 @@ public class PuestoParqueController {
         return puestos.cambiarAbreTarde(dto);
     }
 
+    @Operation(summary = "Los roles del puesto (Zorrito, Presentador) y cómo se llama el resto (Ayudante)",
+            description = "Sólo usa nombre, roles y rolResto. roles vacío = sin roles.")
+    @PutMapping("/roles")
+    public PuestoParqueDto cambiarRoles(@RequestBody PuestoParqueDto dto) {
+        return puestos.cambiarRoles(dto);
+    }
+
     @Operation(summary = "Si el puesto aparece en la columna Puestos fijos de los cronogramas",
             description = "Sólo usa nombre y mostrarEnFijos; la prioridad no cambia.")
     @PutMapping("/fijos")

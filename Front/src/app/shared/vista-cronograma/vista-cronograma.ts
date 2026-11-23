@@ -1,6 +1,8 @@
-import { Component, computed, effect, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { clavePuesto } from '../../models/empleado';
+import { PuestoService } from '../../services/puesto.service';
 import { LucideIdCard, LucidePrinter, LucideTable } from '@lucide/angular';
-import { Cronograma, Tarjeta } from '../../models/cronograma';
+import { Cronograma, rolesDeCelda, Tarjeta } from '../../models/cronograma';
 import { TarjetaEmpleado } from '../tarjeta/tarjeta';
 import { estiloCelda } from '../colores';
 
@@ -40,10 +42,19 @@ export class VistaCronograma {
   acompanantes = input<TarjetaAcompanante[]>([]);
   /** Número → lo que hace antes de abrir. */
   tareas = input<Map<number, string>>(new Map());
+  /** Puesto → horarios (posiciones) en que quedó sin nadie y hay que pedir un refuerzo. */
+  refuerzos = input<Map<string, Set<number>>>(new Map());
   /** Se abrió la impresión (para guardar lo que se hizo hoy). */
   imprimio = output<void>();
 
   readonly estiloCelda = estiloCelda;
+  /** Clave del puesto → cómo se llama el resto de su gente (Ayudante). */
+  private restos = signal<Map<string, string>>(new Map());
+
+  /** Cada uno de la celda con su rol (vacío si el puesto no tiene roles ahí). */
+  rolesDeCelda(p: Cronograma['puestos'][number], i: number): { rol: string; numero: number }[] {
+    return rolesDeCelda(p, i, this.restos().get(clavePuesto(p.nombre)) ?? null);
+  }
 
   vista = signal<Vista>('tarjetas');
   seleccionada = signal(0);
@@ -73,6 +84,12 @@ export class VistaCronograma {
   hayInicio = computed(() => this.cronograma().puestos.some((p) => p.iniciaRotacion));
 
   constructor() {
+    inject(PuestoService)
+      .listar()
+      .subscribe({
+        next: (l) => this.restos.set(new Map(l.filter((p) => p.rolResto).map((p) => [clavePuesto(p.nombre), p.rolResto!]))),
+        error: () => {},
+      });
     effect(() => {
       this.cronograma();
       this.seleccionada.set(0);

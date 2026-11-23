@@ -378,6 +378,24 @@ class GeneradorServiceTest {
         assertThat(fila(c, "Flotante de minigolf").celdas().get(2)).isEqualTo("Cerrado");
     }
 
+    @Test
+    void enLasTandasBusquedaLaHacenElDeTraviesaYElDeLaberinto() {
+        // Búsqueda está en dos lugares: mitad con Travesía y mitad con Laberinto. En el almuerzo también.
+        List<List<String>> lugares = List.of(List.of("Entrada"), List.of("Minigolf"), List.of("Travesía", "Búsqueda"),
+                List.of("Laberinto", "Búsqueda"), List.of("Tobogán"), List.of("Carrera"));
+        reglas.guardar(new ReglaAperturaDto(null, 6, Afluencia.ALTA, List.of(new PedidoGeneradorDto.Fijo("Cajero", 2)), lugares));
+        List<PedidoGeneradorDto.Lugar> rueda = lugares.stream().map(l -> new PedidoGeneradorDto.Lugar(l, false)).toList();
+        CronogramaDto c = generador.generar(new PedidoGeneradorDto("Plan", Afluencia.ALTA, 16, "11:00", "18:00", 30, "12:00", "13:30",
+                List.of(new PedidoGeneradorDto.Fijo("Cajero", 2)), rueda, List.of(), List.of())).cronograma();
+
+        for (int k : List.of(2, 3)) {
+            List<Integer> busqueda = PlanRotacion.empleados(fila(c, "Búsqueda").celdas().get(k));
+            assertThat(busqueda).as("Búsqueda " + k).hasSize(2)
+                    .containsAll(PlanRotacion.empleados(fila(c, "Travesía").celdas().get(k)))
+                    .containsAll(PlanRotacion.empleados(fila(c, "Laberinto").celdas().get(k)));
+        }
+    }
+
     private static PedidoGeneradorDto pedido(int empleados) {
         List<PedidoGeneradorDto.Lugar> rueda = RUEDA.stream()
                 .map(l -> new PedidoGeneradorDto.Lugar(List.of(l.split("\\+")), l.startsWith("Travesía")))

@@ -199,7 +199,9 @@ class CronogramaServiceTest {
 
         // Nadie sabe Pileta (baja): queda cerrada y quien tocaba ahí pasa a Libre; no hay "no sabe".
         PuestoDto pileta = b.cronograma().puestos().stream().filter(p -> p.nombre().equals("Pileta")).findFirst().orElseThrow();
-        assertThat(pileta.celdas()).containsOnly("Cerrado", "").contains("Cerrado");
+        // Un puesto de prioridad baja sin nadie queda Cerrado (no pide refuerzo).
+        assertThat(pileta.celdas()).containsOnly("Cerrado");
+        assertThat(b.refuerzos()).noneMatch(r -> r.puesto().equals("Pileta"));
         assertThat(b.cronograma().puestos()).anyMatch(p -> p.nombre().equals("Libre"));
         assertThat(b.avisos()).noneMatch(a -> a.contains("no sabe")).anyMatch(a -> a.startsWith("Pileta queda cerrado"));
     }

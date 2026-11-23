@@ -13,6 +13,13 @@ export interface Empleado {
   acompananteHabitualId: number | null;
   /** Ids de las tareas que piden saber y sabe hacer. */
   tareas: number[];
+  /** Los roles de puestos para los que está preparado (Zorrito en Show del zorrito). */
+  roles?: RolSabido[];
+}
+
+export interface RolSabido {
+  puesto: string;
+  rol: string;
 }
 
 /** Para comparar nombres de puestos sin que importen mayúsculas, acentos ni espacios. */

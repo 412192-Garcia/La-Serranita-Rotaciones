@@ -15,6 +15,10 @@ export interface PuestoParque {
   mostrarEnFijos: boolean;
   /** Si abre más tarde (Tirolesa, Casa del zorrito); null si está abierto todo el día. */
   abreTarde: AbreTardePuesto | null;
+  /** Los roles que necesitan a alguien preparado, uno por persona y en orden (Zorrito, Presentador). */
+  roles?: string[];
+  /** Cómo se llama el resto de la gente del puesto (Ayudante). */
+  rolResto?: string | null;
 }
 
 /**

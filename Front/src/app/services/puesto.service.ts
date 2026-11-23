@@ -28,6 +28,11 @@ export class PuestoService {
     return this.http.put<PuestoParque>(`${this.url}/abre-tarde`, { nombre, abreTarde });
   }
 
+  /** Los roles del puesto (vacío = sin roles) y cómo se llama el resto. */
+  cambiarRoles(nombre: string, roles: string[], rolResto: string | null): Observable<PuestoParque> {
+    return this.http.put<PuestoParque>(`${this.url}/roles`, { nombre, roles, rolResto });
+  }
+
   cambiarPrioridad(p: PuestoParque): Observable<PuestoParque> {
     return this.http.put<PuestoParque>(this.url, p);
   }

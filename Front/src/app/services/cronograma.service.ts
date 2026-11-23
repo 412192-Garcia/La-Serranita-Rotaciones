@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Borrador, PedidoGenerador, PedidoGeneradorDia } from '../models/generador';
+import { Borrador, PedidoCubrirRol, PedidoGenerador, PedidoGeneradorDia } from '../models/generador';
 import { Cronograma, CronogramaResumen, PedidoSugerencia, Sugerencia } from '../models/cronograma';
 
 @Injectable({ providedIn: 'root' })
@@ -43,6 +43,11 @@ export class CronogramaService {
   /** Arma un borrador para los que vinieron y reparte los números (no lo guarda). */
   generarDia(pedido: PedidoGeneradorDia): Observable<Borrador> {
     return this.http.post<Borrador>(`${this.url}/generar-dia`, pedido);
+  }
+
+  /** Elige a mano quién cubre un rol que nadie podía hacer; devuelve el borrador cambiado. */
+  cubrirRol(pedido: PedidoCubrirRol): Observable<Borrador> {
+    return this.http.post<Borrador>(`${this.url}/cubrir-rol`, pedido);
   }
 
   sugerir(pedido: PedidoSugerencia): Observable<Sugerencia[]> {

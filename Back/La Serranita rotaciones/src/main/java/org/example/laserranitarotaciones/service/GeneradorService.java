@@ -558,19 +558,29 @@ public class GeneradorService {
             for (int n = 1; n <= empleados; n++) {
                 if (!Integer.valueOf(hora).equals(descansa.get(n)) && !enSuPuesto.contains(n)) trabajan.add(n);
             }
-            ReglaAperturaDto regla = reglaPara(reglasDelDia, trabajan.size());
+            // Las reglas cuentan a todos, con la gente de la Tirolesa adentro: se elige la que, sin esa gente, entra
+            // en los que están para los puestos generales. La Tirolesa la manejan sus horarios, no la regla.
+            Set<String> deTarde = new HashSet<>();
+            for (Tarde t : tardes) deTarde.add(Nombres.clave(t.puesto()));
+            ReglaAperturaDto regla = reglaPara(reglasDelDia, trabajan.size(), deTarde);
 
             List<Abierto> abiertos = new ArrayList<>();
             Set<String> enRegla = new HashSet<>();
             for (PedidoGeneradorDto.Fijo f : regla.fijos()) {
+                if (deTarde.contains(Nombres.clave(f.puesto()))) continue;
                 String fila = porClave.get(Nombres.clave(f.puesto()));
                 if (fila == null || !enRegla.add(fila)) continue;
                 abiertos.add(new Abierto(List.of(fila), Math.max(1, f.personas()),
                         pesos.getOrDefault(Nombres.clave(fila), Prioridad.MEDIA.peso()), new ArrayList<>()));
             }
+            Set<String> fijosDeRegla = new HashSet<>(enRegla);
             for (List<String> l : regla.lugares()) {
-                List<String> deEste = l.stream().map(x -> porClave.get(Nombres.clave(x))).filter(x -> x != null && enRegla.add(x)).toList();
+                // Un puesto puede estar en dos lugares (Búsqueda, mitad con Travesía y mitad con Laberinto): queda en
+                // los dos, no sólo en el primero.
+                List<String> deEste = l.stream().map(x -> porClave.get(Nombres.clave(x)))
+                        .filter(x -> x != null && !fijosDeRegla.contains(x)).distinct().toList();
                 if (deEste.isEmpty()) continue;
+                enRegla.addAll(deEste);
                 abiertos.add(new Abierto(deEste, 1, peso(deEste, pesos), new ArrayList<>()));
             }
             for (String fila : filas.keySet()) {
@@ -611,8 +621,11 @@ public class GeneradorService {
             List<Integer> sinUbicar = new ArrayList<>();
             for (int n : orden) {
                 List<String> lo = suyo.getOrDefault(n, List.of());
-                Abierto a = abiertos.stream().filter(x -> x.quienes().size() < x.cupo() && x.filas().stream().anyMatch(lo::contains))
-                        .findFirst().orElse(null);
+                // Primero su lugar tal cual (Travesía y Búsqueda); si no está, uno que tenga algo de lo suyo.
+                Abierto a = abiertos.stream().filter(x -> x.quienes().size() < x.cupo() && new HashSet<>(x.filas()).equals(new HashSet<>(lo)))
+                        .findFirst()
+                        .orElseGet(() -> abiertos.stream().filter(x -> x.quienes().size() < x.cupo() && x.filas().stream().anyMatch(lo::contains))
+                                .findFirst().orElse(null));
                 if (a != null) a.quienes().add(n);
                 else sinUbicar.add(n);
             }
@@ -650,11 +663,17 @@ public class GeneradorService {
         }
     }
 
-    /** La regla de esa cantidad; si no hay, la de la cantidad más cercana por debajo, y si no, por arriba. */
-    private static ReglaAperturaDto reglaPara(List<ReglaAperturaDto> reglasDelDia, int cantidad) {
-        return reglasDelDia.stream().filter(r -> r.empleados() <= cantidad)
-                .max(java.util.Comparator.comparingInt(ReglaAperturaDto::empleados))
-                .orElseGet(() -> reglasDelDia.stream().min(java.util.Comparator.comparingInt(ReglaAperturaDto::empleados)).orElseThrow());
+    /**
+     * La regla para esa cantidad de gente en los puestos generales. Las reglas cuentan a todos: a cada una se le resta
+     * la gente de los puestos de horario (la Tirolesa) para compararla. Si no hay exacta, la más cercana por debajo, y
+     * si no, por arriba.
+     */
+private static ReglaAperturaDto reglaPara(List<ReglaAperturaDto> reglasDelDia, int cantidad, Set<String> deTarde) {
+        java.util.function.ToIntFunction<ReglaAperturaDto> generales = r -> r.empleados() - r.fijos().stream()
+                .filter(f -> deTarde.contains(Nombres.clave(f.puesto()))).mapToInt(PedidoGeneradorDto.Fijo::personas).sum();
+        return reglasDelDia.stream().filter(r -> generales.applyAsInt(r) <= cantidad)
+                .max(java.util.Comparator.comparingInt(generales))
+                .orElseGet(() -> reglasDelDia.stream().min(java.util.Comparator.comparingInt(generales)).orElseThrow());
     }
 
     private static List<LocalTime> horarios(PedidoGeneradorDto p) {

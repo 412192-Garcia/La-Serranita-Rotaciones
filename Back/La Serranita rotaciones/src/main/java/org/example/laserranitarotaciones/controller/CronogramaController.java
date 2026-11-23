@@ -91,6 +91,12 @@ public class CronogramaController {
         return sugerencias.generarConPresentes(pedido);
     }
 
+    @Operation(summary = "Elige a mano quién cubre un rol que nadie de los que vinieron podía hacer (no lo guarda)")
+    @PostMapping("/cubrir-rol")
+    public BorradorDto cubrirRol(@RequestBody org.example.laserranitarotaciones.model.dto.PedidoCubrirRolDto pedido) {
+        return sugerencias.cubrirRol(pedido);
+    }
+
     @Operation(summary = "Arma un borrador de cronograma (no lo guarda)")
     @PostMapping("/generar")
     public BorradorDto generar(@RequestBody PedidoGeneradorDto pedido) {

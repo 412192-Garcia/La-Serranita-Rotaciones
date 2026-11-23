@@ -31,8 +31,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Las reglas de "puestos abiertos": con tantos empleados (sin la Tirolesa) y tal afluencia, qué puestos
- * funcionan, cuáles son fijos y quién comparte qué. El generador arma la rueda con la que corresponde.
+ * Las reglas de "puestos abiertos": con tantos empleados (todos los que vinieron) y tal afluencia, qué puestos
+ * funcionan, cuáles son fijos, cuántos van a la Tirolesa y quién comparte qué. El generador arma la rueda con la
+ * que corresponde.
  */
 @Service
 @RequiredArgsConstructor
@@ -194,18 +195,40 @@ public class ReglaAperturaService {
         repositorio.flush();
         Map<Integer, ReglaAperturaDto> bajas = new HashMap<>();
         Set<Integer> medias = new java.util.HashSet<>();
+        // La tabla del parque cuenta sin la Tirolesa: se le suma su gente (según la afluencia) para que la regla cuente
+        // a todos.
         for (ReglaAperturaDto r : leidas) {
-            guardar(r);
+            guardar(conTardes(r));
             if (r.afluencia() == Afluencia.BAJA) bajas.put(r.empleados(), r);
             if (r.afluencia() == Afluencia.MEDIA) medias.add(r.empleados());
         }
         int total = leidas.size();
         for (ReglaAperturaDto b : bajas.values()) {
             if (medias.contains(b.empleados())) continue;
-            guardar(new ReglaAperturaDto(null, b.empleados(), Afluencia.MEDIA, b.fijos(), b.lugares()));
+            guardar(conTardes(new ReglaAperturaDto(null, b.empleados(), Afluencia.MEDIA, b.fijos(), b.lugares())));
             total++;
         }
         return new Importacion(total, avisos);
+    }
+
+    /**
+     * Una regla de la tabla (que cuenta sin la Tirolesa) con la gente de los puestos que abren tarde y siguen hasta
+     * el cierre, desde temprano (la Tirolesa, desde las 13): se agregan como fijos con las personas de esa afluencia
+     * y se suman a los empleados.
+     */
+    private ReglaAperturaDto conTardes(ReglaAperturaDto r) {
+        List<PedidoGeneradorDto.Fijo> fijos = new ArrayList<>(r.fijos());
+        int suma = 0;
+        for (PuestoParque p : puestos.findAll()) {
+            if (p.getAbre() == null || p.getTipo() != org.example.laserranitarotaciones.model.entity.TipoHorario.ABRE_TARDE
+                    || p.getHasta() != null || p.getAbre().compareTo("14:00") > 0) continue;
+            if (fijos.stream().anyMatch(f -> Nombres.clave(f.puesto()).equals(p.getClave()))) continue;
+            Integer n = r.afluencia() == Afluencia.BAJA ? p.getPersonasBaja() : r.afluencia() == Afluencia.ALTA ? p.getPersonasAlta() : p.getPersonasMedia();
+            int personas = n == null ? 1 : n;
+            fijos.add(new PedidoGeneradorDto.Fijo(p.getNombre(), personas));
+            suma += personas;
+        }
+        return new ReglaAperturaDto(r.id(), r.empleados() + suma, r.afluencia(), fijos, r.lugares());
     }
 
     private void leerHoja(Sheet hoja, DataFormatter formato, FormulaEvaluator evaluador,

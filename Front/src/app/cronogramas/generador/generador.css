@@ -309,3 +309,104 @@ h3 {
     height: 44px;
   }
 }
+
+.pregunta-rol {
+  border-left: 4px solid var(--color-primary);
+}
+
+.pregunta-rol p {
+  margin: 0 0 8px;
+}
+
+.pregunta-rol-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pregunta-rol-acciones select {
+  min-width: 200px;
+}
+
+/* --- Modo simple (con los que vinieron) */
+
+.simple-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 28px;
+  align-items: flex-end;
+}
+
+.simple-dato {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.simple .vinieron {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.resumen {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.45;
+}
+
+.armando {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  color: var(--color-text-muted);
+}
+
+.armando svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pedir-refuerzo {
+  border-left: 4px solid #e08a00;
+  background: #fff7eb;
+}
+
+.de-configuracion {
+  margin: 0 0 12px;
+  color: var(--color-text-muted);
+  font-size: 0.92em;
+}
+
+.de-configuracion summary {
+  cursor: pointer;
+}
+
+.de-configuracion ul {
+  margin: 6px 0 0;
+}
+
+.avanzados {
+  margin-top: 20px;
+}
+
+.avanzados > summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 10px 0;
+  min-height: 24px;
+}
+
+@media (pointer: coarse) {
+  .avanzados > summary,
+  .de-configuracion summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+}

@@ -16,10 +16,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Los puestos del parque: una lista cargada, no la que sale de los cronogramas. Los puestos de un
@@ -75,6 +78,7 @@ public class PuestoParqueService {
         for (Empleado e : empleados.findAll()) {
             e.getPuestos().removeIf(x -> Nombres.clave(x).equals(clave));
             e.getPrincipales().removeIf(x -> Nombres.clave(x).equals(clave));
+            e.getRoles().removeIf(x -> Nombres.clave(org.example.laserranitarotaciones.model.dto.RolSabidoDto.de(x).puesto()).equals(clave));
         }
         for (GrupoPuestos g : grupos.findAll()) g.getPuestos().removeIf(x -> Nombres.clave(x).equals(clave));
         repositorio.delete(p);
@@ -127,6 +131,51 @@ public class PuestoParqueService {
         return aDto(repositorio.save(p));
     }
 
+    /**
+     * Los roles del puesto (los que necesitan a alguien preparado, en orden) y cómo se llama el resto. Sin roles,
+     * el puesto no los tiene. A los empleados se les sacan los roles que ya no existen.
+     */
+    @Transactional
+    public PuestoParqueDto cambiarRoles(PuestoParqueDto dto) {
+        PuestoParque p = buscarOCrear(dto.nombre());
+        List<String> roles = new ArrayList<>();
+        Set<String> claves = new HashSet<>();
+        for (String r : dto.roles() == null ? List.<String>of() : dto.roles()) {
+            String rol = r == null ? "" : r.trim();
+            if (rol.isEmpty()) continue;
+            if (rol.length() > 40) throw new ValidacionException("El rol " + rol + " es muy largo.");
+            if (rol.contains("|") || rol.contains(";") || rol.contains("=")) throw new ValidacionException("El rol " + rol + " tiene caracteres que no van.");
+            if (!claves.add(Nombres.clave(rol))) throw new ValidacionException("El rol " + rol + " está repetido.");
+            roles.add(rol);
+        }
+        if (roles.size() > 5) throw new ValidacionException("Son muchos roles: hasta 5.");
+        String resto = dto.rolResto() == null || dto.rolResto().isBlank() || roles.isEmpty() ? null : dto.rolResto().trim();
+        if (resto != null && resto.length() > 40) throw new ValidacionException("El nombre del resto es muy largo.");
+        if (resto != null && claves.contains(Nombres.clave(resto))) throw new ValidacionException(resto + " ya es uno de los roles.");
+        p.getRoles().clear();
+        p.getRoles().addAll(roles);
+        p.setRolResto(resto);
+        PuestoParque guardado = repositorio.save(p);
+        String clave = guardado.getClave();
+        for (Empleado e : empleados.findAll()) {
+            e.getRoles().removeIf(x -> {
+                var r = org.example.laserranitarotaciones.model.dto.RolSabidoDto.de(x);
+                return Nombres.clave(r.puesto()).equals(clave) && !claves.contains(Nombres.clave(r.rol()));
+            });
+        }
+        return aDto(guardado);
+    }
+
+    /** Los puestos con roles: clave del puesto → sus roles. */
+    @Transactional(readOnly = true)
+    public Map<String, RolesPuesto.Config> roles() {
+        Map<String, RolesPuesto.Config> roles = new HashMap<>();
+        repositorio.findAll().forEach(p -> {
+            if (!p.getRoles().isEmpty()) roles.put(p.getClave(), new RolesPuesto.Config(p.getNombre(), List.copyOf(p.getRoles()), p.getRolResto()));
+        });
+        return roles;
+    }
+
     /** Clave del puesto → peso de su prioridad. Lo que no está es Media. */
     @Transactional(readOnly = true)
     public Map<String, Integer> pesos() {
@@ -171,7 +220,7 @@ public class PuestoParqueService {
     private static PuestoParqueDto aDto(PuestoParque p) {
         PuestoParqueDto.AbreTarde a = p.getAbre() == null ? null : new PuestoParqueDto.AbreTarde(p.getAbre(), p.getHasta(),
                 valor(p.getPersonasBaja()), valor(p.getPersonasMedia()), valor(p.getPersonasAlta()), p.getTipo());
-        return new PuestoParqueDto(p.getNombre(), p.getPrioridad(), p.isMostrarEnFijos(), a);
+        return new PuestoParqueDto(p.getNombre(), p.getPrioridad(), p.isMostrarEnFijos(), a, List.copyOf(p.getRoles()), p.getRolResto());
     }
 
     private static int valor(Integer n) {
