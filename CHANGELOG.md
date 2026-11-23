@@ -5,6 +5,11 @@ Qué cambió en cada versión, contado para quien usa el sistema. Lo nuevo se va
 
 ## Sin publicar
 
+- **Login**: para entrar hace falta usuario y contraseña ("No cerrar sesión" la deja abierta 14 días). Los
+  usuarios se crean, se les cambia la contraseña y se borran en Configuración → Usuarios. El botón de salir está
+  arriba a la derecha.
+- **Deploy**: la app queda en rotaciones.parquelaserranita.online, en el mismo servidor que Entradas. Al pasar a
+  main se arman las imágenes, y scripts/deploy.sh la actualiza en un paso (con backup de la base antes).
 - **Cronograma de hoy** (Armar el día → Generar con los que vinieron), mucho más simple: se genera solo al
   entrar. Arriba, cuántos vinieron, cuánta gente se espera, el horario y el almuerzo (si cambiás algo se
   vuelve a generar), y en palabras qué abre, qué abre más tarde y qué queda cerrado hoy. Lo que necesita una

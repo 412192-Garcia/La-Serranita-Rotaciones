@@ -1,0 +1,7 @@
+# Sitio de Rotaciones en el Caddy de Entradas (mismo VPS). Copiar este archivo a la carpeta caddy-extra/ de
+# Entradas en el VPS (/docker/la-serranita-entradas/caddy-extra/rotaciones.caddy) y recargar Caddy:
+#   cd /docker/la-serranita-entradas && docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+# Caddy pide y renueva solo el certificado de HTTPS. El DNS del subdominio tiene que apuntar al VPS.
+rotaciones.parquelaserranita.online {
+	reverse_proxy rotaciones-frontend:80
+}

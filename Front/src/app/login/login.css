@@ -1,0 +1,114 @@
+.fondo {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.tarjeta {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px 26px;
+  background: var(--color-card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.logo {
+  height: 52px;
+  width: auto;
+  align-self: center;
+}
+
+h1 {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  color: var(--color-primary);
+}
+
+.ayuda {
+  margin: -6px 0 4px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #fdecea;
+  color: #a12a1e;
+  font-weight: 600;
+}
+
+.dato {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.dato input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.con-ojo {
+  position: relative;
+  display: block;
+}
+
+.con-ojo input {
+  padding-right: 44px;
+}
+
+.btn-ojo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.btn-ojo svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mantener {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.btn-primario {
+  justify-content: center;
+  margin-top: 4px;
+}
+
+@media (pointer: coarse) {
+  .btn-ojo {
+    width: 44px;
+  }
+
+  .mantener {
+    min-height: 44px;
+  }
+}

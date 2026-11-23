@@ -108,11 +108,38 @@ npm install --prefix Front && npm run start --prefix Front
 
 Los puertos son distintos a los de La Serranita Entradas (8080 / 4200) para poder correr los dos a la vez.
 
-## Docker
+En desarrollo, si no hay ningún usuario, se crea `admin` con contraseña `admin123` para poder entrar. Los
+usuarios se manejan en Configuración → Usuarios (todos pueden todo).
 
-Con `DB_PASSWORD` en un `.env` al lado del `docker-compose.yml`:
+## Producción y deploy
+
+Va en el mismo VPS que Entradas, en `rotaciones.parquelaserranita.online`, detrás del Caddy de Entradas.
+
+**Día a día:** se mergea a `main` (el CI corre los tests y publica las imágenes
+`ghcr.io/412192-garcia/la-serranita-rotaciones-{backend,frontend}`) y se corre `scripts/deploy.sh` (doble clic
+o Git Bash): espera el CI, hace backup de la base, actualiza el VPS y chequea que quede andando.
+
+**Primera vez:**
+
+1. DNS: un registro `A` de `rotaciones.parquelaserranita.online` a la IP del VPS.
+2. En el VPS: `mkdir -p /docker/la-serranita-rotaciones` y ahí un `.env` copiado de `.env.example`, completo
+   (`DB_PASSWORD`, `JWT_SECRET`, `PRIMER_USUARIO`, `PRIMER_USUARIO_CLAVE`).
+3. Caddy de Entradas: copiar `caddy/rotaciones.caddy` a `/docker/la-serranita-entradas/caddy-extra/` y recargar
+   (`docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile` en la carpeta de Entradas).
+4. Si las imágenes de GitHub son privadas: `docker login ghcr.io` en el VPS con un token de GitHub con permiso
+   `read:packages` (o hacer públicos los paquetes en GitHub).
+5. En tu PC: correr `scripts/deploy.sh`. La primera vez crea `scripts/deploy.local`: completarlo (los mismos
+   datos de SSH que en Entradas) y correrlo de nuevo.
+6. Entrar con el primer usuario, cambiarle la contraseña en Configuración → Usuarios y sacar
+   `PRIMER_USUARIO_CLAVE` del `.env`.
+
+## Docker local
+
+Para probar el build de producción en tu PC (con `.env` completo y `docker-compose.override.yml` copiado del
+`.example`):
 
 ```bash
+docker network create proxy
 docker compose up -d --build
 ```
 

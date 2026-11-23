@@ -1,0 +1,8 @@
+# Para probar el build de producción en tu PC: copiar a docker-compose.override.yml (no se sube) y
+#   docker network create proxy     # una sola vez
+#   docker compose up -d --build
+# La app queda en http://localhost:4300.
+services:
+  frontend:
+    ports:
+      - "4300:80"

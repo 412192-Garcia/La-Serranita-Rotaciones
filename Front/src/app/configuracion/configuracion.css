@@ -52,6 +52,12 @@
 @media (max-width: 600px) {
   .pestanias {
     flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .pestanias a {
+    flex: none;
   }
 
   .pestanias a {

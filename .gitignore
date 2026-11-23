@@ -1,4 +1,9 @@
 .env
+docker-compose.override.yml
+# Datos del VPS para scripts/deploy.sh (usuario, IP, ruta).
+/scripts/deploy.local
+# Backups de la base (en el VPS).
+/backups/
 .idea/
 *.class
 

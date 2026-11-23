@@ -110,3 +110,32 @@ main {
     display: none;
   }
 }
+
+.salir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.salir:hover {
+  color: var(--color-primary-dark);
+  background: var(--color-card-bg);
+}
+
+.salir svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (pointer: coarse) {
+  .salir {
+    width: 44px;
+    min-height: 44px;
+  }
+}

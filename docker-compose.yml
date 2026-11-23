@@ -1,32 +1,123 @@
+# Rotaciones en producción: base, backup, backend y front. Va en el mismo VPS que Entradas: no tiene Caddy
+# propio, lo publica el Caddy de Entradas (rotaciones.parquelaserranita.online) por la red "proxy".
+# Las variables se leen del ".env" de esta carpeta (copiar .env.example y completar).
+#
+# En el VPS (sin el código, sólo este archivo y el .env): scripts/deploy.sh hace todo. A mano:
+#   docker compose pull
+#   docker compose up -d
+#
+# Local, para probar el build de producción (con el código al lado):
+#   docker network create proxy     # una sola vez
+#   docker compose up -d --build    # y entrar por http://localhost:4300 con docker-compose.override.yml.example
+#
+# Primer arranque: no hay usuarios. Con PRIMER_USUARIO y PRIMER_USUARIO_CLAVE en el .env se crea el primero.
+
+# Los logs de Docker sin límite llenan el disco: hasta 5 archivos de 10 MB por servicio.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_DB: rotaciones
       POSTGRES_USER: ${DB_USERNAME:-rotaciones}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en el .env}
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-rotaciones}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Backup de la base: pg_dump una vez por semana (por defecto miércoles 4 AM) a ./backups, con la fecha en el
+  # nombre; los de más de BACKUP_RETENCION_DIAS se borran solos. El deploy además hace uno antes de actualizar.
+  # Restaurar: docker compose exec -T db pg_restore -U rotaciones -d rotaciones --clean < backups/<archivo>.dump
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    logging: *logging
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGDATABASE: rotaciones
+      PGUSER: ${DB_USERNAME:-rotaciones}
+      PGPASSWORD: ${DB_PASSWORD}
+      TZ: America/Argentina/Buenos_Aires
+      BACKUP_CRON: ${BACKUP_CRON:-0 4 * * 3}
+      BACKUP_RETENCION_DIAS: ${BACKUP_RETENCION_DIAS:-56}
+    volumes:
+      - ./backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cat > /usr/local/bin/backup.sh <<'SCRIPT'
+        #!/bin/sh
+        set -e
+        archivo="/backups/rotaciones-$$(date +%Y-%m-%d_%H%M).dump"
+        pg_dump -Fc -f "$$archivo.tmp"
+        mv "$$archivo.tmp" "$$archivo"
+        find /backups -name 'rotaciones-*.dump' -mtime +"$$BACKUP_RETENCION_DIAS" -delete
+        echo "$$(date '+%Y-%m-%d %H:%M') backup OK: $$archivo ($$(du -h "$$archivo" | cut -f1))"
+        SCRIPT
+        chmod +x /usr/local/bin/backup.sh
+        echo "$$BACKUP_CRON /usr/local/bin/backup.sh >> /proc/1/fd/1 2>&1" > /etc/crontabs/root
+        echo "Backups programados: '$$BACKUP_CRON', se guardan $$BACKUP_RETENCION_DIAS días en ./backups"
+        exec crond -f -l 8
 
   backend:
+    image: ghcr.io/412192-garcia/la-serranita-rotaciones-backend:latest
     build: ./Back/La Serranita rotaciones
     restart: unless-stopped
+    logging: *logging
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/api/salud >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
     environment:
       SPRING_PROFILES_ACTIVE: prod
       DB_URL: jdbc:postgresql://db:5432/rotaciones
       DB_USERNAME: ${DB_USERNAME:-rotaciones}
       DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en el .env}
+      PRIMER_USUARIO: ${PRIMER_USUARIO:-}
+      PRIMER_USUARIO_CLAVE: ${PRIMER_USUARIO_CLAVE:-}
+    # Nombre propio en la red: el front lo busca así (ver Front/nginx.conf), sin chocar con el "backend" de otro
+    # proyecto. Sin ports: sólo se llega por el front.
+    networks:
+      default:
+        aliases: [rotaciones-backend]
 
   frontend:
+    image: ghcr.io/412192-garcia/la-serranita-rotaciones-frontend:latest
     build: ./Front
     restart: unless-stopped
+    logging: *logging
     depends_on:
       - backend
-    ports:
-      - "4300:80"
+    # "proxy": la red del Caddy de Entradas, que lo publica como rotaciones-frontend:80 (ver caddy/rotaciones.caddy).
+    networks:
+      default:
+      proxy:
+        aliases: [rotaciones-frontend]
+
+networks:
+  default:
+  proxy:
+    external: true
 
 volumes:
   db_data:

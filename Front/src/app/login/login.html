@@ -1,0 +1,56 @@
+<div class="fondo">
+  <form class="tarjeta" (submit)="entrar($event)">
+    <img class="logo" src="img/logo-la-serranita.png" alt="La Serranita" />
+    <h1>Rotación de puestos</h1>
+    <p class="ayuda">Entrá con tu usuario.</p>
+
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+
+    <label class="dato">
+      <span>Usuario</span>
+      <input class="campo" type="text" name="usuario" autocomplete="username" autocapitalize="none" [value]="usuario()" (input)="usuario.set(valor($event))" />
+    </label>
+
+    <label class="dato">
+      <span>Contraseña</span>
+      <span class="con-ojo">
+        <input
+          class="campo"
+          [type]="verClave() ? 'text' : 'password'"
+          name="clave"
+          autocomplete="current-password"
+          [value]="clave()"
+          (input)="clave.set(valor($event))"
+        />
+        <button
+          type="button"
+          class="btn-ojo"
+          [attr.aria-label]="verClave() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+          [attr.aria-pressed]="verClave()"
+          (click)="verClave.set(!verClave())"
+        >
+          @if (verClave()) {
+            <svg lucideEyeOff [strokeWidth]="2"></svg>
+          } @else {
+            <svg lucideEye [strokeWidth]="2"></svg>
+          }
+        </button>
+      </span>
+    </label>
+
+    <label class="mantener">
+      <input type="checkbox" name="mantener" [checked]="mantener()" (change)="mantener.set(!mantener())" />
+      No cerrar sesión en este dispositivo
+    </label>
+
+    <button type="submit" class="btn-primario" [disabled]="entrando() || !usuario().trim() || !clave()">
+      @if (entrando()) {
+        <svg lucideLoaderCircle class="girando" [strokeWidth]="2.5"></svg> Entrando…
+      } @else {
+        Entrar
+      }
+    </button>
+  </form>
+</div>
